@@ -47,7 +47,7 @@ base.yaml (manual edit) → resume.py (composition) → rendercv (PDF+HTML)
 pip install pyyaml rendercv
 
 # Optional - LLM tag extraction / cover letter drafting
-pip install openai
+pip install openai python-dotenv
 ```
 
 Python 3.12.2 is available. `PyYAML` and `openai` are pre-installed.
@@ -117,5 +117,6 @@ sections:
 ## LLM Integration
 
 - Uses `openai` client with DeepSeek endpoint (`api.deepseek.com`) by default
+- All settings configured via `.env` — `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL`
 - Falls back gracefully if `DEEPSEEK_API_KEY` is not set
-- Can swap to Ollama (`localhost:11434/v1`) for local inference
+- Swap `DEEPSEEK_BASE_URL` to Ollama (`http://localhost:11434/v1`) for local inference — no code changes needed

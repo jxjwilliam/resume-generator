@@ -295,6 +295,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
+from dotenv import load_dotenv
 
 BASE_FILE = "base.yaml"
 LOG_FILE = "applications.json"
@@ -497,9 +498,8 @@ def llm_extract_tags(jd_text, base):
     Falls back to empty string if no LLM configured.
     """
     try:
-        import os
-        # Uses DeepSeek by default (low cost). Swap endpoint for any OpenAI-compatible API.
         from openai import OpenAI
+
         client = OpenAI(
             api_key=os.environ.get("DEEPSEEK_API_KEY"),
             base_url="https://api.deepseek.com"
@@ -522,7 +522,7 @@ Job description:
 {jd_text[:3000]}
 """
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model="deepseek-v4-pro",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=200
         )
@@ -532,6 +532,7 @@ Job description:
         return ""
 
 def main():
+    load_dotenv()  # Load .env file for DEEPSEEK_API_KEY
     parser = argparse.ArgumentParser(description="Resume composition engine")
     subparsers = parser.add_subparsers()
 
@@ -539,7 +540,7 @@ def main():
     build_parser = subparsers.add_parser("build", help="Build a job-specific resume variant")
     build_parser.add_argument("--jd", help="Path to job description text file")
     build_parser.add_argument("--tags", default="", help="Comma-separated tags to filter by")
-    build_parser.add_argument("--template", default="clean", help="Template name")
+    build_parser.add_argument("--template", default="classic", help="Template name")
     build_parser.add_argument("--company", required=True, help="Company name")
     build_parser.add_argument("--role", required=True, help="Role title")
     build_parser.add_argument("--llm", action="store_true", help="Use LLM for JD analysis")
@@ -669,7 +670,7 @@ Return JSON only:
 {"tags": "backend,python,api", "scores": {"bullet_id": 8, ...}}
 ```
 
-**Recommended model:** DeepSeek V3 (`deepseek-chat`) via OpenAI-compatible API. ~$0.001 per JD analysis. Set `DEEPSEEK_API_KEY` env var.
+**Recommended model:** DeepSeek V4 (`deepseek-v4-pro`) via OpenAI-compatible API. ~$0.001 per JD analysis. Add `DEEPSEEK_API_KEY` to `.env` file (loaded automatically by `python-dotenv`).
 
 **Alternative free option:** Gemini 2.0 Flash — free tier is generous enough for personal use.
 
@@ -680,8 +681,10 @@ Return JSON only:
 brew install ollama
 ollama pull llama3.1
 
-# Use in resume.py by swapping the OpenAI client base URL
-# base_url="http://localhost:11434/v1", api_key="ollama"
+# Use by setting these in .env (no code changes needed):
+# DEEPSEEK_BASE_URL=http://localhost:11434/v1
+# DEEPSEEK_API_KEY=ollama
+# DEEPSEEK_MODEL=llama3.1
 ```
 
 ### Step B — Cover letter drafting
@@ -756,7 +759,7 @@ Do you want to send a web link in a cold email?
 | Component | Tool | When to add |
 |---|---|---|
 | Visual editor | Reactive Resume | When you want a GUI or web URL |
-| JD analysis | DeepSeek V3 / Gemini Flash / Ollama | When manual tag selection feels slow |
+| JD analysis | DeepSeek V4 / Gemini Flash / Ollama | When manual tag selection feels slow |
 | Cover letter drafting | Any LLM | Every application — high ROI |
 | Local web dashboard | Next.js or SvelteKit | When the CLI log is hard to browse |
 
@@ -764,7 +767,7 @@ Do you want to send a web link in a cold email?
 
 | Provider | Model | Cost per resume | Privacy |
 |---|---|---|---|
-| DeepSeek | deepseek-chat | ~$0.001 | Cloud |
+| DeepSeek | deepseek-v4-pro | ~$0.001 | Cloud |
 | Google | Gemini 2.0 Flash | Free tier | Cloud |
 | Ollama | Llama 3.1 8B | Free (local) | Local |
 | OpenAI | GPT-4o mini | ~$0.01 | Cloud |
@@ -778,8 +781,8 @@ Do you want to send a web link in a cold email?
 # Python dependencies
 pip install pyyaml rendercv
 
-# Optional: LLM integration (OpenAI-compatible client)
-pip install openai
+# Optional: LLM integration (OpenAI-compatible client + .env loading)
+pip install openai python-dotenv
 
 # Optional: Ollama for local LLM
 brew install ollama && ollama pull llama3.1
@@ -838,9 +841,10 @@ Build the minimum system that solves your actual problem. Do this in order.
 ### Week 2 — Add LLM (optional, 1–2 hours)
 
 1. Sign up for DeepSeek API (or use Gemini free tier)
-2. Set `DEEPSEEK_API_KEY` in your environment
-3. Run: `python resume.py build --company X --role Y --jd jds/x.txt --llm`
-4. Compare the LLM-suggested tags to what you'd have picked manually. Adjust prompt if needed.
+2. Install deps: `pip install openai python-dotenv`
+3. Add `DEEPSEEK_API_KEY=sk-...` to `.env` (auto-loaded by `python-dotenv` via `load_dotenv()`)
+4. Run: `python resume.py build --company X --role Y --jd jds/x.txt --llm`
+5. Compare the LLM-suggested tags to what you'd have picked manually. Adjust prompt if needed.
 
 ---
 

@@ -8,7 +8,7 @@ Stop juggling 7 different resume files. Edit one YAML file — generate any vari
 
 ```bash
 # Install dependencies
-pip install pyyaml rendercv
+pip install -r requirements.txt
 
 # See all available tags in your resume data
 python resume.py tags
@@ -190,7 +190,7 @@ The system works perfectly without LLM — `--llm` is purely additive for conven
 
 ```bash
 # 1. Install deps
-pip install pyyaml rendercv
+pip install -r requirements.txt
 
 # 2. Review the base data
 python resume.py tags
@@ -223,7 +223,7 @@ __pycache__/
 - Python 3.11+
 - [PyYAML](https://pyyaml.org/) — YAML parsing
 - [rendercv](https://github.com/sinaatalay/rendercv) — PDF + HTML rendering
-- `openai` (optional) — LLM tag extraction
+- `openai` + `python-dotenv` (optional) — LLM tag extraction
 
 ## Reference
 

@@ -306,12 +306,20 @@ flowchart LR
 
 | Provider | Model | Cost | Privacy |
 |---|---|---|---|
-| DeepSeek | `deepseek-chat` | ~$0.001/resume | Cloud |
+| DeepSeek | `deepseek-v4-pro` | ~$0.001/resume | Cloud |
 | Google | Gemini 2.0 Flash | Free tier | Cloud |
 | Ollama (local) | Llama 3.1 8B | Free | ✅ Local |
 | OpenAI | GPT-4o mini | ~$0.01 | Cloud |
 
-Set `DEEPSEEK_API_KEY` in your environment, or swap the endpoint in `resume.py` for another provider.
+Add these to `.env` (auto-loaded by `python-dotenv`):
+
+```env
+DEEPSEEK_API_KEY=sk-...
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-pro
+```
+
+Swap `DEEPSEEK_BASE_URL` for another OpenAI-compatible provider (e.g. Ollama, OpenAI) — no code changes needed.
 
 ---
 
@@ -342,7 +350,7 @@ The `.gitignore` is already configured — you don't need to think about this.
 
 ```bash
 # 1. Install dependencies
-pip install pyyaml rendercv
+pip install -r requirements.txt
 
 # 2. Review existing tags
 python resume.py tags
