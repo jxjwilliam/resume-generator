@@ -11,9 +11,11 @@ meta:
 
 identity:
   name: "William Jiang"
+  headline: "Senior Full-Stack & AI Engineer | Node.js • Python | Agentic AI & AI Solutions"
   email: "jxjwilliam@gmail.com"
   phone: "(236) 992-3846"
   location: "Vancouver, Canada"
+  photo: "assets/william-jiang.jpg"
 
   urls:
     - label: "GitHub"
@@ -38,6 +40,17 @@ identity:
       opportunity to discuss how my background aligns with your team's
       goals and how I can contribute to your company's continued growth
       and modernization.
+
+# ─── SUMMARY (resume — not cover letter) ─────────────────────
+
+summary: >
+  Senior Full-Stack Engineer with 20+ years of experience designing, developing,
+  and scaling enterprise-grade applications across Next.js, React.js, Node.js,
+  Microservices, and cloud platforms (AWS, GCP, Azure), with deep expertise in
+  AI-driven development, LLM integration, and intelligent system architecture.
+  Proven track record in RESTful APIs, database optimization, CI/CD pipelines, and
+  distributed systems. Skilled mentor and problem solver with global experience
+  across North America, APAC, and Europe.
 
 # ─── EXPERIENCE ───────────────────────────────────────────────
 
@@ -88,7 +101,7 @@ experience:
     start: "2007-03"
     end: "2014-07"
     status: active
-    tags: [frontend, javascript, ecommerce, ui]
+    tags: [frontend, javascript, ecommerce, ui, react, fullstack]
     bullets:
       - text: "Updated Best Buy product gallery images/thumbnails and added new features including multi-video support, 360-degree rotation for Desktop, Tablet, and Mobile at bestbuy.ca and futureshop.ca"
         tags: [frontend, javascript, ui, mobile]
@@ -180,6 +193,10 @@ experience:
         relevance: high
       - text: "Improved scalability and reliability of backend services through observability, caching, and monitoring"
         tags: [backend, devops, performance, observability]
+        status: active
+        relevance: high
+      - text: "Implemented MLOps workflows using Kubernetes, Docker, Jenkins, AWS, Kubeflow, Airflow, and Weights & Biases for ML training and deployment"
+        tags: [ai, ml, devops, mlops, kubernetes]
         status: active
         relevance: high
       - text: "Collaborated across product and design teams to deliver seamless user experiences"
@@ -436,12 +453,16 @@ projects:
 education:
   - institution: "Xi'an Jiaotong University"
     degree: "Bachelor of Engineering"
-    graduation: "1991"
+    start: "1987-09"
+    graduation: "1991-07"
+    location: "China"
     status: active
     tags: [general]
   - institution: "Universal Learning Institute"
     degree: "Diploma of Business Management"
-    graduation: "2006"
+    start: "2005-03"
+    graduation: "2006-03"
+    location: "Vancouver, Canada"
     status: active
     tags: [general]
 

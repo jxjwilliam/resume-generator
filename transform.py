@@ -9,7 +9,10 @@ import yaml
 import json
 import argparse
 import os
+import base64
+import io
 import httpx
+from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 
@@ -19,6 +22,12 @@ API_BASE = "https://rxresu.me/api/openapi"
 API_KEY = os.environ.get("RXRESU_REACTIVE_RESUME_API_KEY", "")
 
 BASE_FILE = "base.yaml"
+DEFAULT_MAX_BULLETS = 4
+PHOTO_CANDIDATES = [
+    "assets/william-jiang.jpg",
+    "assets/William-Jiang-1.png",
+    "assets/william-jiang-1.png",
+]
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -63,6 +72,75 @@ def filter_active(items: list, required_tags: set = None) -> list:
     return out
 
 
+def filter_bullets(bullets: list, required_tags: set = None) -> list:
+    """Keep active bullets; when tags are set, match on bullet tags only."""
+    out = []
+    for b in bullets:
+        if b.get("status") == "deprecated":
+            continue
+        if required_tags:
+            if not required_tags.intersection(set(b.get("tags", []))):
+                continue
+        out.append(b)
+    return out
+
+
+def sort_jobs_reverse_chronological(jobs: list) -> list:
+    """Newest roles first (matches standard resume order)."""
+    def sort_key(job):
+        start = job.get("start") or "0000-00"
+        end = job.get("end") or "9999-12"
+        return (start, end)
+    return sorted(jobs, key=sort_key, reverse=True)
+
+
+def resolve_photo_path(explicit: Optional[str], identity: dict) -> Optional[Path]:
+    """Pick the first existing photo path (jpg preferred — smaller upload)."""
+    candidates = []
+    if explicit:
+        candidates.append(explicit)
+    if identity.get("photo"):
+        candidates.append(identity["photo"])
+    candidates.extend(PHOTO_CANDIDATES)
+    for raw in candidates:
+        path = Path(raw)
+        if path.is_file():
+            return path
+    return None
+
+
+def build_picture_data_url(image_path: Path, max_px: int = 400) -> dict:
+    """Resize photo and embed as a data URL (rxresu.me accepts this via PATCH)."""
+    from PIL import Image
+
+    img = Image.open(image_path).convert("RGB")
+    img.thumbnail((max_px, max_px))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=85)
+    data_url = f"data:image/jpeg;base64,{base64.b64encode(buf.getvalue()).decode()}"
+    aspect = round(img.width / img.height, 2) if img.height else 1.0
+    return {
+        "hidden": False,
+        "url": data_url,
+        "size": 100,
+        "rotation": 0,
+        "aspectRatio": aspect,
+        "borderRadius": 50,
+        "borderColor": "rgba(0, 0, 0, 0)",
+        "borderWidth": 0,
+        "shadowColor": "rgba(0, 0, 0, 0.2)",
+        "shadowWidth": 2,
+    }
+
+
+SKILL_CATEGORY_LABELS = {
+    "languages": "Languages",
+    "frameworks": "Frameworks & Libraries",
+    "tools": "Tools & Platforms",
+    "ai_tools": "AI & Development Tools",
+}
+
+
 def make_uuid() -> str:
     import uuid
     return str(uuid.uuid4())
@@ -74,7 +152,7 @@ def build_basics(identity: dict) -> dict:
     urls = {u["label"].lower(): u["url"] for u in identity.get("urls", [])}
     return {
         "name": identity["name"],
-        "headline": "",
+        "headline": identity.get("headline", ""),
         "email": identity["email"],
         "phone": identity["phone"],
         "location": identity["location"],
@@ -90,7 +168,9 @@ def build_basics(identity: dict) -> dict:
     }
 
 
-def build_summary_content(data: dict, target_tags: set = None) -> str:
+def build_summary_content(data: dict, target_tags: set = None, use_cover_letter: bool = False) -> str:
+    if not use_cover_letter and data.get("summary"):
+        return data["summary"].strip()
     cls = data.get("cover_letters", [])
     if target_tags and target_tags.intersection({"ai", "fullstack"}):
         match = next((c for c in cls if c["id"] == "ai-fullstack-focused"), None)
@@ -100,59 +180,96 @@ def build_summary_content(data: dict, target_tags: set = None) -> str:
         match = next((c for c in cls if c["id"] == "leadership-focused"), None)
     if match:
         return match["body"].replace("{opening}", "").replace("{closing}", "").strip()
-    return ""
+    return data.get("summary", "").strip()
 
 
-def build_experience_items(exp_list: list, required_tags: set = None) -> list:
-    active = filter_active(exp_list, required_tags)
+def _bullet_relevance_score(bullet: dict, required_tags: set = None) -> int:
+    if not required_tags:
+        return {"high": 3, "medium": 2, "low": 1}.get(bullet.get("relevance", "medium"), 2)
+    overlap = len(required_tags.intersection(set(bullet.get("tags", []))))
+    rel = {"high": 3, "medium": 2, "low": 1}.get(bullet.get("relevance", "medium"), 2)
+    return overlap * 10 + rel
+
+
+def build_experience_items(
+    exp_list: list,
+    required_tags: set = None,
+    max_bullets: int = DEFAULT_MAX_BULLETS,
+) -> list:
+    """Include jobs when any bullet matches tags; sort newest-first."""
+    active_jobs = [j for j in exp_list if j.get("status") != "deprecated"]
     items = []
-    for job in active:
-        bullets = [
-            b["text"] for b in job.get("bullets", [])
-            if b.get("status") != "deprecated"
-            and (not required_tags or required_tags.intersection(set(b.get("tags", []))))
-        ]
-        start = iso_to_readable(job['start'])
-        end = iso_to_readable(job.get('end')) or "Present"
-        period = f"{start} – {end}"
+    for job in sort_jobs_reverse_chronological(active_jobs):
+        matched = filter_bullets(job.get("bullets", []), required_tags)
+        if not matched and required_tags:
+            job_tags = set(job.get("tags", []))
+            if required_tags.intersection(job_tags):
+                matched = filter_bullets(job.get("bullets", []), None)
+        if not matched:
+            continue
+        matched.sort(key=lambda b: _bullet_relevance_score(b, required_tags), reverse=True)
+        if max_bullets > 0:
+            matched = matched[:max_bullets]
+        start = iso_to_readable(job["start"])
+        end = iso_to_readable(job.get("end")) or "Present"
         items.append({
             "id": make_uuid(),
             "hidden": False,
             "company": job["company"],
             "position": job["title"],
             "location": job["location"],
-            "period": period,
+            "period": f"{start} – {end}",
             "website": {"url": "", "label": ""},
-            "description": "\n".join(f"• {b}" for b in bullets),
+            "description": "\n".join(f"• {b['text']}" for b in matched),
             "roles": [],
         })
     return items
 
 
 def build_education_items(edu_list: list) -> list:
-    return [
-        {
+    items = []
+    for e in filter_active(edu_list):
+        start = iso_to_readable(e.get("start"))
+        end = iso_to_readable(e.get("graduation"))
+        if start and end:
+            period = f"{start} – {end}"
+        else:
+            period = end or start or ""
+        items.append({
             "id": make_uuid(),
             "hidden": False,
             "school": e["institution"],
             "degree": e["degree"],
-            "area": "",
+            "area": e.get("location", ""),
             "grade": "",
-            "location": "",
-            "period": iso_to_readable(e.get("graduation")),
+            "location": e.get("location", ""),
+            "period": period,
             "website": {"url": "", "label": ""},
             "description": "",
-        }
-        for e in filter_active(edu_list)
-    ]
+        })
+    return items
 
 
-def build_skills_items(skills: dict) -> list:
+def build_skills_items(
+    skills: dict,
+    required_tags: set = None,
+    mode: str = "grouped",
+    show_levels: bool = False,
+) -> list:
+    """Build skills section items.
+
+    grouped (default): one row per base.yaml category, technologies as keyword tags.
+    flat: one row per skill (legacy behaviour); dot ratings hidden unless show_levels.
+    """
+    if mode == "flat":
+        return _build_skills_flat(skills, required_tags, show_levels)
+    return _build_skills_grouped(skills, required_tags)
+
+
+def _build_skills_flat(skills: dict, required_tags: set, show_levels: bool) -> list:
     result = []
-    for _category, items in skills.items():
-        for skill in items:
-            if skill.get("status") == "deprecated":
-                continue
+    for items in skills.values():
+        for skill in filter_active(items, required_tags):
             level_num = {"expert": 5, "advanced": 4, "intermediate": 3}.get(
                 skill.get("level", ""), 3
             )
@@ -162,10 +279,30 @@ def build_skills_items(skills: dict) -> list:
                 "icon": "",
                 "iconColor": "",
                 "name": skill["name"],
-                "proficiency": skill.get("level", "").title(),
-                "level": level_num,
-                "keywords": skill.get("tags", []),
+                "proficiency": skill.get("level", "").title() if show_levels else "",
+                "level": level_num if show_levels else 0,
+                "keywords": [],
             })
+    return result
+
+
+def _build_skills_grouped(skills: dict, required_tags: set) -> list:
+    result = []
+    for category, items in skills.items():
+        active = filter_active(items, required_tags)
+        if not active:
+            continue
+        label = SKILL_CATEGORY_LABELS.get(category, category.replace("_", " ").title())
+        result.append({
+            "id": make_uuid(),
+            "hidden": False,
+            "icon": "",
+            "iconColor": "",
+            "name": label,
+            "proficiency": "",
+            "level": 0,
+            "keywords": [s["name"] for s in active],
+        })
     return result
 
 
@@ -188,43 +325,30 @@ def build_projects_items(projects: list, required_tags: set = None) -> list:
     ]
 
 
-def build_profiles() -> list:
-    return [
-        {
-            "id": make_uuid(), "hidden": False,
-            "icon": "github-logo", "iconColor": "",
-            "network": "GitHub", "username": "williamjxj",
-            "website": {"url": "https://github.com/williamjxj", "label": "@williamjxj"},
-        },
-        {
-            "id": make_uuid(), "hidden": False,
-            "icon": "linkedin-logo", "iconColor": "",
-            "network": "LinkedIn", "username": "William Jiang",
-            "website": {"url": "https://www.linkedin.com/in/william-jiang-226a7616/", "label": "william-jiang"},
-        },
-    ]
-
-
-def build_metadata(template: str) -> dict:
+def build_metadata(template: str, skills_mode: str = "grouped", include_projects: bool = True) -> dict:
+    main_sections = ["summary", "skills", "experience"]
+    if include_projects:
+        main_sections.append("projects")
+    main_sections.append("education")
     return {
         "template": template,
         "layout": {
             "sidebarWidth": 35,
             "pages": [
                 {
-                    "fullWidth": False,
-                    "main": ["profiles", "summary", "education", "experience", "projects"],
-                    "sidebar": ["skills"],
+                    "fullWidth": True,
+                    "main": main_sections,
+                    "sidebar": [],
                 }
             ],
         },
         "page": {
-            "gapX": 4, "gapY": 6, "marginX": 14, "marginY": 12,
+            "gapX": 4, "gapY": 3, "marginX": 12, "marginY": 10,
             "format": "letter", "locale": "en-US",
             "hideLinkUnderline": False, "hideIcons": False, "hideSectionIcons": True,
         },
         "design": {
-            "level": {"icon": "star", "type": "circle"},
+            "level": {"icon": "star", "type": "hidden" if skills_mode == "grouped" else "circle"},
             "colors": {
                 "primary": "rgba(37, 99, 235, 1)",
                 "text": "rgba(0, 0, 0, 1)",
@@ -232,8 +356,8 @@ def build_metadata(template: str) -> dict:
             },
         },
         "typography": {
-            "body": {"fontFamily": "IBM Plex Serif", "fontWeights": ["400", "500"], "fontSize": 14, "lineHeight": 1.5},
-            "heading": {"fontFamily": "IBM Plex Serif", "fontWeights": ["600"], "fontSize": 20, "lineHeight": 1.5},
+            "body": {"fontFamily": "IBM Plex Sans", "fontWeights": ["400", "500"], "fontSize": 10, "lineHeight": 1.35},
+            "heading": {"fontFamily": "IBM Plex Sans", "fontWeights": ["600"], "fontSize": 17, "lineHeight": 1.25},
         },
         "notes": "",
         "styleRules": [],
@@ -242,30 +366,50 @@ def build_metadata(template: str) -> dict:
 
 # ── build patch operations (JSON Patch RFC 6902, paths relative to /data) ────
 
-def build_operations(base: dict, target_tags: set = None, template: str = "elegant") -> list:
+def build_operations(
+    base: dict,
+    target_tags: set = None,
+    template: str = "elegant",
+    skills_mode: str = "grouped",
+    all_skills: bool = False,
+    show_skill_levels: bool = False,
+    max_bullets: int = DEFAULT_MAX_BULLETS,
+    use_cover_letter: bool = False,
+    include_projects: bool = True,
+    photo_path: Optional[Path] = None,
+    include_photo: bool = True,
+) -> list:
     """Convert all resume sections into JSON Patch replace operations."""
-    ops = []
     basics = build_basics(base["identity"])
-    summary_content = build_summary_content(base, target_tags)
-    metadata = build_metadata(template)
+    summary_content = build_summary_content(base, target_tags, use_cover_letter)
+    metadata = build_metadata(template, skills_mode, include_projects)
+    skill_tags = None if all_skills else target_tags
+    skills_columns = 2 if skills_mode == "grouped" else 1
 
     field_map = {
         "/basics": basics,
         "/summary/content": summary_content,
         "/summary/hidden": False,
-        "/sections/profiles/items": build_profiles(),
-        "/sections/profiles/hidden": False,
-        "/sections/experience/items": build_experience_items(base["experience"], target_tags),
+        "/sections/profiles/items": [],
+        "/sections/profiles/hidden": True,
+        "/sections/experience/items": build_experience_items(
+            base["experience"], target_tags, max_bullets
+        ),
         "/sections/education/items": build_education_items(base["education"]),
-        "/sections/skills/items": build_skills_items(base["skills"]),
+        "/sections/skills/items": build_skills_items(
+            base["skills"], skill_tags, skills_mode, show_skill_levels
+        ),
+        "/sections/skills/columns": skills_columns,
+        "/sections/skills/hidden": False,
         "/sections/projects/items": build_projects_items(base["projects"], target_tags),
+        "/sections/projects/hidden": not include_projects,
         "/metadata": metadata,
     }
 
-    for path, value in field_map.items():
-        ops.append({"op": "replace", "path": path, "value": value})
+    if include_photo and photo_path:
+        field_map["/picture"] = build_picture_data_url(photo_path)
 
-    return ops
+    return [{"op": "replace", "path": path, "value": value} for path, value in field_map.items()]
 
 
 # ── LLM enhancement (optional) ────────────────────────────────────────────────
@@ -325,13 +469,6 @@ def list_resumes() -> list:
     return r.json()
 
 
-def list_resumes() -> list:
-    headers = {"x-api-key": API_KEY}
-    r = httpx.get(f"{API_BASE}/resumes", headers=headers, timeout=10)
-    r.raise_for_status()
-    return r.json()
-
-
 # ── entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -339,8 +476,24 @@ if __name__ == "__main__":
     parser.add_argument("--yaml", default=BASE_FILE, help="Path to base.yaml")
     parser.add_argument("--tags", default="fullstack,ai,react,node,python",
                         help="Comma-separated tag filter")
-    parser.add_argument("--template", default="elegant",
-                        help="rxresume template name (elegant, bronzor, leafish, etc.)")
+    parser.add_argument("--template", default="kakuna",
+                        help="rxresume template name (kakuna, bronzor, elegant, etc.)")
+    parser.add_argument("--skills-mode", choices=["grouped", "flat"], default="grouped",
+                        help="grouped: one row per category with keyword tags (default); flat: one row per skill")
+    parser.add_argument("--all-skills", action="store_true",
+                        help="Include all active skills, ignore --tags filter for skills only")
+    parser.add_argument("--show-skill-levels", action="store_true",
+                        help="Show proficiency dots (flat mode only; grouped always hides levels)")
+    parser.add_argument("--max-bullets", type=int, default=DEFAULT_MAX_BULLETS,
+                        help="Max bullets per job (0 = unlimited)")
+    parser.add_argument("--no-projects", action="store_true",
+                        help="Omit projects section (reduces page length)")
+    parser.add_argument("--use-cover-letter", action="store_true",
+                        help="Use cover letter template for summary instead of base.yaml summary")
+    parser.add_argument("--photo", default=None,
+                        help="Profile photo path (default: identity.photo or assets/william-jiang.jpg)")
+    parser.add_argument("--no-photo", action="store_true",
+                        help="Do not embed profile photo")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print JSON payload, don't POST")
     parser.add_argument("--resume-id", default=None,
@@ -351,14 +504,15 @@ if __name__ == "__main__":
                         help="Target role description (used with --llm)")
     args = parser.parse_args()
 
-    if not API_KEY:
+    if not args.dry_run and not API_KEY:
         print("Error: RXRESU_REACTIVE_RESUME_API_KEY not set in .env")
         exit(1)
 
     with open(args.yaml) as f:
         base = yaml.safe_load(f)
 
-    required_tags = set(args.tags.split(",")) if args.tags else None
+    required_tags = set(t for t in args.tags.split(",") if t) if args.tags else None
+    photo_path = None if args.no_photo else resolve_photo_path(args.photo, base.get("identity", {}))
 
     if args.llm:
         print("Running LLM enhancement...")
@@ -374,12 +528,35 @@ if __name__ == "__main__":
         if summary_text:
             print(f"LLM summary generated ({len(summary_text)} chars)")
 
-    ops = build_operations(base, required_tags, args.template)
+    ops = build_operations(
+        base, required_tags, args.template,
+        skills_mode=args.skills_mode,
+        all_skills=args.all_skills,
+        show_skill_levels=args.show_skill_levels,
+        max_bullets=args.max_bullets,
+        use_cover_letter=args.use_cover_letter,
+        include_projects=not args.no_projects,
+        photo_path=photo_path,
+        include_photo=not args.no_photo,
+    )
     resume_name = f"william-jiang-{args.template}"
 
     if args.dry_run:
+        exp_op = next(o for o in ops if o["path"] == "/sections/experience/items")
+        skills_op = next(o for o in ops if o["path"] == "/sections/skills/items")
+        summary_op = next(o for o in ops if o["path"] == "/summary/content")
         print(json.dumps(ops, indent=2))
         print(f"\nTotal operations: {len(ops)}")
+        print(f"Summary: {len(summary_op['value'])} chars")
+        print(f"Experience: {len(exp_op['value'])} jobs (newest first)")
+        for item in exp_op["value"]:
+            n = len([l for l in item.get("description", "").split("\n") if l.strip()])
+            print(f"  • {item['company']} | {item['period']} | {n} bullets")
+        print(f"Skills: {len(skills_op['value'])} groups ({args.skills_mode} mode)")
+        if photo_path:
+            print(f"Photo: {photo_path} ({'embedded' if any(o['path']=='/picture' for o in ops) else 'skipped'})")
+        elif not args.no_photo:
+            print("Photo: not found (use --photo or add identity.photo in base.yaml)")
     elif args.resume_id:
         result = patch_resume(args.resume_id, ops)
         rid = result.get("id", args.resume_id)

@@ -85,6 +85,7 @@ def build_variant(base, tags, template, company, role, jd_text=None):
             "end_date": job.get("end") or "present",
             "highlights": [b["text"] for b in filtered_bullets]
         })
+    exp_section.sort(key=lambda e: e["start_date"], reverse=True)
     sections["experience"] = exp_section
 
     # Skills — filter by tags

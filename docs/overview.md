@@ -1,54 +1,91 @@
 # Resume Management System — Overview
 
-> **One YAML to rule them all.** Stop maintaining N different resumes for every job application. Maintain a single source of truth, compose job-specific variants with tag-based filtering, and render professional PDFs — all from the CLI.
+> **One YAML to rule them all.** Maintain a single source of truth in `base.yaml`, compose job-specific variants with tag-based filtering, and render to **ATS PDFs** (rendercv) or **visual resumes** (rxresu.me) — all from the CLI.
 
 ---
 
 ## Architecture
 
-The system has three independent layers. Each layer has a single responsibility and a well-defined contract with the others.
+The system has three data/composition layers and **two rendering paths**:
 
 ```mermaid
 flowchart TB
     subgraph L1["Layer 1 · Data (manual)"]
-        BY["base.yaml<br/>tagged experience, skills,<br/>projects, education, cover letters"]
+        BY["base.yaml<br/>summary, headline, experience,<br/>skills, projects, education"]
         style BY fill:#e1f5fe,stroke:#0288d1
     end
 
     subgraph L2["Layer 2 · Composition (CLI)"]
         RP["resume.py<br/>filter · assemble · log"]
-        VY["variants/&lt;slug&gt;.yaml<br/>rendercv-compatible subset"]
-        AJ["applications.json<br/>application tracking log"]
+        TP["transform.py<br/>JSON Patch · rxresu.me sync"]
+        VY["variants/&lt;slug&gt;.yaml"]
+        AJ["applications.json"]
         style RP fill:#fff3e0,stroke:#f57c00
+        style TP fill:#fff3e0,stroke:#f57c00
         style VY fill:#fff3e0,stroke:#f57c00
         style AJ fill:#fff3e0,stroke:#f57c00
     end
 
-    subgraph L3["Layer 3 · Rendering (rendercv)"]
-        RC["rendercv<br/>YAML → Typst → PDF/HTML/PNG"]
-        PDF["📑 PDF"]
+    subgraph L3A["Layer 3A · rendercv"]
+        RC["rendercv<br/>YAML → Typst → PDF/HTML"]
+        PDF["📑 ATS PDF"]
         HTML["🌐 HTML"]
-        PNG["🖼️ PNG"]
         style RC fill:#e8f5e9,stroke:#388e3c
     end
 
-    L1 -->|"python resume.py build --tags backend,python"| L2
-    L2 -->|"rendercv render variants/slug.yaml"| L3
+    subgraph L3B["Layer 3B · rxresu.me"]
+        RX["rxresu.me builder<br/>visual templates"]
+        VIS["🎨 Visual PDF + share link"]
+        style RX fill:#e8eaf6,stroke:#3f51b5
+    end
+
+    L1 -->|"python resume.py build"| L2
+    L1 -->|"python transform.py"| L2
+    RP --> VY --> RC
+    RC --> PDF
+    RC --> HTML
+    TP --> RX --> VIS
+    RP --> AJ
 ```
 
 ### Layer boundaries
 
-| Layer | Edits | Automation | Output |
+| Layer | Edits | Tools | Output |
 |---|---|---|---|
-| **Layer 1** — `base.yaml` | Manual only | None — you write everything | Tagged YAML data |
-| **Layer 2** — `resume.py` | Never manually | CLI filters + assembles + logs | Variant YAML + JSON log |
-| **Layer 3** — rendercv | Never manually | Converts variant to final format | PDF, HTML, PNG |
+| **Layer 1** — `base.yaml` | Manual only | — | Tagged YAML data |
+| **Layer 2** — Composition | Never manually | `resume.py`, `transform.py` | Variant YAML or JSON Patch ops |
+| **Layer 3A** — rendercv | Never manually | rendercv CLI | ATS PDF, HTML |
+| **Layer 3B** — rxresu.me | Tweak in UI | rxresu.me dashboard | Visual PDF, public link |
 
-The key rule: **base.yaml is the only file you touch by hand.** Everything else is generated on demand.
+The key rule: **`base.yaml` is the only file you touch by hand.** Everything else is generated or synced on demand.
+
+### When to use which path
+
+| Need | Command | Output |
+|---|---|---|
+| Job application, ATS scan | `resume.py build --tags ...` | `output/<slug>/William_Jiang_CV.pdf` |
+| Visual polish, templates, sharing | `transform.py --resume-id ...` | rxresu.me builder + PDF export |
+| Both | Run both from same `base.yaml` | Two formats, one source of truth |
 
 ---
 
-## Data flow
+## `base.yaml` schema highlights
+
+Beyond tagged experience/skills/projects, the source file now includes fields used by both render paths:
+
+| Field | Example | Used by |
+|---|---|---|
+| `identity.headline` | `Senior Full-Stack & AI Engineer \| ...` | `transform.py` → rxresu.me |
+| `identity.photo` | `assets/william-jiang.jpg` | `transform.py` → embedded headshot |
+| `summary` | Short professional paragraph | `transform.py` (default summary source) |
+| `education[].start` + `graduation` | `1987-09` → `1991-07` | Full date ranges in output |
+| `cover_letters[]` | Role-specific letter bodies | Applications only (`--use-cover-letter` for rxresu.me) |
+
+Experience is stored oldest→newest in YAML; both CLIs **output newest-first**.
+
+---
+
+## Data flow (rendercv path)
 
 This diagram traces a single bullet from `base.yaml` through to the final PDF:
 
@@ -78,6 +115,39 @@ flowchart LR
     MATCH -->|"yes"| VBULLET
     VBULLET --> RENDER
 ```
+
+---
+
+## Data flow (rxresu.me path)
+
+```mermaid
+flowchart LR
+    subgraph Base["base.yaml"]
+        DATA["identity · summary · experience<br/>skills · projects · education"]
+    end
+
+    subgraph Transform["transform.py"]
+        FILTER["Tag filter + bullet cap"]
+        MAP["Map to RxResume schema"]
+        PATCH["JSON Patch operations"]
+    end
+
+    subgraph RxResume["rxresu.me"]
+        BUILDER["Visual builder"]
+        EXPORT["PDF export / share link"]
+    end
+
+    DATA --> FILTER --> MAP --> PATCH --> BUILDER --> EXPORT
+```
+
+Key transform behaviors:
+
+- **Skills grouped** by category (4 rows, keyword tags) — not 36 individual rated rows
+- **Profiles hidden** — links live in the header
+- **Photo** resized and embedded as JPEG data URL
+- **`--all-skills`** bypasses tag filter for the skills section only
+
+Full CLI reference: [`rxresume-integration-guide.md`](rxresume-integration-guide.md)
 
 ---
 
@@ -178,9 +248,11 @@ sequenceDiagram
 
 | Command | Purpose |
 |---|---|
-| `python resume.py build --company X --role Y --tags backend,python` | Build and render a job-specific resume |
+| `python resume.py build --company X --role Y --tags backend,python` | Build and render an ATS resume via rendercv |
 | `python resume.py tags` | List all available tags in `base.yaml` |
-| `python resume.py log` | Show your full application history |
+| `python resume.py log` | Show application history |
+| `python transform.py --dry-run` | Preview RxResume JSON Patch ops |
+| `python transform.py --resume-id <ID> --all-skills` | Sync `base.yaml` to rxresu.me |
 
 ### `build` flags
 
@@ -213,34 +285,24 @@ Examples:
 ```
 resume-app/
 ├── base.yaml                 # ★ Single source of truth — you edit this
-├── resume.py                 # CLI composition engine
+├── resume.py                 # CLI composition engine (rendercv path)
+├── transform.py              # RxResume sync (visual path)
 ├── applications.json         # Auto-generated application tracking log
 ├── README.md
 ├── .gitignore
 │
-├── jds/                      # Job descriptions (paste JD text here)
-│   ├── bestit-swe.txt
-│   └── google-swe.txt
+├── assets/                   # Source resumes + profile photo
+│   ├── william-jiang.jpg     # Default headshot (rxresu.me)
+│   └── *.docx                # Legacy resume versions
 │
-├── variants/                 # Auto-generated per-application YAMLs
-│   ├── bestit-senior-swe-202606.yaml
-│   └── google-swe-202606.yaml
-│
+├── jds/                      # Job descriptions
+├── variants/                 # Auto-generated rendercv YAMLs
 ├── output/                   # Auto-generated PDFs + HTML (gitignored)
-│   ├── bestit-senior-swe-202606/
-│   │   ├── William_Jiang_CV.pdf
-│   │   ├── William_Jiang_CV.html
-│   │   └── William_Jiang_CV.md
-│   └── google-swe-202606/
-│       └── William_Jiang_CV.pdf
 │
-├── docs/
-│   ├── overview.md           # This document
-│   └── resume-system-implementation.md  # Full system design spec
-│
-└── assets/                   # Raw resume files being consolidated
-    ├── William Jiang - Senior FullStack Engineer.docx
-    └── ...
+└── docs/
+    ├── overview.md           # This document
+    ├── rxresume-integration-guide.md
+    └── resume-system-implementation.md
 ```
 
 ---
@@ -314,9 +376,13 @@ flowchart LR
 Add these to `.env` (auto-loaded by `python-dotenv`):
 
 ```env
+# Optional — LLM tag extraction (resume.py --llm)
 DEEPSEEK_API_KEY=sk-...
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-pro
+
+# Required for transform.py → rxresu.me
+RXRESU_REACTIVE_RESUME_API_KEY=your_key_here
 ```
 
 Swap `DEEPSEEK_BASE_URL` for another OpenAI-compatible provider (e.g. Ollama, OpenAI) — no code changes needed.
@@ -330,9 +396,10 @@ flowchart LR
     subgraph Commit["✅ Commit to git"]
         C1["base.yaml"]
         C2["resume.py"]
-        C3["applications.json"]
-        C4["variants/"]
-        C5["jds/"]
+        C3["transform.py"]
+        C4["applications.json"]
+        C5["variants/"]
+        C6["jds/"]
     end
 
     subgraph Ignore["🚫 Ignore (.gitignore)"]
@@ -355,7 +422,7 @@ pip install -r requirements.txt
 # 2. Review existing tags
 python resume.py tags
 
-# 3. Build your first resume
+# 3. Build ATS PDF
 python resume.py build \
   --company "BestIT" \
   --role "Senior SWE" \
@@ -365,7 +432,11 @@ python resume.py build \
 # 4. Open the PDF
 open output/bestit-senior-swe-202606/William_Jiang_CV.pdf
 
-# 5. Check the log
+# 5. Sync to rxresu.me (optional)
+python transform.py --dry-run --all-skills
+python transform.py --resume-id <YOUR_ID> --all-skills --max-bullets 3
+
+# 6. Check the log
 python resume.py log
 ```
 
@@ -385,5 +456,7 @@ python resume.py log
 ## Reference
 
 - Full system design: [`resume-system-implementation.md`](resume-system-implementation.md)
+- RxResume integration: [`rxresume-integration-guide.md`](rxresume-integration-guide.md)
 - User identity & links: [`init.md`](init.md)
 - RenderCV docs: <https://docs.rendercv.com>
+- Reactive Resume docs: <https://docs.rxresu.me>
