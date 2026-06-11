@@ -10,6 +10,28 @@
       "jd_source": null,
       "variant_file": "variants/bestit-senior-fullstack-ai-engineer-202606.yaml",
       "output_dir": "output/bestit-senior-fullstack-ai-engineer-202606"
+    },
+    {
+      "id": "bestit-senior-fullstack-ai-engineer-202606",
+      "company": "BestIT",
+      "role": "Senior Fullstack AI Engineer",
+      "date": "2026-06-11",
+      "tags_used": "fullstack,ai,python,node",
+      "template": "classic",
+      "jd_source": null,
+      "variant_file": "variants/bestit-senior-fullstack-ai-engineer-202606.yaml",
+      "output_dir": "output/bestit-senior-fullstack-ai-engineer-202606"
+    },
+    {
+      "id": "bestit-senior-fullstack-ai-engineer-202606",
+      "company": "BestIT",
+      "role": "Senior Fullstack AI Engineer",
+      "date": "2026-06-11",
+      "tags_used": "fullstack,ai,python,node",
+      "template": "classic",
+      "jd_source": null,
+      "variant_file": "variants/bestit-senior-fullstack-ai-engineer-202606.yaml",
+      "output_dir": "output/bestit-senior-fullstack-ai-engineer-202606"
     }
   ]
 }

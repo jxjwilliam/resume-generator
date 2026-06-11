@@ -1,0 +1,142 @@
+cv:
+  name: William Jiang
+  email: jxjwilliam@gmail.com
+  phone: '+12369923846'
+  location: Vancouver, Canada
+  headline: Senior Full-Stack & AI Engineer | Node.js • Python | Agentic AI & AI Solutions
+  photo: ../assets/william-jiang.jpg
+  social_networks:
+  - network: GitHub
+    username: williamjxj
+  - network: LinkedIn
+    username: william-jiang-226a7616
+  sections:
+    Summary:
+    - 'Senior Full-Stack Engineer with 20+ years of experience designing, developing,
+      and scaling enterprise-grade applications across Next.js, React.js, Node.js,
+      Microservices, and cloud platforms (AWS, GCP, Azure), with deep expertise in
+      AI-driven development, LLM integration, and intelligent system architecture.
+      Proven track record in RESTful APIs, database optimization, CI/CD pipelines,
+      and distributed systems. Skilled mentor and problem solver with global experience
+      across North America, APAC, and Europe.
+
+      '
+    experience:
+    - company: Best IT Consulting Inc.
+      position: Founder / Full-Stack & AI Engineer
+      location: Vancouver, Canada
+      start_date: 2024-10
+      end_date: present
+      highlights:
+      - Founded and scaled a consulting firm delivering Node.js- and AI-driven digital
+        solutions for enterprise clients
+      - Working on e-invoicing and e-documents for Shaanxi Coal and Chemical Industry
+        Group using Node.js, FastAPI, and RAG
+      - Built production-grade React + Node.js applications and AI-enhanced backend
+        services focusing on automation, reliability, and scalability
+      - Designed microservices and API-first systems with Node.js, Express, and PostgreSQL
+      - Implemented AutoBidder and Site-RAG-Chatbot using JavaScript/Python tech stack
+    - company: Xperi
+      position: Senior Full-stack Engineer
+      location: San Jose, USA (Remote)
+      start_date: 2021-03
+      end_date: 2024-09
+      highlights:
+      - Led development of MLDP (Machine Learning Data Pipelines) and Experiment Collection
+        Manager using microservices architecture with React.js, Node.js, Python, and
+        Java for AI/ML tasks
+      - Implemented MLOps workflows using Kubernetes, Docker, Jenkins, AWS, Kubeflow,
+        Airflow, and Weights & Biases for ML training and deployment
+    - company: EPAM (Credit Suisse)
+      position: React/Full-stack Engineer / Software Architect
+      location: Shenzhen, China
+      start_date: 2018-12
+      end_date: 2020-02
+      highlights:
+      - Architected Credit Suisse Stock real-time integration with existing datasets
+        via pipelines and microservices using React, Node.js, WebSockets, MongoDB,
+        and Python
+    - company: China Soft (HSBC)
+      position: Full-stack Engineer / Software Architect
+      location: Xi'an, China
+      start_date: 2017-09
+      end_date: 2018-12
+      highlights:
+      - Built Retail Business Banking Onboarding services for SME customers using
+        React, Redux, Java Spring Boot microservices, Node.js, and MongoDB
+    - company: WebMD
+      position: Senior Frontend Engineer
+      location: New York City, USA
+      start_date: 2014-11
+      end_date: 2017-08
+      highlights:
+      - Built web-based bridges to deliver advertisements using JavaScript, HTML5/CSS3,
+        Google DFP, Node.js, jQuery, and third-party libraries (Nativo, Akamai, PubMatic,
+        Lotame, Adobe Cloud)
+      - Implemented advertisement document store and access system using AngularJS,
+        Node.js, MongoDB, and Amazon S3
+    skills:
+    - label: Languages
+      details: Python, TypeScript, JavaScript
+    - label: Frameworks
+      details: React.js / Next.js, Node.js / Express.js, Python / FastAPI, LangChain
+        / LlamaIndex
+    - label: Ai_Tools
+      details: Cursor, GitHub Copilot, Claude Code, OpenAI API, Hugging Face, Stable
+        Diffusion / ComfyUI, Vibe Coding, Spec-Driven Development, Context Engineering
+    projects:
+    - name: AutoBidder
+      summary: Automated bidding system built with JavaScript/Python tech stack for
+        intelligent price optimization
+      highlights:
+      - Designed and implemented automated bidding algorithms for real-time price
+        optimization
+    - name: Site-RAG-Chatbot
+      summary: RAG-powered chatbot for website content Q&A, enabling natural language
+        querying across site documentation
+      highlights:
+      - Built Retrieval-Augmented Generation pipeline using LangChain/LlamaIndex for
+        document retrieval and LLM-based answer generation
+      - Integrated with website content sources for domain-specific question answering
+    - name: MLDP (Machine Learning Data Pipelines)
+      summary: Enterprise ML data pipeline system at Xperi for managing AI/ML experiment
+        data, GPU/CPU performance tracking, and model lifecycle management
+      highlights:
+      - Developed microservices-based AI/ML data pipeline system using React.js, Node.js,
+        Python, and Java
+      - Optimized GPU/CPU performance in Kubernetes environments for ML training workloads
+    education:
+    - institution: Xi'an Jiaotong University
+      area: Bachelor of Engineering
+      degree: ''
+      date: 1991-07
+    - institution: Universal Learning Institute
+      area: Diploma of Business Management
+      degree: ''
+      date: 2006-03
+design:
+  theme: classic
+  page:
+    size: us-letter
+    top_margin: 0.7in
+    bottom_margin: 0.7in
+    left_margin: 0.7in
+    right_margin: 0.7in
+  colors:
+    name: rgb(0,79,144)
+    headline: rgb(0,79,144)
+    connections: rgb(0,79,144)
+    section_titles: rgb(0,79,144)
+    links: rgb(0,79,144)
+  typography:
+    font_family: Source Sans 3
+    font_size:
+      body: 10pt
+      name: 30pt
+      headline: 10pt
+      connections: 10pt
+      section_titles: 1.4em
+  header:
+    alignment: center
+  links:
+    show_external_link_icon: false

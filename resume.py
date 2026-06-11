@@ -69,6 +69,10 @@ def build_variant(base, tags, template, company, role, jd_text=None):
 
     sections = {}
 
+    # Summary — include as first section if present
+    if base.get("summary"):
+        sections["Summary"] = [base["summary"]]
+
     # Experience — filter bullets by tags
     exp_section = []
     for job in base.get("experience", []):
@@ -129,6 +133,8 @@ def build_variant(base, tags, template, company, role, jd_text=None):
             "email": base["identity"]["email"],
             "phone": _parse_phone(base["identity"]["phone"]),
             "location": base["identity"]["location"],
+            "headline": base["identity"].get("headline", ""),
+            "photo": str(Path("..") / base["identity"]["photo"]) if base["identity"].get("photo") else None,
             "social_networks": [
                 {"network": u["label"], "username": _extract_username(u["url"])}
                 for u in base["identity"]["urls"]

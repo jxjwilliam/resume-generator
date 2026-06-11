@@ -1,7 +1,5 @@
 # ─── Generated files ───────────────────────────────────────────
 output/                          # PDFs + HTML — regenerate anytime
-variants/                        # Generated variant YAMLs — rebuild from base.yaml
-applications.json                # Auto-generated application tracking log
 
 # ─── Python ────────────────────────────────────────────────────
 __pycache__/
@@ -43,6 +41,4 @@ docs/.claude/
 docs/.cursor/
 docs/.mcp.json
 output/
-jds/
-variants/
 .obsidian/
