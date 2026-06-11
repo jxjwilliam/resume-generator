@@ -282,288 +282,37 @@ python resume.py log
 
 ### 3.2 Full Python script (`resume.py`)
 
-```python
-#!/usr/bin/env python3
-"""
-Resume Composition Engine
-Usage: python resume.py build --jd <file> --tags <tags> --template <name>
-"""
+The composition engine is implemented in `resume.py` at the repo root. The spec version below captures the design intent; the actual file evolves with the project and may include additional features (headline/photo/summary mapping, phone normalization, username extraction, rendercv 2.x design schema, etc.).
 
-import yaml
-import json
-import argparse
-import subprocess
-import os
-import re
-from datetime import datetime
-from pathlib import Path
-from dotenv import load_dotenv
+**Always read the actual `resume.py` file** for the canonical implementation. The key functions and their purposes:
 
-BASE_FILE = "base.yaml"
-LOG_FILE = "applications.json"
-OUTPUT_DIR = "output"
-VARIANTS_DIR = "variants"
+| Function | Purpose |
+|---|---|
+| `load_base()` | Read and parse `base.yaml` |
+| `filter_by_tags()` | Filter items by tag list + status flags |
+| `build_variant()` | Assemble a rendercv-compatible variant dict from filtered base data |
+| `write_variant()` | Serialize variant dict to `variants/<slug>.yaml` |
+| `render_variant()` | Shell out to `rendercv render` to produce PDF + HTML + PNG |
+| `log_application()` | Append build metadata to `applications.json` |
+| `llm_extract_tags()` | Optional — call DeepSeek/OpenAI API to suggest tags from a JD |
 
-def load_base():
-    with open(BASE_FILE) as f:
-        return yaml.safe_load(f)
+**Variant mapping** (`build_variant()` produces a two-key dict):
 
-def load_log():
-    if Path(LOG_FILE).exists():
-        with open(LOG_FILE) as f:
-            return json.load(f)
-    return {"applications": []}
-
-def save_log(log):
-    with open(LOG_FILE, "w") as f:
-        json.dump(log, f, indent=2)
-
-def filter_by_tags(items, tags, status_filter=["active"]):
-    """Filter a list of items by tags and status."""
-    if not tags:
-        return [i for i in items if i.get("status", "active") in status_filter]
-    return [
-        i for i in items
-        if i.get("status", "active") in status_filter
-        and any(t in i.get("tags", []) for t in tags)
-    ]
-
-def build_variant(base, tags, template, company, role, jd_text=None):
-    """Assemble a job-specific variant from the base."""
-    tags_list = [t.strip() for t in tags.split(",")] if tags else []
-
-    variant = {
-        "cv": {
-            "name": base["identity"]["name"],
-            "email": base["identity"]["email"],
-            "phone": base["identity"]["phone"],
-            "location": base["identity"]["location"],
-            "social_networks": [
-                {"network": u["label"], "username": u["url"]}
-                for u in base["identity"]["urls"]
-                if u["status"] == "active"
-            ],
-        },
-        "sections": {}
-    }
-
-    # Experience — filter bullets by tags
-    exp_section = []
-    for job in base.get("experience", []):
-        if job.get("status") != "active":
-            continue
-        filtered_bullets = filter_by_tags(job.get("bullets", []), tags_list)
-        if not filtered_bullets:
-            continue
-        exp_section.append({
-            "company": job["company"],
-            "position": job["title"],
-            "location": job["location"],
-            "start_date": job["start"],
-            "end_date": job.get("end"),
-            "highlights": [b["text"] for b in filtered_bullets]
-        })
-    variant["sections"]["experience"] = exp_section
-
-    # Skills — filter by tags
-    all_skills = []
-    for category, items in base.get("skills", {}).items():
-        filtered = filter_by_tags(items, tags_list)
-        if filtered:
-            all_skills.append({
-                "label": category.title(),
-                "details": ", ".join(s["name"] for s in filtered)
-            })
-    variant["sections"]["skills"] = all_skills
-
-    # Projects
-    variant["sections"]["projects"] = [
-        {
-            "name": p["name"],
-            "url": p.get("url", ""),
-            "summary": p["description"],
-            "highlights": [b["text"] for b in p.get("bullets", []) if b.get("status") == "active"]
-        }
-        for p in base.get("projects", [])
-        if p.get("status") == "active"
-        and (not tags_list or any(t in p.get("tags", []) for t in tags_list))
-    ]
-
-    # Education
-    variant["sections"]["education"] = [
-        {
-            "institution": e["institution"],
-            "area": e["degree"],
-            "date": e["graduation"]
-        }
-        for e in base.get("education", [])
-        if e.get("status") == "active"
-    ]
-
-    return variant
-
-def write_variant(variant, slug):
-    """Write the variant YAML to disk."""
-    Path(VARIANTS_DIR).mkdir(exist_ok=True)
-    path = f"{VARIANTS_DIR}/{slug}.yaml"
-    with open(path, "w") as f:
-        yaml.dump(variant, f, allow_unicode=True, sort_keys=False)
-    return path
-
-def render_variant(variant_path, slug):
-    """Call rendercv to render the variant to PDF + HTML."""
-    Path(OUTPUT_DIR).mkdir(exist_ok=True)
-    result = subprocess.run(
-        ["rendercv", "render", variant_path, "--output-folder-name", f"{OUTPUT_DIR}/{slug}"],
-        capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        print(f"rendercv error:\n{result.stderr}")
-        return False
-    return True
-
-def log_application(slug, company, role, tags, template, jd_file):
-    """Record this application in the tracking log."""
-    log = load_log()
-    log["applications"].append({
-        "id": slug,
-        "company": company,
-        "role": role,
-        "date": datetime.now().isoformat()[:10],
-        "tags_used": tags,
-        "template": template,
-        "jd_source": jd_file,
-        "variant_file": f"{VARIANTS_DIR}/{slug}.yaml",
-        "output_dir": f"{OUTPUT_DIR}/{slug}"
-    })
-    save_log(log)
-
-def cmd_build(args):
-    base = load_base()
-    slug = f"{args.company.lower().replace(' ','-')}-{args.role.lower().replace(' ','-')}-{datetime.now().strftime('%Y%m')}"
-
-    jd_text = None
-    if args.jd:
-        with open(args.jd) as f:
-            jd_text = f.read()
-
-    # Optional LLM step
-    tags = args.tags
-    if args.llm and jd_text:
-        print("Running LLM JD analysis...")
-        tags = llm_extract_tags(jd_text, base)
-        print(f"LLM suggested tags: {tags}")
-
-    print(f"Building variant: {slug}")
-    print(f"Tags: {tags}")
-    print(f"Template: {args.template}")
-
-    variant = build_variant(base, tags, args.template, args.company, args.role, jd_text)
-    variant_path = write_variant(variant, slug)
-    print(f"Variant written: {variant_path}")
-
-    print("Rendering PDF + HTML...")
-    success = render_variant(variant_path, slug)
-    if success:
-        print(f"Output: {OUTPUT_DIR}/{slug}/")
-
-    log_application(slug, args.company, args.role, tags, args.template, args.jd)
-    print(f"Logged to {LOG_FILE}")
-
-def cmd_tags(args):
-    base = load_base()
-    all_tags = set()
-    for job in base.get("experience", []):
-        for bullet in job.get("bullets", []):
-            all_tags.update(bullet.get("tags", []))
-    for cat, items in base.get("skills", {}).items():
-        for item in items:
-            all_tags.update(item.get("tags", []))
-    print("Available tags:\n" + "\n".join(sorted(all_tags)))
-
-def cmd_log(args):
-    log = load_log()
-    apps = log.get("applications", [])
-    if not apps:
-        print("No applications logged yet.")
-        return
-    for a in apps:
-        print(f"\n{a['date']} — {a['company']} / {a['role']}")
-        print(f"  ID:       {a['id']}")
-        print(f"  Tags:     {a['tags_used']}")
-        print(f"  Template: {a['template']}")
-        print(f"  Output:   {a['output_dir']}")
-
-def llm_extract_tags(jd_text, base):
-    """
-    Optional: call an LLM to extract relevant tags from the JD.
-    Falls back to empty string if no LLM configured.
-    """
-    try:
-        from openai import OpenAI
-
-        client = OpenAI(
-            api_key=os.environ.get("DEEPSEEK_API_KEY"),
-            base_url="https://api.deepseek.com"
-        )
-
-        all_tags = set()
-        for job in base.get("experience", []):
-            for b in job.get("bullets", []):
-                all_tags.update(b.get("tags", []))
-        for cat, items in base.get("skills", {}).items():
-            for item in items:
-                all_tags.update(item.get("tags", []))
-
-        prompt = f"""Given this job description, select the most relevant tags from the list below.
-Return ONLY a comma-separated list of tags, nothing else.
-
-Available tags: {', '.join(sorted(all_tags))}
-
-Job description:
-{jd_text[:3000]}
-"""
-        response = client.chat.completions.create(
-            model="deepseek-v4-pro",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=200
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"LLM not available ({e}), skipping tag extraction")
-        return ""
-
-def main():
-    load_dotenv()  # Load .env file for DEEPSEEK_API_KEY
-    parser = argparse.ArgumentParser(description="Resume composition engine")
-    subparsers = parser.add_subparsers()
-
-    # build command
-    build_parser = subparsers.add_parser("build", help="Build a job-specific resume variant")
-    build_parser.add_argument("--jd", help="Path to job description text file")
-    build_parser.add_argument("--tags", default="", help="Comma-separated tags to filter by")
-    build_parser.add_argument("--template", default="classic", help="Template name")
-    build_parser.add_argument("--company", required=True, help="Company name")
-    build_parser.add_argument("--role", required=True, help="Role title")
-    build_parser.add_argument("--llm", action="store_true", help="Use LLM for JD analysis")
-    build_parser.set_defaults(func=cmd_build)
-
-    # tags command
-    tags_parser = subparsers.add_parser("tags", help="List all available tags in base")
-    tags_parser.set_defaults(func=cmd_tags)
-
-    # log command
-    log_parser = subparsers.add_parser("log", help="Show application history")
-    log_parser.set_defaults(func=cmd_log)
-
-    args = parser.parse_args()
-    if hasattr(args, "func"):
-        args.func(args)
-    else:
-        parser.print_help()
-
-if __name__ == "__main__":
-    main()
+```yaml
+cv:
+  name, email, phone, location   # from identity
+  headline                       # from identity.headline
+  photo                          # from identity.photo (resolved relative to variant)
+  social_networks                # active URLs, username extracted
+  sections:
+    Summary                      # from base.summary (if present)
+    experience                   # active jobs, bullets filtered by tags, newest-first
+    skills                       # grouped by category, filtered by tags
+    projects                     # active, tag-filtered
+    education                    # all active entries
+design:
+  theme                          # from --template (default: classic)
+  page, colors, typography       # see Section 4.1 for rendercv 2.x schema
 ```
 
 ---
@@ -598,12 +347,25 @@ Set the theme in your variant YAML:
 ```yaml
 design:
   theme: classic
-  font: Source Sans 3
-  font_size: 10pt
-  page_size: us-letter
-  color: "#2B5EA7"
-  disable_external_link_icons: false
-  disable_last_updated_date: false
+  page:
+    size: us-letter
+    top_margin: 0.7in
+    bottom_margin: 0.7in
+    left_margin: 0.7in
+    right_margin: 0.7in
+  colors:
+    name: rgb(0,79,144)
+    headline: rgb(0,79,144)
+    connections: rgb(0,79,144)
+    section_titles: rgb(0,79,144)
+  typography:
+    font_family: Source Sans 3
+    font_size:
+      body: 10pt
+      name: 30pt
+      headline: 10pt
+      connections: 10pt
+      section_titles: 1.4em
 ```
 
 ### 4.2 Reactive Resume (optional visual layer)
@@ -880,14 +642,14 @@ resume-system/
 
 ```
 output/          # Large binary files — regenerate anytime
+.env             # API keys
 __pycache__/
 *.pyc
-.env             # API keys
 ```
 
-**Commit to git:** `base.yaml`, `resume.py`, `applications.json`, `variants/`, `jds/`
+**Commit to git:** `base.yaml`, `resume.py`, `transform.py`, `applications.json`, `variants/`, `jds/`
 
-**Do not commit:** `output/` (PDFs), `.env` (API keys)
+**Do not commit:** `output/` (PDFs — regenerate anytime), `.env` (API keys), `__pycache__/`
 
 ---
 
@@ -943,4 +705,4 @@ rendercv render variants/bestit-senior-swe-202606.yaml
 
 ---
 
-*Generated: 2026-06-10 | System designed for Python 3.11+, rendercv 1.x, optional DeepSeek/Gemini/Ollama LLM integration*
+*Generated: 2026-06-10 | Updated: 2026-06-11 | System designed for Python 3.11+, rendercv 2.x, optional DeepSeek/Gemini/Ollama LLM integration*

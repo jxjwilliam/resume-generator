@@ -201,7 +201,7 @@ Every resume bullet, skill, project, and education entry lives in `base.yaml`. K
 | Field | Purpose |
 |---|---|
 | `identity` | Name, headline, email, phone, location, URLs, photo path |
-| `summary` | Short resume summary (used by `transform.py` and future rendercv mapping) |
+| `summary` | Short resume summary (used by both `transform.py` and `resume.py build_variant()`) |
 | `experience` | Jobs with tagged bullets and status flags |
 | `skills` | Grouped by category (`languages`, `frameworks`, `tools`, `ai_tools`) |
 | `projects`, `education` | Tagged entries with date ranges |
