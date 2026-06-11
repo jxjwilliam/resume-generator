@@ -43,3 +43,6 @@ docs/.claude/
 docs/.cursor/
 docs/.mcp.json
 output/
+jds/
+variants/
+.obsidian/
