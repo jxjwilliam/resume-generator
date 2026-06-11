@@ -15,12 +15,12 @@ python resume.py tags
 
 # Build a PDF for a specific role
 python resume.py build \
-  --company "Stripe" \
+  --company "BestIT" \
   --role "Senior SWE" \
   --tags backend,python,api \
   --template classic
 
-# Output: variants/stripe-senior-swe-202606.yaml + output/stripe-senior-swe-202606/William_Jiang_CV.pdf
+# Output: variants/bestit-senior-swe-202606.yaml + output/bestit-senior-swe-202606/William_Jiang_CV.pdf
 ```
 
 ## Workflow

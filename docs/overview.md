@@ -96,7 +96,7 @@ flowchart TB
     end
 
     subgraph Auto["LLM-assisted (optional)"]
-        A1["--jd jds/stripe.txt --llm"]
+        A1["--jd jds/bestit.txt --llm"]
         A2["LLM reads JD + your tag list"]
         A3["LLM returns: ai,backend,python"]
         A4["resume.py filters with those tags"]
@@ -163,15 +163,15 @@ sequenceDiagram
 
     CLI->>CLI: filter bullets by tags + active status
     CLI->>CLI: build variant dict
-    CLI->>FS: write variants/stripe-swe.yaml
+    CLI->>FS: write variants/bestit-swe.yaml
 
-    CLI->>FS: rendercr render → output/stripe-swe/
+    CLI->>FS: rendercr render → output/bestit-swe/
     FS-->>CLI: done
 
     CLI->>FS: log to applications.json
     FS-->>CLI: done
 
-    CLI-->>User: PDF at output/stripe-swe/CV.pdf
+    CLI-->>User: PDF at output/bestit-swe/CV.pdf
 ```
 
 ### All commands
@@ -201,7 +201,7 @@ The variant file name is auto-generated:
 {company}-{role}-{YYYYMM}.yaml
 
 Examples:
-  stripe-senior-swe-202606.yaml
+  bestit-senior-swe-202606.yaml
   google-swe-202606.yaml
   shopify-staff-engineer-202607.yaml
 ```
@@ -219,15 +219,15 @@ resume-app/
 ├── .gitignore
 │
 ├── jds/                      # Job descriptions (paste JD text here)
-│   ├── stripe-swe.txt
+│   ├── bestit-swe.txt
 │   └── google-swe.txt
 │
 ├── variants/                 # Auto-generated per-application YAMLs
-│   ├── stripe-senior-swe-202606.yaml
+│   ├── bestit-senior-swe-202606.yaml
 │   └── google-swe-202606.yaml
 │
 ├── output/                   # Auto-generated PDFs + HTML (gitignored)
-│   ├── stripe-senior-swe-202606/
+│   ├── bestit-senior-swe-202606/
 │   │   ├── William_Jiang_CV.pdf
 │   │   ├── William_Jiang_CV.html
 │   │   └── William_Jiang_CV.md
@@ -349,13 +349,13 @@ python resume.py tags
 
 # 3. Build your first resume
 python resume.py build \
-  --company "Stripe" \
+  --company "BestIT" \
   --role "Senior SWE" \
   --tags backend,python,api \
   --template classic
 
 # 4. Open the PDF
-open output/stripe-senior-swe-202606/William_Jiang_CV.pdf
+open output/bestit-senior-swe-202606/William_Jiang_CV.pdf
 
 # 5. Check the log
 python resume.py log

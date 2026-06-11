@@ -59,10 +59,10 @@ Python 3.12.2 is available. `PyYAML` and `openai` are pre-installed.
 python resume.py tags
 
 # Build a variant (manual tags)
-python resume.py build --company "Stripe" --role "Senior SWE" --tags backend,python,api --template classic
+python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python,api --template classic
 
 # Build with JD file and LLM tag suggestion
-python resume.py build --company "Stripe" --role "Senior SWE" --jd jds/stripe.txt --llm
+python resume.py build --company "BestIT" --role "Senior SWE" --jd jds/bestit.txt --llm
 
 # View application history
 python resume.py log

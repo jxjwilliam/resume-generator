@@ -266,10 +266,10 @@ The composition script reads `base.yaml`, takes a job description, and outputs a
 
 ```bash
 # Basic — manual section selection
-python resume.py build --jd stripe-swe.txt --tags backend,python,typescript --template clean
+python resume.py build --jd bestit-swe.txt --tags backend,python,typescript --template clean
 
 # With LLM analysis (optional)
-python resume.py build --jd stripe-swe.txt --llm --template clean
+python resume.py build --jd bestit-swe.txt --llm --template clean
 
 # List all available tags in your base
 python resume.py tags
@@ -576,7 +576,7 @@ rendercv takes your variant YAML and outputs a PDF and an HTML version.
 pip install rendercv
 
 # Render a variant
-rendercv render variants/stripe-swe-202606.yaml
+rendercv render variants/bestit-swe-202606.yaml
 
 # Output: a folder with PDF + HTML
 ```
@@ -610,7 +610,7 @@ If you want a GUI editor or a shareable web URL on top of the same data:
 1. Go to [rxresu.me](https://rxresu.me) — create a free account
 2. Import your variant YAML (or enter manually)
 3. Pick a template and tweak visually
-4. Export PDF or copy the public URL (e.g. `rxresu.me/w/stripe-2026`)
+4. Export PDF or copy the public URL (e.g. `rxresu.me/w/bestit-2026`)
 
 Use Reactive Resume for roles where you want to send a live web link (e.g. in your cold email signature). Use rendercv for the PDF that goes through ATS systems.
 
@@ -624,15 +624,15 @@ Every time you run `resume.py build`, it appends to `applications.json`:
 {
   "applications": [
     {
-      "id": "stripe-senior-swe-202606",
-      "company": "Stripe",
+      "id": "bestit-senior-swe-202606",
+      "company": "BestIT",
       "role": "Senior Software Engineer",
       "date": "2026-06-10",
       "tags_used": "backend,python,typescript,api",
       "template": "classic",
-      "jd_source": "jds/stripe-swe.txt",
-      "variant_file": "variants/stripe-senior-swe-202606.yaml",
-      "output_dir": "output/stripe-senior-swe-202606",
+      "jd_source": "jds/bestit-swe.txt",
+      "variant_file": "variants/bestit-senior-swe-202606.yaml",
+      "output_dir": "output/bestit-senior-swe-202606",
       "status": "applied",
       "notes": ""
     }
@@ -827,11 +827,11 @@ Build the minimum system that solves your actual problem. Do this in order.
 2. Run:
    ```bash
    python resume.py build \
-     --company "Stripe" \
+     --company "BestIT" \
      --role "Senior SWE" \
      --tags backend,python,typescript,api \
      --template classic \
-     --jd jds/stripe-swe.txt
+     --jd jds/bestit-swe.txt
    ```
 3. Check the PDF. Check `applications.json`. You now have a tracked, reproducible application.
 
@@ -853,15 +853,15 @@ resume-system/
 ├── applications.json          # Application tracking log (auto-generated)
 │
 ├── jds/                       # Job descriptions (paste JD text here)
-│   ├── stripe-swe-2026-06.txt
+│   ├── bestit-swe-2026-06.txt
 │   └── shopify-staff-eng-2026-07.txt
 │
 ├── variants/                  # Auto-generated per-application YAMLs
-│   ├── stripe-swe-202606.yaml
+│   ├── bestit-swe-202606.yaml
 │   └── shopify-staff-eng-202607.yaml
 │
 ├── output/                    # Auto-generated PDFs + HTML
-│   ├── stripe-swe-202606/
+│   ├── bestit-swe-202606/
 │   │   ├── William_Chen_CV.pdf
 │   │   └── William_Chen_CV.html
 │   └── shopify-staff-eng-202607/
@@ -920,19 +920,19 @@ Run a test build with broad tags (`--tags backend,python,typescript`) and check 
 python resume.py tags
 
 # Build a variant (manual tags)
-python resume.py build --company "Stripe" --role "Senior SWE" --tags backend,python,api --template classic
+python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python,api --template classic
 
 # Build a variant (with JD file)
 python resume.py build --company "Shopify" --role "Staff Eng" --jd jds/shopify.txt --tags backend,python
 
 # Build with LLM tag suggestion
-python resume.py build --company "Stripe" --role "Senior SWE" --jd jds/stripe.txt --llm
+python resume.py build --company "BestIT" --role "Senior SWE" --jd jds/bestit.txt --llm
 
 # View application history
 python resume.py log
 
 # Render a variant manually
-rendercv render variants/stripe-senior-swe-202606.yaml
+rendercv render variants/bestit-senior-swe-202606.yaml
 ```
 
 ---

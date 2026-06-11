@@ -1,26 +1,15 @@
 {
   "applications": [
     {
-      "id": "stripe-senior-swe-202606",
-      "company": "Stripe",
-      "role": "Senior SWE",
-      "date": "2026-06-10",
-      "tags_used": "backend,python,api",
+      "id": "bestit-senior-fullstack-ai-engineer-202606",
+      "company": "BestIT",
+      "role": "Senior Fullstack AI Engineer",
+      "date": "2026-06-11",
+      "tags_used": "",
       "template": "classic",
       "jd_source": null,
-      "variant_file": "variants/stripe-senior-swe-202606.yaml",
-      "output_dir": "output/stripe-senior-swe-202606"
-    },
-    {
-      "id": "stripe-senior-swe-202606",
-      "company": "Stripe",
-      "role": "Senior SWE",
-      "date": "2026-06-10",
-      "tags_used": "backend,python,api",
-      "template": "classic",
-      "jd_source": null,
-      "variant_file": "variants/stripe-senior-swe-202606.yaml",
-      "output_dir": "output/stripe-senior-swe-202606"
+      "variant_file": "variants/bestit-senior-fullstack-ai-engineer-202606.yaml",
+      "output_dir": "output/bestit-senior-fullstack-ai-engineer-202606"
     }
   ]
 }
