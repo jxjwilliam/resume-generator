@@ -10,6 +10,8 @@ import argparse
 import subprocess
 import os
 import re
+import sys
+import traceback
 from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
@@ -187,14 +189,14 @@ def write_variant(variant, slug):
         yaml.dump(variant, f, allow_unicode=True, sort_keys=False)
     return path
 
-def render_variant(variant_path, slug):
-    """Call rendercv to render the variant to PDF + HTML."""
+def render_variant(variant_path, slug, all_formats=False):
+    """Call rendercv to render the variant. PDF-only by default."""
     output_path = str(Path(OUTPUT_DIR).resolve() / slug)
     Path(OUTPUT_DIR).mkdir(exist_ok=True)
-    result = subprocess.run(
-        ["rendercv", "render", variant_path, "--output-folder", output_path],
-        capture_output=True, text=True
-    )
+    cmd = ["rendercv", "render", variant_path, "--output-folder", output_path]
+    if not all_formats:
+        cmd += ["--dont-generate-markdown", "--dont-generate-html", "--dont-generate-png"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         print(f"rendercv error:\n{result.stderr}")
         return False
@@ -240,8 +242,8 @@ def cmd_build(args):
     variant_path = write_variant(variant, slug)
     print(f"Variant written: {variant_path}")
 
-    print("Rendering PDF + HTML...")
-    success = render_variant(variant_path, slug)
+    print("Rendering PDF...")
+    success = render_variant(variant_path, slug, all_formats=args.all_formats)
     if success:
         print(f"Output: {OUTPUT_DIR}/{slug}/")
 
@@ -307,13 +309,18 @@ Job description:
             messages=[{"role": "user", "content": prompt}],
             max_tokens=200
         )
-        return response.choices[0].message.content.strip()
+        raw = response.choices[0].message.content
+        if raw is None:
+            print(f"LLM returned None content. finish_reason={response.choices[0].finish_reason}", file=sys.stderr)
+            return ""
+        return raw.strip()
     except Exception as e:
-        print(f"LLM not available ({e}), skipping tag extraction")
+        print(f"LLM error ({type(e).__name__}: {e})", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
         return ""
 
 def main():
-    load_dotenv()  # Load .env file for DEEPSEEK_API_KEY
+    load_dotenv(override=True)  # Load .env file, overriding shell env vars
     parser = argparse.ArgumentParser(description="Resume composition engine")
     subparsers = parser.add_subparsers()
 
@@ -325,6 +332,7 @@ def main():
     build_parser.add_argument("--company", required=True, help="Company name")
     build_parser.add_argument("--role", required=True, help="Role title")
     build_parser.add_argument("--llm", action="store_true", help="Use LLM for JD analysis")
+    build_parser.add_argument("--all-formats", action="store_true", help="Generate HTML, Markdown, and PNG in addition to PDF")
     build_parser.set_defaults(func=cmd_build)
 
     # tags command
