@@ -32,6 +32,83 @@
       "jd_source": null,
       "variant_file": "variants/bestit-senior-fullstack-ai-engineer-202606.yaml",
       "output_dir": "output/bestit-senior-fullstack-ai-engineer-202606"
+    },
+    {
+      "id": "acme-senior-swe-202606",
+      "company": "Acme",
+      "role": "Senior SWE",
+      "date": "2026-06-11",
+      "tags_used": "fullstack,ai,python,node",
+      "template": "classic",
+      "jd_source": null,
+      "variant_file": "variants/acme-senior-swe-202606.yaml",
+      "output_dir": "output/acme-senior-swe-202606"
+    },
+    {
+      "id": "itiq-principal-software-developer-202606",
+      "company": "ITIQ",
+      "role": "Principal Software Developer",
+      "date": "2026-06-11",
+      "tags_used": "",
+      "template": "classic",
+      "jd_source": "jds/adam-green.txt",
+      "variant_file": "variants/itiq-principal-software-developer-202606.yaml",
+      "output_dir": "output/itiq-principal-software-developer-202606"
+    },
+    {
+      "id": "itiq-principal-software-developer-202606",
+      "company": "ITIQ",
+      "role": "Principal Software Developer",
+      "date": "2026-06-11",
+      "tags_used": "",
+      "template": "classic",
+      "jd_source": "jds/adam-green.txt",
+      "variant_file": "variants/itiq-principal-software-developer-202606.yaml",
+      "output_dir": "output/itiq-principal-software-developer-202606"
+    },
+    {
+      "id": "itiq-principal-software-developer-202606",
+      "company": "ITIQ",
+      "role": "Principal Software Developer",
+      "date": "2026-06-11",
+      "tags_used": "",
+      "template": "classic",
+      "jd_source": "jds/adam-green.txt",
+      "variant_file": "variants/itiq-principal-software-developer-202606.yaml",
+      "output_dir": "output/itiq-principal-software-developer-202606"
+    },
+    {
+      "id": "itiq-principal-software-developer-202606",
+      "company": "ITIQ",
+      "role": "Principal Software Developer",
+      "date": "2026-06-11",
+      "tags_used": "",
+      "template": "classic",
+      "jd_source": "jds/adam-green.txt",
+      "variant_file": "variants/itiq-principal-software-developer-202606.yaml",
+      "output_dir": "output/itiq-principal-software-developer-202606"
+    },
+    {
+      "id": "itiq-principal-software-developer-202606",
+      "company": "ITIQ",
+      "role": "Principal Software Developer",
+      "date": "2026-06-11",
+      "tags_used": "python, kubernetes, azure, backend, ai, llm, cloud, distributed-systems, ci/cd, architecture, leadership, machine-learning, hpc, containers, api, devops, java, go, rust, innovation",
+      "template": "classic",
+      "jd_source": "jds/adam-green.txt",
+      "variant_file": "variants/itiq-principal-software-developer-202606.yaml",
+      "output_dir": "output/itiq-principal-software-developer-202606"
+    },
+    {
+      "id": "itiq-principal-software-developer-202606",
+      "company": "ITIQ",
+      "role": "Principal Software Developer",
+      "date": "2026-06-11",
+      "tags_used": "python, kubernetes, cloud, ci/cd, backend, ai, architecture, distributed-systems, llm, ml, devops, gcp, azure, docker, leadership, hpc, api, platform-engineering, containerization, high-performance-computing, innovation, mentorship, methodology, monitoring, performance, pipeline, scripting, infrastructure, scientific-computing, orchestration",
+      "template": "classic",
+      "jd_source": "jds/adam-green.txt",
+      "variant_file": "variants/itiq-principal-software-developer-202606.yaml",
+      "output_dir": "output/itiq-principal-software-developer-202606"
     }
   ]
 }
