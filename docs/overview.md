@@ -382,7 +382,7 @@ DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-pro
 
 # Required for transform.py → rxresu.me
-RXRESU_REACTIVE_RESUME_API_KEY=your_key_here
+RXRESU_API_KEY=your_key_here
 ```
 
 Swap `DEEPSEEK_BASE_URL` for another OpenAI-compatible provider (e.g. Ollama, OpenAI) — no code changes needed.

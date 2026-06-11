@@ -9,7 +9,7 @@
 ```
 base.yaml → transform.py → JSON Patch ops → PATCH /api/openapi/resumes/{id}
                 ↑
-         .env (RXRESU_REACTIVE_RESUME_API_KEY)
+         .env (RXRESU_API_KEY)
          optional: DeepSeek LLM (--llm)
 ```
 
@@ -37,7 +37,7 @@ Required packages: `pyyaml`, `httpx`, `Pillow`, `python-dotenv`.
 3. Add to `.env`:
 
 ```env
-RXRESU_REACTIVE_RESUME_API_KEY=your_key_here
+RXRESU_API_KEY=your_key_here
 ```
 
 API base: `https://rxresu.me/api/openapi`  

@@ -27,7 +27,7 @@ python transform.py --resume-id <YOUR_RESUME_ID> --all-skills
 # → https://rxresu.me/builder/<YOUR_RESUME_ID>
 ```
 
-Set `RXRESU_REACTIVE_RESUME_API_KEY` in `.env` for Path B. See [`docs/rxresume-integration-guide.md`](docs/rxresume-integration-guide.md).
+Set `RXRESU_API_KEY` in `.env` for Path B. See [`docs/rxresume-integration-guide.md`](docs/rxresume-integration-guide.md).
 
 ## Workflow
 
@@ -267,7 +267,7 @@ The system works perfectly without LLM — `--llm` is purely additive for conven
 pip install -r requirements.txt
 
 # 2. Configure .env (optional for LLM, required for rxresu.me)
-# RXRESU_REACTIVE_RESUME_API_KEY=...
+# RXRESU_API_KEY=...
 # DEEPSEEK_API_KEY=...
 
 # 3. Review the base data
@@ -297,7 +297,7 @@ jds/
 
 # Ignore these (already in .gitignore):
 output/          # PDFs — regenerate anytime
-.env             # API keys (RXRESU_REACTIVE_RESUME_API_KEY, DEEPSEEK_API_KEY)
+.env             # API keys (RXRESU_API_KEY, DEEPSEEK_API_KEY)
 __pycache__/
 ```
 

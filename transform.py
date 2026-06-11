@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API_BASE = "https://rxresu.me/api/openapi"
-API_KEY = os.environ.get("RXRESU_REACTIVE_RESUME_API_KEY", "")
+API_KEY = os.environ.get("RXRESU_API_KEY", "")
 
 BASE_FILE = "base.yaml"
 DEFAULT_MAX_BULLETS = 4
@@ -505,7 +505,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.dry_run and not API_KEY:
-        print("Error: RXRESU_REACTIVE_RESUME_API_KEY not set in .env")
+        print("Error: RXRESU_API_KEY not set in .env")
         exit(1)
 
     with open(args.yaml) as f:
