@@ -25,13 +25,19 @@ python resume.py build \
 
 ## Workflow
 
-```
-base.yaml (edit this)  →  resume.py build  →  rendercv  →  PDF + HTML
+```mermaid
+flowchart LR
+    A["✏️ base.yaml<br/>(manual edit)"] --> B["⚙️ resume.py build"]
+    B --> C["📄 variants/&lt;slug&gt;.yaml"]
+    C --> D["🎨 rendercv"]
+    D --> E["📑 output/&lt;slug&gt;/CV.pdf"]
+    D --> F["🌐 output/&lt;slug&gt;/CV.html"]
+    B -.-> G["📋 applications.json"]
 ```
 
-1. **Edit `base.yaml`** — add experience, skills, projects. Tag each bullet with keywords.
-2. **Run `resume.py build`** — the CLI filters your base by tags, assembles a variant YAML, and renders it.
-3. **Ship the PDF** — your ATS-friendly, job-tailored resume is ready in `output/`.
+1. **Edit `base.yaml`** — maintain your single source of truth: all experience, skills, projects, education, and cover letter templates in one tagged YAML file.
+2. **Run `resume.py build`** — the CLI filters content by keyword tags, assembles a job-specific variant, renders it via rendercv, and logs the application.
+3. **Ship the PDF** — your ATS-friendly, role-tailored resume is ready in `output/`.
 
 ## CLI Reference
 
@@ -111,6 +117,34 @@ $ python resume.py log
 ```
 
 ## How It Works
+
+```mermaid
+flowchart TB
+    subgraph L1["Layer 1 — Data"]
+        BY["base.yaml<br/>all experience, skills,<br/>projects, education"]
+        AG["Tagging System<br/>backend, react, ai, ...<br/>active / deprecated / conflicted"]
+    end
+
+    subgraph L2["Layer 2 — Composition"]
+        RP["resume.py CLI<br/>filter · assemble · log"]
+        VY["variants/&lt;slug&gt;.yaml<br/>job-specific subset"]
+        AJ["applications.json<br/>tracking log"]
+    end
+
+    subgraph L3["Layer 3 — Rendering"]
+        RC["rendercv<br/>YAML → PDF + HTML"]
+        PDF["📑 PDF — ATS-ready"]
+        HTML["🌐 HTML — web view"]
+    end
+
+    BY --> RP
+    AG --> RP
+    RP --> VY
+    RP --> AJ
+    VY --> RC
+    RC --> PDF
+    RC --> HTML
+```
 
 ### Layer 1 — `base.yaml` (single source of truth)
 
