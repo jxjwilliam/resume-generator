@@ -42,3 +42,6 @@ docs/.cursor/
 docs/.mcp.json
 output/
 .obsidian/
+variants/
+applications.json
+jds/

@@ -1,3 +1,4 @@
+opencode, cursor, deepseek
 
 ## CV
 
