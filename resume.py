@@ -42,24 +42,31 @@ def filter_by_tags(items, tags, status_filter=["active"]):
         and any(t in i.get("tags", []) for t in tags)
     ]
 
+def _parse_phone(phone: str) -> str:
+    """Normalize a phone number to E.164 format (+1XXXXXXXXXX)."""
+    digits = re.sub(r"[^\d]", "", phone)
+    # If it's 10 digits (NA), assume +1
+    if len(digits) == 10:
+        return f"+1{digits}"
+    # If it already has country code
+    if len(digits) >= 11:
+        return f"+{digits}"
+    return phone
+
+
+def _extract_username(url: str) -> str:
+    """Extract the username portion from a social network URL."""
+    # Strip trailing slash
+    url = url.rstrip("/")
+    # Take the last path segment
+    return url.rsplit("/", 1)[-1]
+
+
 def build_variant(base, tags, template, company, role, jd_text=None):
     """Assemble a job-specific variant from the base."""
     tags_list = [t.strip() for t in tags.split(",")] if tags else []
 
-    variant = {
-        "cv": {
-            "name": base["identity"]["name"],
-            "email": base["identity"]["email"],
-            "phone": base["identity"]["phone"],
-            "location": base["identity"]["location"],
-            "social_networks": [
-                {"network": u["label"], "username": u["url"]}
-                for u in base["identity"]["urls"]
-                if u["status"] == "active"
-            ],
-        },
-        "sections": {}
-    }
+    sections = {}
 
     # Experience — filter bullets by tags
     exp_section = []
@@ -74,10 +81,10 @@ def build_variant(base, tags, template, company, role, jd_text=None):
             "position": job["title"],
             "location": job["location"],
             "start_date": job["start"],
-            "end_date": job.get("end"),
+            "end_date": job.get("end") or "present",
             "highlights": [b["text"] for b in filtered_bullets]
         })
-    variant["sections"]["experience"] = exp_section
+    sections["experience"] = exp_section
 
     # Skills — filter by tags
     all_skills = []
@@ -88,13 +95,12 @@ def build_variant(base, tags, template, company, role, jd_text=None):
                 "label": category.title(),
                 "details": ", ".join(s["name"] for s in filtered)
             })
-    variant["sections"]["skills"] = all_skills
+    sections["skills"] = all_skills
 
     # Projects
-    variant["sections"]["projects"] = [
+    sections["projects"] = [
         {
             "name": p["name"],
-            "url": p.get("url", ""),
             "summary": p["description"],
             "highlights": [b["text"] for b in p.get("bullets", []) if b.get("status") == "active"]
         }
@@ -104,25 +110,63 @@ def build_variant(base, tags, template, company, role, jd_text=None):
     ]
 
     # Education
-    variant["sections"]["education"] = [
+    sections["education"] = [
         {
             "institution": e["institution"],
             "area": e["degree"],
+            "degree": "",
             "date": e["graduation"]
         }
         for e in base.get("education", [])
         if e.get("status") == "active"
     ]
 
-    # rendercv requires a design block
-    variant["design"] = {
-        "theme": template,
-        "font": "Source Sans 3",
-        "font_size": "10pt",
-        "page_size": "us-letter",
-        "color": "#2B5EA7",
-        "disable_external_link_icons": False,
-        "disable_last_updated_date": False
+    variant = {
+        "cv": {
+            "name": base["identity"]["name"],
+            "email": base["identity"]["email"],
+            "phone": _parse_phone(base["identity"]["phone"]),
+            "location": base["identity"]["location"],
+            "social_networks": [
+                {"network": u["label"], "username": _extract_username(u["url"])}
+                for u in base["identity"]["urls"]
+                if u["status"] == "active"
+            ],
+            "sections": sections,
+        },
+        "design": {
+            "theme": template,
+            "page": {
+                "size": "us-letter",
+                "top_margin": "0.7in",
+                "bottom_margin": "0.7in",
+                "left_margin": "0.7in",
+                "right_margin": "0.7in",
+            },
+            "colors": {
+                "name": "rgb(0,79,144)",
+                "headline": "rgb(0,79,144)",
+                "connections": "rgb(0,79,144)",
+                "section_titles": "rgb(0,79,144)",
+                "links": "rgb(0,79,144)",
+            },
+            "typography": {
+                "font_family": "Source Sans 3",
+                "font_size": {
+                    "body": "10pt",
+                    "name": "30pt",
+                    "headline": "10pt",
+                    "connections": "10pt",
+                    "section_titles": "1.4em",
+                },
+            },
+            "header": {
+                "alignment": "center",
+            },
+            "links": {
+                "show_external_link_icon": False,
+            },
+        },
     }
 
     return variant
@@ -137,9 +181,10 @@ def write_variant(variant, slug):
 
 def render_variant(variant_path, slug):
     """Call rendercv to render the variant to PDF + HTML."""
+    output_path = str(Path(OUTPUT_DIR).resolve() / slug)
     Path(OUTPUT_DIR).mkdir(exist_ok=True)
     result = subprocess.run(
-        ["rendercv", "render", variant_path, "--output-folder-name", f"{OUTPUT_DIR}/{slug}"],
+        ["rendercv", "render", variant_path, "--output-folder", output_path],
         capture_output=True, text=True
     )
     if result.returncode != 0:
