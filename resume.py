@@ -12,6 +12,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
+from dotenv import load_dotenv
 
 BASE_FILE = "base.yaml"
 LOG_FILE = "applications.json"
@@ -270,12 +271,11 @@ def llm_extract_tags(jd_text, base):
     Falls back to empty string if no LLM configured.
     """
     try:
-        import os
-        # Uses DeepSeek by default (low cost). Swap endpoint for any OpenAI-compatible API.
         from openai import OpenAI
+
         client = OpenAI(
             api_key=os.environ.get("DEEPSEEK_API_KEY"),
-            base_url="https://api.deepseek.com"
+            base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
         )
 
         all_tags = set()
@@ -286,6 +286,7 @@ def llm_extract_tags(jd_text, base):
             for item in items:
                 all_tags.update(item.get("tags", []))
 
+        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
         prompt = f"""Given this job description, select the most relevant tags from the list below.
 Return ONLY a comma-separated list of tags, nothing else.
 
@@ -295,7 +296,7 @@ Job description:
 {jd_text[:3000]}
 """
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model=model,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=200
         )
@@ -305,6 +306,7 @@ Job description:
         return ""
 
 def main():
+    load_dotenv()  # Load .env file for DEEPSEEK_API_KEY
     parser = argparse.ArgumentParser(description="Resume composition engine")
     subparsers = parser.add_subparsers()
 

@@ -1,0 +1,9 @@
+# Core
+pyyaml>=6.0
+rendercv>=2.0
+
+# Env file loading
+python-dotenv>=1.0
+
+# LLM tag extraction / cover letter drafting
+openai>=1.0
