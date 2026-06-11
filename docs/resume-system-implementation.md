@@ -24,6 +24,8 @@
 
 ## 1. System Overview
 
+![](./imgs/resume_system_architecture.svg)
+
 ```
 ┌─────────────────────────────────────────┐
 │  LAYER 1 — Single source of truth       │

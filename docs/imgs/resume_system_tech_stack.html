@@ -1,0 +1,148 @@
+
+<h2 class="sr-only">Resume system full tech stack — architecture, components, and LLM options organized by layer</h2>
+<style>
+.section{margin-bottom:1.5rem;}
+.section-label{font-size:11px;font-weight:500;letter-spacing:.05em;color:var(--color-text-tertiary);text-transform:uppercase;margin-bottom:8px;}
+.row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:10px 14px;}
+.card-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin:0 0 3px;}
+.card-sub{font-size:12px;color:var(--color-text-secondary);margin:0 0 6px;line-height:1.4;}
+.badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:999px;}
+.b-req{background:#E1F5EE;color:#085041;}
+.b-opt{background:#FAEEDA;color:#633806;}
+.b-llm{background:#EEEDFE;color:#3C3489;}
+.b-free{background:#F1EFE8;color:#444441;}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:1.25rem 0;}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--color-text-secondary);margin-bottom:1.25rem;}
+.legend span{display:flex;align-items:center;gap:5px;}
+</style>
+
+<div class="legend">
+  <span><span class="badge b-req">Required</span> core system</span>
+  <span><span class="badge b-opt">Optional</span> nice to have</span>
+  <span><span class="badge b-llm">LLM</span> AI-powered step</span>
+  <span><span class="badge b-free">Free / OSS</span></span>
+</div>
+
+<div class="section">
+  <div class="section-label">Data layer — your single source of truth</div>
+  <div class="row">
+    <div class="card">
+      <div class="card-title">YAML / JSON schema</div>
+      <div class="card-sub">One file, all your content. Sections tagged by type and status.</div>
+      <span class="badge b-req">Required</span> <span class="badge b-free">Free</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Git version control</div>
+      <div class="card-sub">Track every change to your base. Roll back anytime. GitHub or local.</div>
+      <span class="badge b-req">Required</span> <span class="badge b-free">Free</span>
+    </div>
+    <div class="card">
+      <div class="card-title">SQLite / JSON log</div>
+      <div class="card-sub">Per-application tracking: company, role, date, sections used, template.</div>
+      <span class="badge b-req">Required</span> <span class="badge b-free">Free</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Composition engine — assembly logic</div>
+  <div class="row">
+    <div class="card">
+      <div class="card-title">Python / Node script</div>
+      <div class="card-sub">Reads base YAML, filters sections by tags, writes a job-specific variant file.</div>
+      <span class="badge b-req">Required</span> <span class="badge b-free">Free</span>
+    </div>
+    <div class="card">
+      <div class="card-title">JD keyword extractor</div>
+      <div class="card-sub">Paste JD → extract top keywords → score your bullets → rank sections.</div>
+      <span class="badge b-llm">LLM</span> <span class="badge b-opt">Optional</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Template selector</div>
+      <div class="card-sub">Rule-based (startup → modern, FAANG → minimal) or LLM-suggested.</div>
+      <span class="badge b-opt">Optional</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Cover letter generator</div>
+      <div class="card-sub">Base CL template + JD context → tailored draft. Classic LLM use case.</div>
+      <span class="badge b-llm">LLM</span> <span class="badge b-opt">Optional</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Rendering — turning data into documents</div>
+  <div class="row">
+    <div class="card">
+      <div class="card-title">rendercv</div>
+      <div class="card-sub">YAML in → PDF + HTML out. Git-friendly, no GUI needed.</div>
+      <span class="badge b-req">Required</span> <span class="badge b-free">Free / OSS</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Reactive Resume</div>
+      <div class="card-sub">Visual editor layer on top. Import JSON → tweak → export PDF + web URL.</div>
+      <span class="badge b-opt">Optional</span> <span class="badge b-free">Free</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Puppeteer / Playwright</div>
+      <div class="card-sub">Headless PDF export from HTML template. Scriptable, fully automated.</div>
+      <span class="badge b-opt">Optional</span> <span class="badge b-free">Free</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">UI — how you interact with the system</div>
+  <div class="row">
+    <div class="card">
+      <div class="card-title">CLI (simplest)</div>
+      <div class="card-sub"><code style="font-size:11px;">resume build --jd stripe.txt --template clean</code> — no UI needed.</div>
+      <span class="badge b-req">Required</span> <span class="badge b-free">Free</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Local web UI</div>
+      <div class="card-sub">Next.js or SvelteKit dashboard. Browse versions, preview, export. Localhost only.</div>
+      <span class="badge b-opt">Optional</span> <span class="badge b-free">Free</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Obsidian vault</div>
+      <div class="card-sub">Manage base + CL drafts as markdown notes. No code. Very low friction.</div>
+      <span class="badge b-opt">Optional</span> <span class="badge b-free">Free</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section">
+  <div class="section-label">LLM options — if you add AI to the pipeline</div>
+  <div class="row">
+    <div class="card">
+      <div class="card-title">DeepSeek V3 / R1</div>
+      <div class="card-sub">Cheapest option for JD analysis + CL drafting. ~$0.001 per resume.</div>
+      <span class="badge b-llm">LLM</span> <span class="badge b-free">Very cheap</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Gemini 2.0 Flash</div>
+      <div class="card-sub">Fast, free tier available. Good for keyword extraction + scoring.</div>
+      <span class="badge b-llm">LLM</span> <span class="badge b-free">Free tier</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Ollama (local)</div>
+      <div class="card-sub">Run Llama 3 / Mistral locally. Zero cost, fully private. Slower.</div>
+      <span class="badge b-llm">LLM</span> <span class="badge b-free">Free / local</span>
+    </div>
+    <div class="card">
+      <div class="card-title">OpenAI / Anthropic</div>
+      <div class="card-sub">Higher quality output, higher cost. Use only for final cover letter polish.</div>
+      <span class="badge b-llm">LLM</span> <span class="badge b-opt">Optional</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:1rem;display:flex;gap:10px;flex-wrap:wrap;">
+  <button onclick="sendPrompt('Show me the MVP implementation plan — minimum viable version I can build in a weekend')">MVP build plan ↗</button>
+  <button onclick="sendPrompt('Design the YAML schema for the base resume file with tagging system')">Design the YAML schema ↗</button>
+  <button onclick="sendPrompt('Write the Python CLI script that reads base YAML and outputs a job-specific resume variant')">Write the CLI script ↗</button>
+</div>
