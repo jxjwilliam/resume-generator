@@ -115,6 +115,7 @@ async def upload_jd(file: UploadFile):
 
 def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
     cmd = [sys.executable, "resume.py", "build",
+           "--yaml", args.yaml_file,
            "--company", args.company,
            "--template", args.theme]
     if args.role:
@@ -127,6 +128,12 @@ def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
         cmd += ["--llm"]
     if args.all_formats:
         cmd += ["--all-formats"]
+    if args.locale and args.locale != "en":
+        cmd += ["--locale", args.locale]
+    if args.cover_letter:
+        cmd += ["--cover-letter"]
+    if args.docx:
+        cmd += ["--docx"]
     return cmd
 
 

@@ -43,6 +43,9 @@ export interface ResumeRunRequest {
   jd_text?: string;
   use_llm?: boolean;
   all_formats?: boolean;
+  locale?: string;
+  cover_letter?: boolean;
+  docx?: boolean;
 }
 
 export interface TransformRunRequest {

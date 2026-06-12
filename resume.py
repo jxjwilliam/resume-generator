@@ -21,8 +21,8 @@ LOG_FILE = "applications.json"
 OUTPUT_DIR = "output"
 VARIANTS_DIR = "variants"
 
-def load_base():
-    with open(BASE_FILE) as f:
+def load_base(yaml_file: str = BASE_FILE):
+    with open(yaml_file) as f:
         return yaml.safe_load(f)
 
 def load_log():
@@ -60,8 +60,15 @@ def _extract_username(url: str) -> str:
     return url.rsplit("/", 1)[-1]
 
 
+def _font_for_locale(locale: str) -> str:
+    """Map a locale to a rendercv font family."""
+    return {
+        "en": "Source Sans 3",
+        "zh-CN": "Noto Sans SC",
+    }.get(locale, "Source Sans 3")
+
 def build_variant(base, tags, template, company, role, jd_text=None,
-                  headline_override=None, summary_override=None):
+                  headline_override=None, summary_override=None, locale="en"):
     """Assemble a job-specific variant from the base."""
     tags_list = [t.strip() for t in tags.split(",")] if tags else []
 
@@ -153,7 +160,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
                 "links": "rgb(0,79,144)",
             },
             "typography": {
-                "font_family": "Source Sans 3",
+                "font_family": _font_for_locale(locale),
                 "font_size": {
                     "body": "10pt",
                     "name": "30pt",
@@ -193,6 +200,199 @@ def render_variant(variant_path, slug, all_formats=False):
         return False
     return True
 
+
+def generate_docx(variant_path: str, slug: str) -> str | None:
+    """Generate a .docx file from a variant YAML. Returns output path or None on error."""
+    try:
+        from docx import Document
+        from docx.shared import Pt, Inches, RGBColor
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+    except ImportError:
+        print("python-docx not installed. Run: pip install python-docx", file=sys.stderr)
+        return None
+
+    with open(variant_path) as f:
+        variant = yaml.safe_load(f)
+
+    cv = variant.get("cv", {})
+    design = variant.get("design", {})
+    doc = Document()
+
+    # Page setup
+    section = doc.sections[0]
+    page = design.get("page", {})
+    margin_str = page.get("left_margin", "0.7in")
+    if margin_str.endswith("in"):
+        val = float(margin_str.replace("in", ""))
+        for attr in ["top_margin", "bottom_margin", "left_margin", "right_margin"]:
+            setattr(section, attr, Inches(val))
+
+    theme_color = RGBColor(0, 0x4F, 0x90)
+
+    def _heading(text):
+        p = doc.add_paragraph()
+        run = p.add_run(text)
+        run.bold = True
+        run.font.size = Pt(12)
+        run.font.color.rgb = theme_color
+        run.font.name = "Calibri"
+        p.paragraph_format.space_before = Pt(12)
+        p.paragraph_format.space_after = Pt(4)
+        return p
+
+    def _font(run, name="Calibri", size=Pt(10.5)):
+        run.font.name = name
+        run.font.size = size
+
+    # Name
+    name = cv.get("name", "")
+    if name:
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run(name)
+        run.bold = True
+        run.font.size = Pt(18)
+        run.font.name = "Calibri"
+        p.paragraph_format.space_after = Pt(2)
+
+    # Contact line
+    parts = [cv.get("email", ""), cv.get("phone", ""), cv.get("location", "")]
+    contact = "  |  ".join(p for p in parts if p)
+    if contact:
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run(contact)
+        _font(run, size=Pt(10))
+        p.paragraph_format.space_after = Pt(2)
+
+    # Headline
+    headline = cv.get("headline", "")
+    if headline:
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run(headline)
+        run.italic = True
+        _font(run, size=Pt(10.5))
+        p.paragraph_format.space_after = Pt(6)
+
+    sections_data = cv.get("sections", {})
+
+    # Summary
+    summary_list = sections_data.get("Summary", [])
+    if summary_list:
+        _heading("Summary")
+        for text in summary_list:
+            p = doc.add_paragraph(text)
+            _font(p.runs[0] if p.runs else p.add_run(), size=Pt(10.5))
+            p.paragraph_format.space_after = Pt(4)
+
+    # Experience
+    exp = sections_data.get("experience", [])
+    if exp:
+        _heading("Experience")
+        for job in exp:
+            p = doc.add_paragraph()
+            run = p.add_run(job.get("company", ""))
+            run.bold = True
+            _font(run)
+            p.paragraph_format.space_after = Pt(0)
+            p.paragraph_format.space_before = Pt(6)
+
+            pos = job.get("position", "")
+            dates = job.get("start_date", "")
+            if job.get("end_date"):
+                dates += f" -- {job['end_date']}"
+            if pos or dates:
+                p = doc.add_paragraph()
+                if pos:
+                    run = p.add_run(pos)
+                    _font(run)
+                    run.font.size = Pt(10)
+                if dates:
+                    run = p.add_run(f"  ({dates})")
+                    run.italic = True
+                    _font(run, size=Pt(10))
+                p.paragraph_format.space_after = Pt(2)
+
+            loc = job.get("location", "")
+            if loc:
+                p = doc.add_paragraph()
+                run = p.add_run(loc)
+                _font(run, size=Pt(10))
+                p.paragraph_format.space_after = Pt(2)
+
+            for hl in job.get("highlights", []):
+                p = doc.add_paragraph(hl, style="List Bullet")
+                for run in p.runs:
+                    _font(run, size=Pt(10.5))
+
+    # Skills
+    skills = sections_data.get("skills", [])
+    if skills:
+        _heading("Skills")
+        for sg in skills:
+            label = sg.get("label", "")
+            details = sg.get("details", "")
+            if label or details:
+                p = doc.add_paragraph()
+                if label:
+                    run = p.add_run(f"{label}: ")
+                    run.bold = True
+                    _font(run)
+                if details:
+                    run = p.add_run(details)
+                    _font(run)
+                p.paragraph_format.space_after = Pt(2)
+
+    # Projects
+    projects = sections_data.get("projects", [])
+    if projects:
+        _heading("Projects")
+        for proj in projects:
+            proj_name = proj.get("name", "")
+            proj_summary = proj.get("summary", "")
+            if proj_name:
+                p = doc.add_paragraph()
+                run = p.add_run(proj_name)
+                run.bold = True
+                _font(run)
+                p.paragraph_format.space_after = Pt(0)
+            if proj_summary:
+                p = doc.add_paragraph(proj_summary)
+                _font(p.runs[0] if p.runs else p.add_run(), size=Pt(10))
+                p.paragraph_format.space_after = Pt(2)
+            for hl in proj.get("highlights", []):
+                p = doc.add_paragraph(hl, style="List Bullet")
+                for run in p.runs:
+                    _font(run, size=Pt(10.5))
+
+    # Education
+    edu = sections_data.get("education", [])
+    if edu:
+        _heading("Education")
+        for e in edu:
+            inst = e.get("institution", "")
+            area = e.get("area", "")
+            edate = e.get("date", "")
+            if inst:
+                p = doc.add_paragraph()
+                run = p.add_run(inst)
+                run.bold = True
+                _font(run)
+                p.paragraph_format.space_after = Pt(0)
+            line = "  |  ".join(p for p in [area, edate] if p)
+            if line:
+                p = doc.add_paragraph(line)
+                _font(p.runs[0] if p.runs else p.add_run(), size=Pt(10))
+                p.paragraph_format.space_after = Pt(4)
+
+    output_path = f"{OUTPUT_DIR}/{slug}/resume.docx"
+    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+    doc.save(output_path)
+    print(f"DOCX written: {output_path}")
+    return output_path
+
+
 def log_application(slug, company, role, tags, template, jd_file):
     log = load_log()
     log["applications"].append({
@@ -209,7 +409,7 @@ def log_application(slug, company, role, tags, template, jd_file):
     save_log(log)
 
 def cmd_build(args):
-    base = load_base()
+    base = load_base(getattr(args, "yaml", BASE_FILE))
 
     if args.llm and not args.jd:
         print("Error: --jd is required when using --llm", file=sys.stderr)
@@ -259,9 +459,12 @@ def cmd_build(args):
     print(f"Building variant: {slug}")
     print(f"Tags: {tags}")
     print(f"Template: {args.template}")
+    print(f"Locale: {args.locale}")
 
     variant = build_variant(base, tags, args.template, args.company, role, jd_text,
-                            headline_override=headline_override, summary_override=summary_override)
+                            headline_override=headline_override,
+                            summary_override=summary_override,
+                            locale=args.locale)
     variant_path = write_variant(variant, slug)
     print(f"Variant written: {variant_path}")
 
@@ -272,6 +475,18 @@ def cmd_build(args):
 
     log_application(slug, args.company, role, tags, args.template, args.jd)
     print(f"Logged to {LOG_FILE}")
+
+    # ── Cover letter (optional) ─────────────────────────────────
+    if getattr(args, "cover_letter", False):
+        print("Generating cover letter...")
+        cl_tags = tags or ""
+        _generate_cover_letter(base, args.company, role, jd_text, cl_tags, slug,
+                                yaml_file=getattr(args, "yaml", BASE_FILE))
+
+    # ── DOCX (optional) ─────────────────────────────────────────
+    if getattr(args, "docx", False):
+        print("Generating DOCX...")
+        generate_docx(variant_path, slug)
 
 def cmd_tags(args):
     base = load_base()
@@ -455,8 +670,27 @@ Job description:
         return body
 
 
+def _generate_cover_letter(base: dict, company: str, role: str | None,
+                           jd_text: str | None, tags: str, slug: str, yaml_file: str = BASE_FILE):
+    """Generate a cover letter .txt file in the output directory."""
+    from argparse import Namespace
+    cl_args = Namespace(
+        yaml=yaml_file,
+        company=company,
+        role=role or "",
+        jd=jd_text,
+        tags=tags,
+        llm=bool(jd_text),
+        output=f"{OUTPUT_DIR}/{slug}/cover-letter-{company.lower().replace(' ','-')}.txt",
+    )
+    try:
+        cmd_cover_letter(cl_args)
+    except SystemExit:
+        pass  # cmd_cover_letter calls exit(1) on error — swallow for batch mode
+
+
 def cmd_cover_letter(args):
-    base = load_base()
+    base = load_base(args.yaml)
 
     if not args.company:
         print("Error: --company is required", file=sys.stderr)
@@ -521,13 +755,18 @@ def main():
     subparsers = parser.add_subparsers()
 
     build_parser = subparsers.add_parser("build", help="Build a job-specific resume variant")
+    build_parser.add_argument("--yaml", default="base.yaml", help="YAML source file (default: base.yaml)")
     build_parser.add_argument("--jd", help="Path to job description text file")
     build_parser.add_argument("--tags", default="", help="Comma-separated tags to filter by")
     build_parser.add_argument("--template", default="classic", help="Template name")
     build_parser.add_argument("--company", required=True, help="Company name")
     build_parser.add_argument("--role", help="Role title (extracted from JD first line if omitted with --llm)")
+    build_parser.add_argument("--locale", default="en", choices=["en", "zh-CN"],
+                              help="Resume language (en or zh-CN)")
     build_parser.add_argument("--llm", action="store_true", help="Use LLM for JD analysis")
     build_parser.add_argument("--all-formats", action="store_true", help="Generate HTML, Markdown, and PNG in addition to PDF")
+    build_parser.add_argument("--cover-letter", action="store_true", help="Also generate a cover letter .txt file")
+    build_parser.add_argument("--docx", action="store_true", help="Also generate a .docx Word document")
     build_parser.set_defaults(func=cmd_build)
 
     tags_parser = subparsers.add_parser("tags", help="List all available tags in base")
@@ -537,6 +776,7 @@ def main():
     log_parser.set_defaults(func=cmd_log)
 
     cl_parser = subparsers.add_parser("cover-letter", help="Generate a cover letter from base.yaml template")
+    cl_parser.add_argument("--yaml", default="base.yaml", help="YAML source file (default: base.yaml)")
     cl_parser.add_argument("--company", required=True, help="Target company name")
     cl_parser.add_argument("--role", help="Role title (extracted from JD first line if omitted with --llm)")
     cl_parser.add_argument("--jd", help="Path to job description text file")

@@ -8,6 +8,8 @@ import {
   Stack,
   Typography,
   Alert,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ThemeCard from "../components/ThemeCard";
@@ -32,9 +34,26 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [useLlm, setUseLlm] = useState(true);
   const [allFormats, setAllFormats] = useState(false);
+  const [locale, setLocale] = useState("en");
+  const [coverLetter, setCoverLetter] = useState(false);
+  const [docx, setDocx] = useState(false);
   const [running, setRunning] = useState(false);
   const [logLines, setLogLines] = useState<LogLine[]>([]);
   const [error, setError] = useState("");
+
+  const handleLocaleChange = (
+    _: React.MouseEvent<HTMLElement>,
+    newLocale: string | null,
+  ) => {
+    if (!newLocale) return;
+    setLocale(newLocale);
+    // Auto-switch YAML file when language changes
+    if (newLocale === "zh-CN" && yamlFile === "base.yaml") {
+      setYamlFile("base_zh.yaml");
+    } else if (newLocale === "en" && yamlFile === "base_zh.yaml") {
+      setYamlFile("base.yaml");
+    }
+  };
 
   const handleRun = useCallback(async () => {
     if (!company.trim()) { setCompany("Unknown"); }
@@ -51,6 +70,9 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         jd_text: jdText || undefined,
         use_llm: useLlm,
         all_formats: allFormats,
+        locale: locale !== "en" ? locale : undefined,
+        cover_letter: coverLetter || undefined,
+        docx: docx || undefined,
       });
 
       api.streamLogs(job_id, (line) => {
@@ -69,7 +91,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
       setError(e.message);
       setRunning(false);
     }
-  }, [yamlFile, company, role, selectedTheme, jdText, useLlm, allFormats, onRefreshHistory]);
+  }, [yamlFile, company, role, selectedTheme, jdText, useLlm, allFormats, locale, coverLetter, docx, onRefreshHistory]);
 
   return (
     <Box>
@@ -78,11 +100,22 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
       <Typography variant="subtitle2" gutterBottom>YAML Source</Typography>
       <YamlSelector value={yamlFile} onChange={setYamlFile} />
 
-      <Stack direction="row" spacing={2} sx={{ mt: 2, mb: 2 }}>
+      <Stack direction="row" spacing={2} sx={{ mt: 2, mb: 2, alignItems: "center" }}>
         <TextField label="Company" size="small" placeholder="Unknown"
           value={company} onChange={(e) => setCompany(e.target.value)} />
         <TextField label="Role" size="small"
           value={role} onChange={(e) => setRole(e.target.value)} />
+        <Box sx={{ flexGrow: 1 }} />
+        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>Language:</Typography>
+        <ToggleButtonGroup
+          value={locale}
+          exclusive
+          onChange={handleLocaleChange}
+          size="small"
+        >
+          <ToggleButton value="en">English</ToggleButton>
+          <ToggleButton value="zh-CN">中文 (简体)</ToggleButton>
+        </ToggleButtonGroup>
       </Stack>
 
       <Typography variant="subtitle2" gutterBottom>Theme</Typography>
@@ -109,6 +142,14 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         <FormControlLabel
           control={<Checkbox checked={allFormats} onChange={(e) => setAllFormats(e.target.checked)} />}
           label="All formats"
+        />
+        <FormControlLabel
+          control={<Checkbox checked={coverLetter} onChange={(e) => setCoverLetter(e.target.checked)} />}
+          label="Cover letter"
+        />
+        <FormControlLabel
+          control={<Checkbox checked={docx} onChange={(e) => setDocx(e.target.checked)} />}
+          label="Docx"
         />
         <Button
           variant="contained"

@@ -11,6 +11,9 @@ class ResumeRunRequest(BaseModel):
     jd_text: Optional[str] = None
     use_llm: bool = False
     all_formats: bool = False
+    locale: str = "en"
+    cover_letter: bool = False
+    docx: bool = False
 
 
 class TransformRunRequest(BaseModel):
