@@ -45,3 +45,6 @@ output/
 variants/
 applications.json
 jds/
+
+# ─── WebUI node_modules ──────────────────────────────────────
+ui/frontend/node_modules/
