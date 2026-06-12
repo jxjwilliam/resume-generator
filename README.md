@@ -57,13 +57,16 @@ flowchart LR
 Generate a job-specific resume variant and render it to PDF + HTML.
 
 | Flag | Required | Description |
-|---|---|---|
+|---|---|---|---|
 | `--company` | ✅ | Target company name |
-| `--role` | ✅ | Job title |
+| `--role` | ✅* | Job title (extracted from JD first line if omitted with `--llm`) |
 | `--tags` | | Comma-separated tags to filter bullets (e.g. `backend,python,react`) |
 | `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes` (default: `classic`) |
-| `--jd` | | Path to a job description text file (stored in `jds/`) |
-| `--llm` | | Use AI to suggest tags from the job description (requires `DEEPSEEK_API_KEY`) |
+| `--jd` | ** | Path to a job description text file (required with `--llm`) |
+| `--llm` | | Use AI to suggest tags, rewrite headline, and rewrite summary from the JD (requires `DEEPSEEK_API_KEY` + `--jd`) |
+
+\* `--role` still required when NOT using `--llm`\
+\*\* `--jd` required when using `--llm`
 
 **Examples:**
 
@@ -74,8 +77,9 @@ python resume.py build --company "Shopify" --role "Staff Engineer" --tags fullst
 # With job description (for reference and tracking)
 python resume.py build --company "Google" --role "SWE" --tags backend,python --jd jds/google-swe.txt
 
-# With LLM tag extraction from the JD (no manual tags needed)
-python resume.py build --company "Anthropic" --role "AI Engineer" --jd jds/anthropic.txt --llm
+# With LLM tag extraction + headline + summary rewrite from the JD
+# (--role is optional — extracted from JD first line)
+python resume.py build --company "Anthropic" --jd jds/anthropic.txt --llm
 ```
 
 ### `python resume.py tags`
@@ -106,6 +110,30 @@ $ python resume.py log
   Output:   output/google-swe-202606/
 ```
 
+### `python resume.py cover-letter`
+
+Generate a cover letter from a `base.yaml` template, with optional LLM rewrite.
+
+| Flag | Required | Description |
+|---|---|---|---|
+| `--company` | ✅ | Target company name |
+| `--role` | | Job title (extracted from JD first line if omitted with `--llm`) |
+| `--tags` | | Comma-separated tags to select cover letter template (e.g. `ai,fullstack` or `backend,api`) |
+| `--jd` | | Path to job description text file |
+| `--llm` | | Use AI to rewrite the cover letter body to match the JD (requires `DEEPSEEK_API_KEY` + `--jd`) |
+| `--output` | | Write to file instead of stdout |
+
+```bash
+# Using the ai-fullstack-focused template
+python resume.py cover-letter --company "Ideon" --role "Principal Dev" --tags ai,fullstack
+
+# With LLM rewrite to match the job description
+python resume.py cover-letter --company "Ideon" --jd jds/adam-green.txt --tags ai,fullstack --llm
+
+# Write to file instead of stdout
+python resume.py cover-letter --company "Ideon" --role "Principal Dev" --output cover-letter-ideon.txt
+```
+
 ### `python transform.py` — RxResume sync
 
 Push `base.yaml` to [rxresu.me](https://rxresu.me) for visual editing and PDF export.
@@ -120,6 +148,9 @@ Push `base.yaml` to [rxresu.me](https://rxresu.me) for visual editing and PDF ex
 | `--max-bullets` | Cap bullets per job (default: `4`) |
 | `--no-projects` | Omit projects section for a shorter resume |
 | `--photo` / `--no-photo` | Control profile photo embedding |
+| `--jd` | Path to job description text file (required with `--llm`) |
+| `--llm` | Use AI to rewrite headline and summary from the JD (requires `DEEPSEEK_API_KEY` + `--jd`) |
+| `--role` | Target role (extracted from JD first line if omitted with `--llm`) |
 
 Full reference: [`docs/rxresume-integration-guide.md`](docs/rxresume-integration-guide.md)
 
@@ -129,6 +160,9 @@ python transform.py --dry-run --all-skills
 
 # Sync to your dashboard resume
 python transform.py --resume-id <ID> --all-skills --max-bullets 3
+
+# Preview with LLM headline+summary rewrite from JD
+python transform.py --dry-run --jd jds/adam-green.txt --llm
 ```
 
 ## Project Structure

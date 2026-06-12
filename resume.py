@@ -48,34 +48,29 @@ def filter_by_tags(items, tags, status_filter=["active"]):
 def _parse_phone(phone: str) -> str:
     """Normalize a phone number to E.164 format (+1XXXXXXXXXX)."""
     digits = re.sub(r"[^\d]", "", phone)
-    # If it's 10 digits (NA), assume +1
     if len(digits) == 10:
         return f"+1{digits}"
-    # If it already has country code
     if len(digits) >= 11:
         return f"+{digits}"
     return phone
 
 
 def _extract_username(url: str) -> str:
-    """Extract the username portion from a social network URL."""
-    # Strip trailing slash
     url = url.rstrip("/")
-    # Take the last path segment
     return url.rsplit("/", 1)[-1]
 
 
-def build_variant(base, tags, template, company, role, jd_text=None):
+def build_variant(base, tags, template, company, role, jd_text=None,
+                  headline_override=None, summary_override=None):
     """Assemble a job-specific variant from the base."""
     tags_list = [t.strip() for t in tags.split(",")] if tags else []
 
     sections = {}
 
-    # Summary — include as first section if present
-    if base.get("summary"):
-        sections["Summary"] = [base["summary"]]
+    summary_text = summary_override or base.get("summary")
+    if summary_text:
+        sections["Summary"] = [summary_text]
 
-    # Experience — filter bullets by tags
     exp_section = []
     for job in base.get("experience", []):
         if job.get("status") != "active":
@@ -94,7 +89,6 @@ def build_variant(base, tags, template, company, role, jd_text=None):
     exp_section.sort(key=lambda e: e["start_date"], reverse=True)
     sections["experience"] = exp_section
 
-    # Skills — filter by tags
     all_skills = []
     for category, items in base.get("skills", {}).items():
         filtered = filter_by_tags(items, tags_list)
@@ -105,7 +99,6 @@ def build_variant(base, tags, template, company, role, jd_text=None):
             })
     sections["skills"] = all_skills
 
-    # Projects
     sections["projects"] = [
         {
             "name": p["name"],
@@ -117,7 +110,6 @@ def build_variant(base, tags, template, company, role, jd_text=None):
         and (not tags_list or any(t in p.get("tags", []) for t in tags_list))
     ]
 
-    # Education
     sections["education"] = [
         {
             "institution": e["institution"],
@@ -135,7 +127,7 @@ def build_variant(base, tags, template, company, role, jd_text=None):
             "email": base["identity"]["email"],
             "phone": _parse_phone(base["identity"]["phone"]),
             "location": base["identity"]["location"],
-            "headline": base["identity"].get("headline", ""),
+            "headline": headline_override or base["identity"].get("headline", ""),
             "photo": str(Path("..") / base["identity"]["photo"]) if base["identity"].get("photo") else None,
             "social_networks": [
                 {"network": u["label"], "username": _extract_username(u["url"])}
@@ -182,7 +174,6 @@ def build_variant(base, tags, template, company, role, jd_text=None):
     return variant
 
 def write_variant(variant, slug):
-    """Write the variant YAML to disk."""
     Path(VARIANTS_DIR).mkdir(exist_ok=True)
     path = f"{VARIANTS_DIR}/{slug}.yaml"
     with open(path, "w") as f:
@@ -203,7 +194,6 @@ def render_variant(variant_path, slug, all_formats=False):
     return True
 
 def log_application(slug, company, role, tags, template, jd_file):
-    """Record this application in the tracking log."""
     log = load_log()
     log["applications"].append({
         "id": slug,
@@ -220,25 +210,53 @@ def log_application(slug, company, role, tags, template, jd_file):
 
 def cmd_build(args):
     base = load_base()
-    slug = f"{args.company.lower().replace(' ','-')}-{args.role.lower().replace(' ','-')}-{datetime.now().strftime('%Y%m')}"
+
+    if args.llm and not args.jd:
+        print("Error: --jd is required when using --llm", file=sys.stderr)
+        exit(1)
+    if not args.role and not args.llm:
+        print("Error: --role is required when not using --llm", file=sys.stderr)
+        exit(1)
 
     jd_text = None
+    role = args.role
     if args.jd:
         with open(args.jd) as f:
             jd_text = f.read()
+        if args.llm and not role:
+            role = jd_text.strip().split('\n')[0].strip()
+            print(f"Extracted role from JD: {role}")
 
-    # Optional LLM step
+    slug = f"{args.company.lower().replace(' ','-')}-{role.lower().replace(' ','-')}-{datetime.now().strftime('%Y%m')}"
+
     tags = args.tags
+    headline_override = None
+    summary_override = None
     if args.llm and jd_text:
         print("Running LLM JD analysis...")
         tags = llm_extract_tags(jd_text, base)
         print(f"LLM suggested tags: {tags}")
 
+        print("Generating LLM headline...")
+        headline_override = llm_generate_headline(jd_text)
+        if headline_override:
+            print(f"LLM headline: {headline_override}")
+        else:
+            print("LLM headline failed, using base.yaml headline")
+
+        print("Generating LLM summary...")
+        summary_override = llm_generate_summary(jd_text, base)
+        if summary_override:
+            print(f"LLM summary: {summary_override[:80]}...")
+        else:
+            print("LLM summary failed, using base.yaml summary")
+
     print(f"Building variant: {slug}")
     print(f"Tags: {tags}")
     print(f"Template: {args.template}")
 
-    variant = build_variant(base, tags, args.template, args.company, args.role, jd_text)
+    variant = build_variant(base, tags, args.template, args.company, role, jd_text,
+                            headline_override=headline_override, summary_override=summary_override)
     variant_path = write_variant(variant, slug)
     print(f"Variant written: {variant_path}")
 
@@ -247,7 +265,7 @@ def cmd_build(args):
     if success:
         print(f"Output: {OUTPUT_DIR}/{slug}/")
 
-    log_application(slug, args.company, args.role, tags, args.template, args.jd)
+    log_application(slug, args.company, role, tags, args.template, args.jd)
     print(f"Logged to {LOG_FILE}")
 
 def cmd_tags(args):
@@ -319,29 +337,205 @@ Job description:
         traceback.print_exc(file=sys.stderr)
         return ""
 
+def llm_generate_headline(jd_text: str) -> str:
+    """
+    Use LLM to generate a job-specific headline from the JD.
+    Falls back to empty string on error (caller uses base.yaml headline).
+    """
+    try:
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=os.environ.get("DEEPSEEK_API_KEY"),
+            base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+        )
+        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
+        prompt = f"""Write a concise 1-line professional headline (10-15 words) for a resume targeting this job. Include the target role title and core relevant technologies. Return ONLY the headline text, nothing else.
+
+Job description:
+{jd_text[:3000]}
+"""
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=100
+        )
+        raw = response.choices[0].message.content
+        if raw is None:
+            print("LLM headline returned None", file=sys.stderr)
+            return ""
+        return raw.strip().strip('"')
+    except Exception as e:
+        print(f"LLM headline error ({type(e).__name__}: {e})", file=sys.stderr)
+        return ""
+
+
+def llm_generate_summary(jd_text: str, base: dict) -> str:
+    """
+    Use LLM to generate a job-specific summary from the JD + top experience bullets.
+    Falls back to empty string on error (caller uses base.yaml summary).
+    """
+    try:
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=os.environ.get("DEEPSEEK_API_KEY"),
+            base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+        )
+        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
+
+        active_bullets = []
+        for job in base.get("experience", []):
+            if job.get("status") != "active":
+                continue
+            for b in job.get("bullets", []):
+                if b.get("status") != "deprecated":
+                    active_bullets.append(b["text"])
+        bullets_text = "\n".join(f"- {b}" for b in active_bullets[:10])
+
+        prompt = f"""Write a 3-4 sentence professional summary for a resume targeting this job. Draw from the candidate's actual experience:
+
+{bullets_text}
+
+The summary should highlight relevant skills, years of experience, and achievements that match the job description. Return ONLY the summary text, nothing else.
+
+Job description:
+{jd_text[:3000]}
+"""
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300
+        )
+        raw = response.choices[0].message.content
+        if raw is None:
+            print("LLM summary returned None", file=sys.stderr)
+            return ""
+        return raw.strip().strip('"')
+    except Exception as e:
+        print(f"LLM summary error ({type(e).__name__}: {e})", file=sys.stderr)
+        return ""
+
+
+def llm_rewrite_cover_letter(body: str, jd_text: str) -> str:
+    """Use LLM to rewrite a cover letter body to better match the JD."""
+    try:
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=os.environ.get("DEEPSEEK_API_KEY"),
+            base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+        )
+        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
+        prompt = f"""Given this cover letter template and job description, rewrite the body to better match the role. Keep the same professional tone and paragraph structure (3-4 paragraphs). Keep the opening and closing sentences intact. Return ONLY the rewritten body, nothing else.
+
+Cover letter body:
+{body}
+
+Job description:
+{jd_text[:3000]}
+"""
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=600
+        )
+        raw = response.choices[0].message.content
+        if raw is None:
+            print("LLM cover letter returned None", file=sys.stderr)
+            return body
+        return raw.strip().strip('"')
+    except Exception as e:
+        print(f"LLM cover letter error ({type(e).__name__}: {e})", file=sys.stderr)
+        return body
+
+
+def cmd_cover_letter(args):
+    base = load_base()
+
+    if not args.company:
+        print("Error: --company is required", file=sys.stderr)
+        exit(1)
+
+    jd_text = None
+    if args.jd:
+        with open(args.jd) as f:
+            jd_text = f.read()
+
+    role = args.role
+    if args.llm and jd_text and not role:
+        role = jd_text.strip().split('\n')[0].strip()
+
+    tags_list = [t.strip() for t in args.tags.split(",") if t] if args.tags else None
+    target_set = set(tags_list) if tags_list else None
+
+    cls = base.get("cover_letters", [])
+    if target_set and target_set.intersection({"ai", "fullstack"}):
+        match = next((c for c in cls if c["id"] == "ai-fullstack-focused"), None)
+    elif target_set and target_set.intersection({"backend", "api"}):
+        match = next((c for c in cls if c["id"] == "backend-focused"), None)
+    else:
+        match = next((c for c in cls if c["id"] == "leadership-focused"), None)
+
+    if not match:
+        print("Error: No cover letter template found in base.yaml", file=sys.stderr)
+        exit(1)
+
+    cl_base = base.get("identity", {}).get("cover_letter_base", {})
+    opening = cl_base.get("opening", "").replace("{role}", role or "{role}").replace("{company}", args.company)
+    closing = cl_base.get("closing", "").replace("{role}", role or "{role}").replace("{company}", args.company)
+
+    body = match["body"].replace("{opening}", opening).replace("{closing}", closing)
+    body = body.replace("{role}", role or "{role}").replace("{company}", args.company)
+
+    if args.llm and jd_text:
+        print("Rewriting cover letter with LLM...")
+        rewritten = llm_rewrite_cover_letter(body, jd_text)
+        if rewritten != body:
+            print("Cover letter rewritten")
+        body = rewritten
+
+    header = f"To the Hiring Team at {args.company},\n\n"
+    footer = f"\n\nBest regards,\n{base['identity']['name']}"
+    full = header + body + footer
+
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write(full)
+        print(f"Cover letter written to {args.output}")
+    else:
+        print("\n" + "=" * 50)
+        print(f"COVER LETTER — {args.company}")
+        print("=" * 50)
+        print(full)
+
+
 def main():
-    load_dotenv(override=True)  # Load .env file, overriding shell env vars
+    load_dotenv(override=True)
     parser = argparse.ArgumentParser(description="Resume composition engine")
     subparsers = parser.add_subparsers()
 
-    # build command
     build_parser = subparsers.add_parser("build", help="Build a job-specific resume variant")
     build_parser.add_argument("--jd", help="Path to job description text file")
     build_parser.add_argument("--tags", default="", help="Comma-separated tags to filter by")
     build_parser.add_argument("--template", default="classic", help="Template name")
     build_parser.add_argument("--company", required=True, help="Company name")
-    build_parser.add_argument("--role", required=True, help="Role title")
+    build_parser.add_argument("--role", help="Role title (extracted from JD first line if omitted with --llm)")
     build_parser.add_argument("--llm", action="store_true", help="Use LLM for JD analysis")
     build_parser.add_argument("--all-formats", action="store_true", help="Generate HTML, Markdown, and PNG in addition to PDF")
     build_parser.set_defaults(func=cmd_build)
 
-    # tags command
     tags_parser = subparsers.add_parser("tags", help="List all available tags in base")
     tags_parser.set_defaults(func=cmd_tags)
 
-    # log command
     log_parser = subparsers.add_parser("log", help="Show application history")
     log_parser.set_defaults(func=cmd_log)
+
+    cl_parser = subparsers.add_parser("cover-letter", help="Generate a cover letter from base.yaml template")
+    cl_parser.add_argument("--company", required=True, help="Target company name")
+    cl_parser.add_argument("--role", help="Role title (extracted from JD first line if omitted with --llm)")
+    cl_parser.add_argument("--jd", help="Path to job description text file")
+    cl_parser.add_argument("--tags", default="", help="Comma-separated tags to select cover letter template")
+    cl_parser.add_argument("--llm", action="store_true", help="Use LLM to rewrite cover letter body")
+    cl_parser.add_argument("--output", help="Output file path (default: stdout)")
+    cl_parser.set_defaults(func=cmd_cover_letter)
 
     args = parser.parse_args()
     if hasattr(args, "func"):

@@ -13,4 +13,19 @@ opencode, cursor, deepseek
 
 1. https://app.tealhq.com/resume-builder/resumes/2e6eb93e-4696-42a9-abcc-13a15a36519a/preview
 2. https://resumegenius.com/dashboard/app/
-3. 
+
+
+### ATS - Applicant Tracking System
+
+
+### CodeGraph
+
+- configured in docs/opencode.jsonc:
+- docs/AGENTS.md
+- .codegraph/codegraph.db
+- Move the MCP config from docs/opencode.jsonc into the active config, or Run `codegraph install --agent opencode` from the project root
+
+### Graphify
+
+- graphify-out/
+- '/graphify'

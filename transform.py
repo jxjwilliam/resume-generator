@@ -9,6 +9,7 @@ import yaml
 import json
 import argparse
 import os
+import sys
 import base64
 import io
 import httpx
@@ -148,11 +149,11 @@ def make_uuid() -> str:
 
 # ── section builders (rxresume schema) ────────────────────────────────────────
 
-def build_basics(identity: dict) -> dict:
+def build_basics(identity: dict, headline_override: str = None) -> dict:
     urls = {u["label"].lower(): u["url"] for u in identity.get("urls", [])}
     return {
         "name": identity["name"],
-        "headline": identity.get("headline", ""),
+        "headline": headline_override or identity.get("headline", ""),
         "email": identity["email"],
         "phone": identity["phone"],
         "location": identity["location"],
@@ -378,10 +379,12 @@ def build_operations(
     include_projects: bool = True,
     photo_path: Optional[Path] = None,
     include_photo: bool = True,
+    headline_override: str = None,
+    summary_override: str = None,
 ) -> list:
     """Convert all resume sections into JSON Patch replace operations."""
-    basics = build_basics(base["identity"])
-    summary_content = build_summary_content(base, target_tags, use_cover_letter)
+    basics = build_basics(base["identity"], headline_override)
+    summary_content = summary_override or build_summary_content(base, target_tags, use_cover_letter)
     metadata = build_metadata(template, skills_mode, include_projects)
     skill_tags = None if all_skills else target_tags
     skills_columns = 2 if skills_mode == "grouped" else 1
@@ -414,7 +417,8 @@ def build_operations(
 
 # ── LLM enhancement (optional) ────────────────────────────────────────────────
 
-def llm_enhance_summary(raw_bullets: list[str], target_role: str) -> str:
+def llm_generate_headline(jd_text: str) -> str:
+    """Use LLM to generate a job-specific headline from the JD. Falls back to empty string."""
     try:
         from openai import OpenAI
         client = OpenAI(
@@ -422,22 +426,64 @@ def llm_enhance_summary(raw_bullets: list[str], target_role: str) -> str:
             base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
         )
         model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
-        prompt = f"""You are a senior technical resume writer.
-Given these bullet points from a Full-Stack/AI engineer's career, write a 3-sentence professional
-summary targeting a {target_role} role. Be specific, quantified where possible.
-Return plain text, no markdown.
+        prompt = f"""Write a concise 1-line professional headline (10-15 words) for a resume targeting this job. Include the target role title and core relevant technologies. Return ONLY the headline text, nothing else.
 
-Bullets:
-{chr(10).join(f'- {b}' for b in raw_bullets[:10])}
+Job description:
+{jd_text[:3000]}
 """
-        resp = client.chat.completions.create(
+        response = client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=200
+            max_tokens=100
         )
-        return resp.choices[0].message.content.strip()
+        raw = response.choices[0].message.content
+        if raw is None:
+            print("LLM headline returned None", file=sys.stderr)
+            return ""
+        return raw.strip().strip('"')
     except Exception as e:
-        print(f"LLM summary enhancement unavailable ({e})")
+        print(f"LLM headline error ({type(e).__name__}: {e})", file=sys.stderr)
+        return ""
+
+
+def llm_generate_summary(jd_text: str, base: dict) -> str:
+    """Use LLM to generate a job-specific summary from the JD + top experience bullets."""
+    try:
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=os.environ.get("DEEPSEEK_API_KEY"),
+            base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+        )
+        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
+        active_bullets = []
+        for job in base.get("experience", []):
+            if job.get("status") != "active":
+                continue
+            for b in job.get("bullets", []):
+                if b.get("status") != "deprecated":
+                    active_bullets.append(b["text"])
+        bullets_text = "\n".join(f"- {b}" for b in active_bullets[:10])
+        prompt = f"""Write a 3-4 sentence professional summary for a resume targeting this job. Draw from the candidate's actual experience:
+
+{bullets_text}
+
+The summary should highlight relevant skills, years of experience, and achievements that match the job description. Return ONLY the summary text, nothing else.
+
+Job description:
+{jd_text[:3000]}
+"""
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300
+        )
+        raw = response.choices[0].message.content
+        if raw is None:
+            print("LLM summary returned None", file=sys.stderr)
+            return ""
+        return raw.strip().strip('"')
+    except Exception as e:
+        print(f"LLM summary error ({type(e).__name__}: {e})", file=sys.stderr)
         return ""
 
 
@@ -498,10 +544,12 @@ if __name__ == "__main__":
                         help="Print JSON payload, don't POST")
     parser.add_argument("--resume-id", default=None,
                         help="PATCH existing resume instead of creating new")
+    parser.add_argument("--jd", default=None,
+                        help="Path to job description text file (required with --llm)")
     parser.add_argument("--llm", action="store_true",
-                        help="Use DeepSeek LLM to enhance summary and select bullets")
-    parser.add_argument("--role", default="AI Architect / Full-Stack Engineer",
-                        help="Target role description (used with --llm)")
+                        help="Use DeepSeek LLM to rewrite headline + summary from JD")
+    parser.add_argument("--role", default=None,
+                        help="Target role (extracted from JD first line if omitted with --llm)")
     args = parser.parse_args()
 
     if not args.dry_run and not API_KEY:
@@ -514,19 +562,37 @@ if __name__ == "__main__":
     required_tags = set(t for t in args.tags.split(",") if t) if args.tags else None
     photo_path = None if args.no_photo else resolve_photo_path(args.photo, base.get("identity", {}))
 
-    if args.llm:
-        print("Running LLM enhancement...")
-        all_bullets = []
-        for job in base.get("experience", []):
-            if job.get("status") == "deprecated":
-                continue
-            for b in job.get("bullets", []):
-                if b.get("status") != "deprecated":
-                    all_bullets.append(b)
+    jd_text = None
+    if args.jd:
+        with open(args.jd) as f:
+            jd_text = f.read()
 
-        summary_text = llm_enhance_summary([b["text"] for b in all_bullets], args.role)
-        if summary_text:
-            print(f"LLM summary generated ({len(summary_text)} chars)")
+    if args.llm and not jd_text:
+        print("Error: --jd is required when using --llm", file=sys.stderr)
+        exit(1)
+
+    role = args.role
+    headline_override = None
+    summary_override = None
+    if args.llm and jd_text:
+        print("Running LLM enhancement...")
+        if not role:
+            role = jd_text.strip().split('\n')[0].strip()
+            print(f"Extracted role from JD: {role}")
+
+        print("Generating LLM headline...")
+        headline_override = llm_generate_headline(jd_text)
+        if headline_override:
+            print(f"LLM headline: {headline_override}")
+        else:
+            print("LLM headline failed, using base.yaml headline")
+
+        print("Generating LLM summary...")
+        summary_override = llm_generate_summary(jd_text, base)
+        if summary_override:
+            print(f"LLM summary: {summary_override[:80]}...")
+        else:
+            print("LLM summary failed, using base.yaml summary")
 
     ops = build_operations(
         base, required_tags, args.template,
@@ -538,6 +604,8 @@ if __name__ == "__main__":
         include_projects=not args.no_projects,
         photo_path=photo_path,
         include_photo=not args.no_photo,
+        headline_override=headline_override,
+        summary_override=summary_override,
     )
     resume_name = f"william-jiang-{args.template}"
 
