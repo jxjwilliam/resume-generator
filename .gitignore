@@ -49,4 +49,4 @@ jds/
 
 # ─── WebUI node_modules ──────────────────────────────────────
 ui/frontend/node_modules/
-ui/backend/runs.db
+.ui_temp_id.txt
