@@ -1,0 +1,96 @@
+import type {
+  ThemeInfo,
+  YamlInfo,
+  RunHistoryItem,
+  ResumeRunRequest,
+  TransformRunRequest,
+  RunResponse,
+  KeywordResult,
+  JdUploadResult,
+  LogLine,
+} from "../types";
+
+const BASE = "/api";
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`POST ${path} ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+async function get<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GET ${path} ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+export const api = {
+  listYamls: () => get<YamlInfo[]>("/yamls"),
+  listThemes: () => get<ThemeInfo[]>("/themes"),
+  listTags: () => get<{ tags: string[] }>("/tags"),
+  analyzeJd: (text: string) =>
+    post<KeywordResult>("/jd/analyze", { text }),
+  uploadJd: async (file: File): Promise<JdUploadResult> => {
+    const res = await fetch(`${BASE}/jd/upload`, {
+      method: "POST",
+      body: file,
+    });
+    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+    return res.json();
+  },
+  runResume: (req: ResumeRunRequest) =>
+    post<RunResponse>("/resume/run", req),
+  runTransform: (req: TransformRunRequest) =>
+    post<RunResponse>("/transform/run", req),
+  cancelRun: (jobId: string) =>
+    post<{ status: string }>(`/resume/cancel/${jobId}`, {}),
+  getHistory: (params?: {
+    type?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const q = new URLSearchParams();
+    if (params?.type) q.set("type", params.type);
+    if (params?.status) q.set("status", params.status);
+    if (params?.limit) q.set("limit", String(params.limit));
+    if (params?.offset) q.set("offset", String(params.offset));
+    const qs = q.toString();
+    return get<{ runs: RunHistoryItem[]; total: number }>(
+      `/history${qs ? "?" + qs : ""}`
+    );
+  },
+  getRunDetail: (jobId: string) =>
+    get<RunHistoryItem>(`/history/${jobId}`),
+  streamLogs: (jobId: string, onLine: (line: LogLine) => void): (() => void) => {
+    const es = new EventSource(`${BASE}/log/${jobId}`);
+    const abort = () => es.close();
+
+    es.onmessage = (event) => {
+      if (!event.data) return;
+      const text = event.data;
+      if (text.startsWith("[STDERR] ")) {
+        onLine({ text: text.slice(9), source: "stderr" });
+      } else if (text.startsWith("[SYSTEM] ")) {
+        onLine({ text: text.slice(9), source: "system" });
+      } else {
+        onLine({ text, source: "stdout" });
+      }
+    };
+    es.onerror = () => {
+      onLine({ text: "Connection closed", source: "system" });
+      es.close();
+    };
+    return abort;
+  },
+};
