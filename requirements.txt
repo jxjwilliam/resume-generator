@@ -18,3 +18,4 @@ uvicorn[standard]>=0.32.0
 aiosqlite>=0.20.0
 sse-starlette>=2.1.0
 pypdf>=5.0.0
+python-multipart>=0.0.12

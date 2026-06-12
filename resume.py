@@ -238,18 +238,23 @@ def cmd_build(args):
         print(f"LLM suggested tags: {tags}")
 
         print("Generating LLM headline...")
-        headline_override = llm_generate_headline(jd_text)
+        headline_override = llm_generate_headline(jd_text, role)
         if headline_override:
             print(f"LLM headline: {headline_override}")
         else:
             print("LLM headline failed, using base.yaml headline")
 
         print("Generating LLM summary...")
-        summary_override = llm_generate_summary(jd_text, base)
+        summary_override = llm_generate_summary(jd_text, base, role)
         if summary_override:
             print(f"LLM summary: {summary_override[:80]}...")
         else:
             print("LLM summary failed, using base.yaml summary")
+
+    if not headline_override and role:
+        base_headline = base["identity"].get("headline", "")
+        headline_override = f"{role} | {base_headline}" if base_headline else role
+        print(f"Role-based headline: {headline_override}")
 
     print(f"Building variant: {slug}")
     print(f"Tags: {tags}")
@@ -337,9 +342,9 @@ Job description:
         traceback.print_exc(file=sys.stderr)
         return ""
 
-def llm_generate_headline(jd_text: str) -> str:
+def llm_generate_headline(jd_text: str, role: str | None = None) -> str:
     """
-    Use LLM to generate a job-specific headline from the JD.
+    Use LLM to generate a job-specific headline from the JD and target role.
     Falls back to empty string on error (caller uses base.yaml headline).
     """
     try:
@@ -349,7 +354,8 @@ def llm_generate_headline(jd_text: str) -> str:
             base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
         )
         model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
-        prompt = f"""Write a concise 1-line professional headline (10-15 words) for a resume targeting this job. Include the target role title and core relevant technologies. Return ONLY the headline text, nothing else.
+        role_line = f"The target role is: {role}." if role else ""
+        prompt = f"""Write a concise 1-line professional headline (10-15 words) for a resume targeting this job. {role_line} The headline MUST reflect the target role title. Include core relevant technologies. Return ONLY the headline text, nothing else.
 
 Job description:
 {jd_text[:3000]}
@@ -369,7 +375,7 @@ Job description:
         return ""
 
 
-def llm_generate_summary(jd_text: str, base: dict) -> str:
+def llm_generate_summary(jd_text: str, base: dict, role: str | None = None) -> str:
     """
     Use LLM to generate a job-specific summary from the JD + top experience bullets.
     Falls back to empty string on error (caller uses base.yaml summary).
@@ -391,7 +397,9 @@ def llm_generate_summary(jd_text: str, base: dict) -> str:
                     active_bullets.append(b["text"])
         bullets_text = "\n".join(f"- {b}" for b in active_bullets[:10])
 
-        prompt = f"""Write a 3-4 sentence professional summary for a resume targeting this job. Draw from the candidate's actual experience:
+        role_line = f" Target role: {role}." if role else ""
+
+        prompt = f"""Write a 3-4 sentence professional summary for a resume targeting this job.{role_line} The summary MUST reflect the target role level and focus on experience relevant to that role. Draw from the candidate's actual experience:
 
 {bullets_text}
 

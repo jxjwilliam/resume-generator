@@ -30,14 +30,14 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   const [selectedTheme, setSelectedTheme] = useState("classic");
   const [jdText, setJdText] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
-  const [useLlm, setUseLlm] = useState(false);
+  const [useLlm, setUseLlm] = useState(true);
   const [allFormats, setAllFormats] = useState(false);
   const [running, setRunning] = useState(false);
   const [logLines, setLogLines] = useState<LogLine[]>([]);
   const [error, setError] = useState("");
 
   const handleRun = useCallback(async () => {
-    if (!company.trim()) { setError("Company is required"); return; }
+    if (!company.trim()) { setCompany("Unknown"); }
     setError("");
     setRunning(true);
     setLogLines([]);
@@ -79,7 +79,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
       <YamlSelector value={yamlFile} onChange={setYamlFile} />
 
       <Stack direction="row" spacing={2} sx={{ mt: 2, mb: 2 }}>
-        <TextField label="Company" size="small" required
+        <TextField label="Company" size="small" placeholder="Unknown"
           value={company} onChange={(e) => setCompany(e.target.value)} />
         <TextField label="Role" size="small"
           value={role} onChange={(e) => setRole(e.target.value)} />

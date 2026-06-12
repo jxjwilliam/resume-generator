@@ -45,6 +45,8 @@ output/
 variants/
 applications.json
 jds/
+**/*.db
 
 # ─── WebUI node_modules ──────────────────────────────────────
 ui/frontend/node_modules/
+ui/backend/runs.db

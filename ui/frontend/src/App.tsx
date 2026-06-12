@@ -5,7 +5,6 @@ import {
   Tab,
   Tabs,
   Toolbar,
-  Typography,
   Container,
   CssBaseline,
   ThemeProvider,
@@ -14,6 +13,7 @@ import {
 import DescriptionIcon from "@mui/icons-material/Description";
 import TransformIcon from "@mui/icons-material/AutoFixHigh";
 import HistoryIcon from "@mui/icons-material/History";
+import Logo from "./components/Logo";
 import ResumePage from "./pages/ResumePage";
 import TransformPage from "./pages/TransformPage";
 import HistoryPage from "./pages/HistoryPage";
@@ -49,9 +49,7 @@ export default function App() {
       <CssBaseline />
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Resume Management
-          </Typography>
+          <Logo />
         </Toolbar>
       </AppBar>
       <Container maxWidth="xl" sx={{ mt: 3 }}>

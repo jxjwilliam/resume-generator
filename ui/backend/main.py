@@ -3,7 +3,7 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
@@ -17,7 +17,7 @@ from .models import (
     YamlInfo,
 )
 from .runner import start_job, stream_logs, cancel_job
-from .theme_data import THEMES
+from .theme_data import THEMES, RX_TEMPLATES
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 YAML_GLOBS = ["*.yaml", "*.yml"]
@@ -57,6 +57,11 @@ async def list_themes():
     return THEMES
 
 
+@app.get("/api/rxresume-templates")
+async def list_rx_templates():
+    return RX_TEMPLATES
+
+
 @app.get("/api/tags")
 async def list_tags():
     yaml_path = REPO_ROOT / "base.yaml"
@@ -90,9 +95,10 @@ async def analyze_jd(data: dict):
 
 
 @app.post("/api/jd/upload")
-async def upload_jd(file: bytes):
-    temp = REPO_ROOT / ".ui_temp_jd"
-    temp.write_bytes(file)
+async def upload_jd(file: UploadFile):
+    temp = REPO_ROOT / f".ui_temp_jd{Path(file.filename or 'file.txt').suffix}"
+    content = await file.read()
+    temp.write_bytes(content)
     try:
         if temp.suffix.lower() == ".pdf":
             text = extract_text_from_pdf(str(temp))
@@ -141,8 +147,11 @@ async def run_transform(args: TransformRunRequest):
     jd_file = str(REPO_ROOT / ".ui_temp_jd.txt")
     Path(jd_file).write_text(args.jd_text)
 
-    cmd = [sys.executable, "transform.py", "--dry-run",
-           "--yaml", args.yaml_file]
+    cmd = [sys.executable, "transform.py",
+           "--yaml", args.yaml_file,
+           "--template", args.template]
+    if args.resume_id:
+        cmd += ["--resume-id", args.resume_id]
     if args.tags:
         cmd += ["--tags", ",".join(args.tags)]
     cmd += ["--jd", jd_file]

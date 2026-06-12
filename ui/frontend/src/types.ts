@@ -5,6 +5,13 @@ export interface ThemeInfo {
   best_for: string;
 }
 
+export interface RxTemplateInfo {
+  id: string;
+  name: string;
+  description: string;
+  best_for: string;
+}
+
 export interface YamlInfo {
   name: string;
   path: string;
@@ -42,6 +49,8 @@ export interface TransformRunRequest {
   yaml_file?: string;
   jd_text: string;
   tags?: string[];
+  template?: string;
+  resume_id?: string;
   use_llm?: boolean;
   generate_pdf?: boolean;
 }

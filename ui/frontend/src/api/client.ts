@@ -1,5 +1,6 @@
 import type {
   ThemeInfo,
+  RxTemplateInfo,
   YamlInfo,
   RunHistoryItem,
   ResumeRunRequest,
@@ -37,13 +38,16 @@ async function get<T>(path: string): Promise<T> {
 export const api = {
   listYamls: () => get<YamlInfo[]>("/yamls"),
   listThemes: () => get<ThemeInfo[]>("/themes"),
+  listRxTemplates: () => get<RxTemplateInfo[]>("/rxresume-templates"),
   listTags: () => get<{ tags: string[] }>("/tags"),
   analyzeJd: (text: string) =>
     post<KeywordResult>("/jd/analyze", { text }),
   uploadJd: async (file: File): Promise<JdUploadResult> => {
+    const fd = new FormData();
+    fd.append("file", file);
     const res = await fetch(`${BASE}/jd/upload`, {
       method: "POST",
-      body: file,
+      body: fd,
     });
     if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
     return res.json();

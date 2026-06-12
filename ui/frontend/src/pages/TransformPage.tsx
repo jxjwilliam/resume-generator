@@ -1,9 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Box,
   Button,
   FormControlLabel,
   Checkbox,
+  TextField,
   Stack,
   Typography,
   Alert,
@@ -13,8 +14,9 @@ import LogStream from "../components/LogStream";
 import JdInput from "../components/JdInput";
 import YamlSelector from "../components/YamlSelector";
 import TagChips from "../components/TagChips";
+import RxTemplateCard from "../components/RxTemplateCard";
 import { api } from "../api/client";
-import type { LogLine } from "../types";
+import type { LogLine, RxTemplateInfo } from "../types";
 
 interface Props {
   onRefreshHistory: () => void;
@@ -24,11 +26,18 @@ export default function TransformPage({ onRefreshHistory }: Props) {
   const [yamlFile, setYamlFile] = useState("base.yaml");
   const [jdText, setJdText] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<RxTemplateInfo[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState("kakuna");
+  const [resumeId, setResumeId] = useState("");
   const [useLlm, setUseLlm] = useState(true);
   const [generatePdf, setGeneratePdf] = useState(false);
   const [running, setRunning] = useState(false);
   const [logLines, setLogLines] = useState<LogLine[]>([]);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.listRxTemplates().then(setTemplates).catch(() => {});
+  }, []);
 
   const handleRun = useCallback(async () => {
     if (!jdText.trim()) { setError("JD text is required"); return; }
@@ -40,6 +49,9 @@ export default function TransformPage({ onRefreshHistory }: Props) {
       const { job_id } = await api.runTransform({
         yaml_file: yamlFile,
         jd_text: jdText,
+        tags: keywords,
+        template: selectedTemplate,
+        resume_id: resumeId.trim() || undefined,
         use_llm: useLlm,
         generate_pdf: generatePdf,
       });
@@ -60,7 +72,7 @@ export default function TransformPage({ onRefreshHistory }: Props) {
       setError(e.message);
       setRunning(false);
     }
-  }, [yamlFile, jdText, useLlm, generatePdf, onRefreshHistory]);
+  }, [yamlFile, jdText, keywords, selectedTemplate, resumeId, useLlm, generatePdf, onRefreshHistory]);
 
   return (
     <Box>
@@ -70,6 +82,28 @@ export default function TransformPage({ onRefreshHistory }: Props) {
       <YamlSelector value={yamlFile} onChange={setYamlFile} />
 
       <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
+        RxResume Template
+      </Typography>
+      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
+        {templates.map((t) => (
+          <RxTemplateCard
+            key={t.id}
+            template={t}
+            selected={selectedTemplate === t.id}
+            onClick={() => setSelectedTemplate(t.id)}
+          />
+        ))}
+      </Stack>
+
+      <Stack direction="row" spacing={2} sx={{ mt: 2, mb: 2 }} alignItems="center">
+        <TextField label="RxResume Resume ID (optional)" size="small"
+          placeholder="Leave empty to create new"
+          value={resumeId} onChange={(e) => setResumeId(e.target.value)}
+          sx={{ minWidth: 300 }}
+        />
+      </Stack>
+
+      <Typography variant="subtitle2" gutterBottom>
         Job Description
       </Typography>
       <JdInput value={jdText} onChange={setJdText} onKeywords={setKeywords} />

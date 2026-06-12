@@ -32,3 +32,5 @@ I need a webui for vidualization process:
 6. the UI underneatch call resume.py, transofrm.py individually.
 7. the UI will keep a history so can track what actually JD-related-resume have been generated.
 8. and do research online to find and add suitable feature which not mentioned here.
+
+

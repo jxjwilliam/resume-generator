@@ -417,8 +417,8 @@ def build_operations(
 
 # ── LLM enhancement (optional) ────────────────────────────────────────────────
 
-def llm_generate_headline(jd_text: str) -> str:
-    """Use LLM to generate a job-specific headline from the JD. Falls back to empty string."""
+def llm_generate_headline(jd_text: str, role: str | None = None) -> str:
+    """Use LLM to generate a job-specific headline from the JD and target role. Falls back to empty string."""
     try:
         from openai import OpenAI
         client = OpenAI(
@@ -426,7 +426,8 @@ def llm_generate_headline(jd_text: str) -> str:
             base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
         )
         model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
-        prompt = f"""Write a concise 1-line professional headline (10-15 words) for a resume targeting this job. Include the target role title and core relevant technologies. Return ONLY the headline text, nothing else.
+        role_line = f"The target role is: {role}." if role else ""
+        prompt = f"""Write a concise 1-line professional headline (10-15 words) for a resume targeting this job. {role_line} The headline MUST reflect the target role title. Include core relevant technologies. Return ONLY the headline text, nothing else.
 
 Job description:
 {jd_text[:3000]}
@@ -446,8 +447,8 @@ Job description:
         return ""
 
 
-def llm_generate_summary(jd_text: str, base: dict) -> str:
-    """Use LLM to generate a job-specific summary from the JD + top experience bullets."""
+def llm_generate_summary(jd_text: str, base: dict, role: str | None = None) -> str:
+    """Use LLM to generate a job-specific summary from the JD + top experience bullets, targeting the specified role."""
     try:
         from openai import OpenAI
         client = OpenAI(
@@ -463,7 +464,8 @@ def llm_generate_summary(jd_text: str, base: dict) -> str:
                 if b.get("status") != "deprecated":
                     active_bullets.append(b["text"])
         bullets_text = "\n".join(f"- {b}" for b in active_bullets[:10])
-        prompt = f"""Write a 3-4 sentence professional summary for a resume targeting this job. Draw from the candidate's actual experience:
+        role_line = f" Target role: {role}." if role else ""
+        prompt = f"""Write a 3-4 sentence professional summary for a resume targeting this job.{role_line} The summary MUST reflect the target role level and focus on experience relevant to that role. Draw from the candidate's actual experience:
 
 {bullets_text}
 
@@ -581,18 +583,22 @@ if __name__ == "__main__":
             print(f"Extracted role from JD: {role}")
 
         print("Generating LLM headline...")
-        headline_override = llm_generate_headline(jd_text)
+        headline_override = llm_generate_headline(jd_text, role)
         if headline_override:
             print(f"LLM headline: {headline_override}")
         else:
             print("LLM headline failed, using base.yaml headline")
 
         print("Generating LLM summary...")
-        summary_override = llm_generate_summary(jd_text, base)
+        summary_override = llm_generate_summary(jd_text, base, role)
         if summary_override:
             print(f"LLM summary: {summary_override[:80]}...")
         else:
             print("LLM summary failed, using base.yaml summary")
+
+    if not headline_override and role:
+        base_headline = base["identity"].get("headline", "")
+        headline_override = f"{role} | {base_headline}" if base_headline else role
 
     ops = build_operations(
         base, required_tags, args.template,
@@ -637,8 +643,9 @@ if __name__ == "__main__":
             "summary": {"title": "", "icon": "article", "columns": 1, "hidden": False, "content": ""},
             "sections": {},
             "customSections": [],
-            "metadata": {"template": "onyx", "layout": {"sidebarWidth": 35, "pages": []}, "page": {}, "design": {}, "typography": {}, "notes": "", "styleRules": []},
+            "metadata": {"template": args.template, "layout": {"sidebarWidth": 35, "pages": []}, "page": {}, "design": {}, "typography": {}, "notes": "", "styleRules": []},
         }
-        rid = create_resume(resume_name, resume_name, blank_data)
+        created = create_resume(resume_name, resume_name, blank_data)
+        rid = created.get("id") if isinstance(created, dict) else created
         result = patch_resume(rid, ops)
         print(f"✅ Created & filled resume: https://rxresu.me/builder/{rid}")

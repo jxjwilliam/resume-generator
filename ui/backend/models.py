@@ -17,6 +17,8 @@ class TransformRunRequest(BaseModel):
     yaml_file: str = "base.yaml"
     jd_text: str
     tags: list[str] = []
+    template: str = "kakuna"
+    resume_id: Optional[str] = None
     use_llm: bool = True
     generate_pdf: bool = False
 
@@ -56,3 +58,10 @@ class YamlInfo(BaseModel):
 
 class KeywordResult(BaseModel):
     keywords: list[str]
+
+
+class RxTemplateInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+    best_for: str
