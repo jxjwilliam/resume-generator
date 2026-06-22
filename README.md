@@ -38,9 +38,16 @@ python transform.py --resume-id <YOUR_RESUME_ID> --all-skills
 # Path C — WebUI (local)
 ./ui/start.sh
 # → http://localhost:5173
+
+# Path D — JD quality pipeline (analyze → compare → build)
+python resume.py compare --jds-dir jds/
+python resume.py analyze --jd jds/target.txt
+python resume.py build --company Acme --jd jds/target.txt \
+  --llm --tailor --boost --max-bullets 3 --max-jobs 4 --template auto
+# → output/.../CV.pdf + ats-report.json + bullet-diff.json
 ```
 
-Set `RXRESU_API_KEY` in `.env` for Path B. See [`docs/rxresume-integration-guide.md`](docs/rxresume-integration-guide.md).
+Set `RXRESU_API_KEY` in `.env` for Path B. Set `LLM_PROVIDER` + provider API keys for Path D. See [`docs/llm-providers.md`](docs/llm-providers.md) and [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md).
 
 ## Workflow
 
@@ -81,11 +88,16 @@ Generate a job-specific resume variant and render it to PDF + HTML, with optiona
 | `--company` | ✅ | Target company name |
 | `--role` | ✅* | Job title (extracted from JD first line if omitted with `--llm`) |
 | `--tags` | | Comma-separated tags to filter bullets (e.g. `backend,python,react`) |
-| `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes` (default: `classic`) |
+| `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes`, or `auto` (default: `classic`) |
 | `--yaml` | | YAML source file (default: `base.yaml`) |
 | `--locale` | | Resume language: `en` or `zh-CN` (default: `en`) |
 | `--jd` | ** | Path to a job description text file (required with `--llm`) |
-| `--llm` | | Use AI to suggest tags, rewrite headline, and rewrite summary from the JD (requires `DEEPSEEK_API_KEY` + `--jd`) |
+| `--max-bullets` | | Max bullets per job (default: `4`; `0` = unlimited) |
+| `--max-jobs` | | Max experience entries (default: `0` = unlimited) |
+| `--llm` | | Use AI to suggest tags, rewrite headline, and rewrite summary (requires API key + `--jd`) |
+| `--llm-provider` | | Override provider: `deepseek`, `kimi`, or `minimax` (default: `LLM_PROVIDER` in `.env`) |
+| `--tailor` | | LLM minimally rewrite selected bullets for JD alignment (requires `--jd` + API key) |
+| `--boost` | | Second LLM pass: add verified missing JD skills to bullets + skills section |
 | `--all-formats` | | Generate HTML, Markdown, and PNG in addition to PDF |
 | `--cover-letter` | | Also generate a cover letter .txt file |
 | `--docx` | | Also generate a .docx Word document |
@@ -105,6 +117,10 @@ python resume.py build --company "Google" --role "SWE" --tags backend,python --j
 # With LLM tag extraction + headline + summary rewrite from the JD
 # (--role is optional — extracted from JD first line)
 python resume.py build --company "Anthropic" --jd jds/anthropic.txt --llm
+
+# Full quality pipeline: LLM + bullet tailor + ATS boost + concise caps
+python resume.py build --company "BestIT" --jd jds/bestit.txt --llm --tailor --boost \
+  --max-bullets 3 --max-jobs 4 --template auto --docx
 
 # With DOCX + cover letter
 python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python --docx --cover-letter
@@ -141,6 +157,36 @@ $ python resume.py log
   Output:   output/google-swe-202606/
 ```
 
+### `python resume.py analyze`
+
+Parse a JD against `base.yaml`: hard skills, matched/missing skills, top-scored bullets.
+
+```bash
+python resume.py analyze --jd jds/target.txt
+python resume.py analyze --jd jds/target.txt --json
+```
+
+### `python resume.py score`
+
+Deterministic ATS compatibility score (/100) without building a PDF.
+
+```bash
+python resume.py score --jd jds/target.txt --tags backend,python --max-bullets 3
+python resume.py score --jd jds/target.txt --output score-report.json
+```
+
+### `python resume.py compare`
+
+Rank 2–5 JDs by resume fit — use to decide which roles to apply to first.
+
+```bash
+python resume.py compare --jd jds/role-a.txt jds/role-b.txt
+python resume.py compare --jds-dir jds/ --max-bullets 3 --max-jobs 4
+python resume.py compare --jds-dir jds/ --output compare-report.json
+```
+
+Full reference: [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md)
+
 ### `python resume.py cover-letter`
 
 Generate a cover letter from a `base.yaml` template, with optional LLM rewrite.
@@ -164,6 +210,16 @@ python resume.py cover-letter --company "Ideon" --jd jds/adam-green.txt --tags a
 # Write to file instead of stdout
 python resume.py cover-letter --company "Ideon" --role "Principal Dev" --output cover-letter-ideon.txt
 ```
+
+### `python resume.py llm-providers`
+
+List configured LLM providers, base URLs, models, and whether each API key is set.
+
+```bash
+python resume.py llm-providers
+```
+
+See [`docs/llm-providers.md`](docs/llm-providers.md) for Kimi (Moonshot) and MiniMax China inland endpoints.
 
 ### `python transform.py` — RxResume sync
 
@@ -227,15 +283,20 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 
 | Page | Path | Description |
 |---|---|---|
-| **Resume** | `/` | Build variants: pick YAML, company, role, theme, JD, tags. Checkboxes for LLM, all formats, cover letter, DOCX. Language toggle (English / 中文). |
-| **Transform** | `/transform` | Sync to Reactive Resume: pick template, upload JD, set resume ID. |
-| **History** | `/history` | View all runs with status, logs, and output links. |
+| **Resume** | `/` | Build variants: JD analysis panel, max bullets/jobs, LLM, Tailor, Boost ATS, Auto theme, DOCX, cover letter |
+| **Transform** | `/transform` | Sync to Reactive Resume: pick template, upload JD, set resume ID |
+| **Compare** | `/compare` | Paste 2–5 JDs, ranked ATS fit table with missing skills |
+| **History** | `/history` | View all runs with status, logs, and output links |
 
 ## Project Structure
 
 ```
 ├── base.yaml                # ★ Single source of truth — edit this
 ├── resume.py                # CLI composition engine (rendercv path)
+├── compose.py               # Shared bullet ranking + caps (resume.py + transform.py)
+├── jd_parser.py             # Structured JD keyword parsing
+├── ats.py                   # Deterministic ATS scoring + multi-JD compare
+├── llm_config.py            # Multi-provider LLM config (deepseek / kimi / minimax)
 ├── transform.py             # RxResume sync (visual path)
 ├── applications.json        # Auto-generated application tracking log
 ├── requirements.txt
@@ -257,7 +318,9 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │       ├── William_Jiang_CV.pdf
 │       ├── William_Jiang_CV.html
 │       ├── resume.docx
-│       └── cover-letter-google.txt
+│       ├── cover-letter-google.txt
+│       ├── ats-report.json
+│       └── bullet-diff.json
 │
 ├── scripts/
 │   └── cleanup.sh           # Reset all generated data
@@ -274,14 +337,16 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │   │   └── runs.db          # SQLite DB (tracked)
 │   └── frontend/
 │       ├── src/
-│       │   ├── App.tsx          # Tab navigation (Resume / Transform / History)
+│       │   ├── App.tsx          # Tab navigation (Resume / Transform / Compare / History)
 │       │   ├── api/client.ts    # API client
 │       │   ├── types.ts         # TypeScript interfaces
 │       │   ├── pages/
-│       │   │   ├── ResumePage.tsx      # Resume build form
-│       │   │   ├── TransformPage.tsx   # RxResume sync form
-│       │   │   └── HistoryPage.tsx     # Run history
+│       │   │   ├── ResumePage.tsx
+│       │   │   ├── TransformPage.tsx
+│       │   │   ├── ComparePage.tsx
+│       │   │   └── HistoryPage.tsx
 │       │   └── components/
+│       │       ├── JdAnalysisPanel.tsx
 │       │       ├── ThemeCard.tsx       # Rendercv theme picker with SVG preview
 │       │       ├── RxTemplateCard.tsx  # RxResume template picker with SVG preview
 │       │       ├── LogStream.tsx       # SSE log display
@@ -293,10 +358,10 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │       └── package.json
 │
 └── docs/
-    ├── AGENTS.md             # Agent instructions
-    ├── overview.md           # Architecture overview
-    ├── resume-system-implementation.md  # Full system design
-    ├── rxresume-integration-guide.md    # RxResume sync reference
+    ├── resume-quality-pipeline.md   # JD pipeline, ATS scoring, tailor/boost (NEW)
+    ├── overview.md                  # Architecture overview
+    ├── resume-system-implementation.md
+    ├── rxresume-integration-guide.md
     └── superpowers/
         ├── specs/            # Design specs
         └── plans/            # Implementation plans
@@ -435,8 +500,9 @@ The system works perfectly without LLM — `--llm` is purely additive for conven
 pip install -r requirements.txt
 
 # 2. Configure .env (optional for LLM, required for rxresu.me)
+# LLM_PROVIDER=deepseek|kimi|minimax
+# DEEPSEEK_API_KEY=...  KIMI_API_KEY=...  MINIMAX_API_KEY=...
 # RXRESU_API_KEY=...
-# DEEPSEEK_API_KEY=...
 
 # 3. Review the base data
 python resume.py tags
@@ -481,6 +547,8 @@ __pycache__/
 
 ## Reference
 
+- **Quality pipeline (analyze, score, compare, tailor, boost):** [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md)
+- **LLM providers (DeepSeek, Kimi, MiniMax):** [`docs/llm-providers.md`](docs/llm-providers.md)
 - Full system design: [`docs/resume-system-implementation.md`](docs/resume-system-implementation.md)
 - RxResume integration: [`docs/rxresume-integration-guide.md`](docs/rxresume-integration-guide.md)
 - Architecture overview: [`docs/overview.md`](docs/overview.md)

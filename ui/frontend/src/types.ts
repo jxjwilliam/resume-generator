@@ -42,6 +42,10 @@ export interface ResumeRunRequest {
   theme?: string;
   jd_text?: string;
   use_llm?: boolean;
+  tailor?: boolean;
+  boost?: boolean;
+  max_bullets?: number;
+  max_jobs?: number;
   all_formats?: boolean;
   locale?: string;
   cover_letter?: boolean;
@@ -66,9 +70,48 @@ export interface KeywordResult {
   keywords: string[];
 }
 
+export interface JdAnalysisResult {
+  keywords: string[];
+  hard_skills: string[];
+  title_keywords?: string[];
+  domain_keywords?: string[];
+  role_title?: string;
+  seniority?: string;
+  matched_skills: string[];
+  missing_skills: string[];
+  top_bullets: { job: string; text: string; score: number }[];
+}
+
 export interface JdUploadResult {
   text: string;
   keywords: string[];
+  hard_skills?: string[];
+  matched_skills?: string[];
+  missing_skills?: string[];
+  top_bullets?: { job: string; text: string; score: number }[];
+}
+
+export interface JdCompareRanking {
+  label: string;
+  total: number;
+  grade: string;
+  role_title: string;
+  seniority?: string;
+  matched_skills: string[];
+  missing_skills: string[];
+  keyword_pct: number;
+}
+
+export interface JdCompareResult {
+  rankings: JdCompareRanking[];
+  recommended: string | null;
+  best_score: number;
+  count: number;
+}
+
+export interface JdCompareItem {
+  label: string;
+  text: string;
 }
 
 export type LogLine = {

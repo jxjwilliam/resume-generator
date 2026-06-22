@@ -17,8 +17,9 @@ import LogStream from "../components/LogStream";
 import JdInput from "../components/JdInput";
 import YamlSelector from "../components/YamlSelector";
 import TagChips from "../components/TagChips";
+import JdAnalysisPanel from "../components/JdAnalysisPanel";
 import { api } from "../api/client";
-import type { ThemeInfo, LogLine } from "../types";
+import type { ThemeInfo, LogLine, JdAnalysisResult } from "../types";
 
 interface Props {
   themes: ThemeInfo[];
@@ -32,7 +33,12 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   const [selectedTheme, setSelectedTheme] = useState("classic");
   const [jdText, setJdText] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
+  const [jdAnalysis, setJdAnalysis] = useState<JdAnalysisResult | null>(null);
   const [useLlm, setUseLlm] = useState(true);
+  const [tailor, setTailor] = useState(false);
+  const [boost, setBoost] = useState(false);
+  const [maxBullets, setMaxBullets] = useState(4);
+  const [maxJobs, setMaxJobs] = useState(5);
   const [allFormats, setAllFormats] = useState(false);
   const [locale, setLocale] = useState("en");
   const [coverLetter, setCoverLetter] = useState(false);
@@ -69,6 +75,10 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         theme: selectedTheme,
         jd_text: jdText || undefined,
         use_llm: useLlm,
+        tailor: tailor || undefined,
+        boost: boost || undefined,
+        max_bullets: maxBullets,
+        max_jobs: maxJobs,
         all_formats: allFormats,
         locale: locale !== "en" ? locale : undefined,
         cover_letter: coverLetter || undefined,
@@ -91,7 +101,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
       setError(e.message);
       setRunning(false);
     }
-  }, [yamlFile, company, role, selectedTheme, jdText, useLlm, allFormats, locale, coverLetter, docx, onRefreshHistory]);
+  }, [yamlFile, company, role, selectedTheme, jdText, useLlm, tailor, boost, maxBullets, maxJobs, allFormats, locale, coverLetter, docx, onRefreshHistory]);
 
   return (
     <Box>
@@ -131,13 +141,28 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
       </Stack>
 
       <Typography variant="subtitle2" gutterBottom>Job Description</Typography>
-      <JdInput value={jdText} onChange={setJdText} onKeywords={setKeywords} />
+      <JdInput value={jdText} onChange={setJdText} onKeywords={setKeywords} onAnalysis={setJdAnalysis} />
+      <JdAnalysisPanel analysis={jdAnalysis} />
       {keywords.length > 0 && <TagChips keywords={keywords} />}
 
-      <Stack direction="row" spacing={2} sx={{ mt: 2, alignItems: "center" }}>
+      <Stack direction="row" spacing={2} sx={{ mt: 2, alignItems: "center", flexWrap: "wrap" }}>
+        <TextField label="Max bullets/job" type="number" size="small" sx={{ width: 130 }}
+          value={maxBullets} onChange={(e) => setMaxBullets(Number(e.target.value) || 4)}
+          inputProps={{ min: 1, max: 8 }} />
+        <TextField label="Max jobs" type="number" size="small" sx={{ width: 110 }}
+          value={maxJobs} onChange={(e) => setMaxJobs(Number(e.target.value) || 5)}
+          inputProps={{ min: 1, max: 10 }} />
         <FormControlLabel
           control={<Checkbox checked={useLlm} onChange={(e) => setUseLlm(e.target.checked)} />}
           label="Use LLM"
+        />
+        <FormControlLabel
+          control={<Checkbox checked={tailor} onChange={(e) => setTailor(e.target.checked)} />}
+          label="Tailor bullets"
+        />
+        <FormControlLabel
+          control={<Checkbox checked={boost} onChange={(e) => setBoost(e.target.checked)} />}
+          label="Boost ATS"
         />
         <FormControlLabel
           control={<Checkbox checked={allFormats} onChange={(e) => setAllFormats(e.target.checked)} />}

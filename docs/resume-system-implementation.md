@@ -1,5 +1,7 @@
 # Resume Management System — Implementation Guide
 
+> **See also:** [`resume-quality-pipeline.md`](resume-quality-pipeline.md) for the JD analysis, ATS scoring, bullet ranking, `--tailor`, `--boost`, and `compare` features added in June 2026.
+
 > **The problem you have:** Multiple resume versions scattered across formats, conflicting/deprecated info (URLs, LinkedIn, cover letters), no tracking of what went to which job, and no clear way to pick the right template for a given role.
 >
 > **The solution:** A 3-layer system — one YAML base file you own, a composition script that assembles a job-specific version from it, and a renderer that outputs PDF + web. LLM is optional but adds JD analysis and cover letter drafting.

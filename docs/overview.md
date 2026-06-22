@@ -267,6 +267,10 @@ sequenceDiagram
 | `python resume.py tags` | List all available tags in `base.yaml` |
 | `python resume.py log` | Show application history |
 | `python resume.py cover-letter --company X --role Y` | Generate a cover letter standalone |
+| `python resume.py analyze --jd jds/x.txt` | Structured JD parse + skill match report |
+| `python resume.py score --jd jds/x.txt` | ATS compatibility score (/100) |
+| `python resume.py compare --jds-dir jds/` | Rank 2–5 JDs by resume fit |
+| `python resume.py build --llm --tailor --boost --template auto` | Full quality pipeline build |
 | `python transform.py --dry-run` | Preview RxResume JSON Patch ops |
 | `python transform.py --resume-id <ID> --all-skills` | Sync `base.yaml` to rxresu.me |
 | `./scripts/cleanup.sh` | Reset all generated data (variants, output, DB) |
@@ -282,7 +286,12 @@ sequenceDiagram
 | `--yaml` | | YAML source file (default: `base.yaml`) |
 | `--locale` | | Resume language: `en` or `zh-CN` (default: `en`) |
 | `--jd` | | Path to a job description text file (saved in `jds/` for reference) |
-| `--llm` | | Enable LLM-based tag extraction from the JD |
+| `--max-bullets` | | Max bullets per job (default: 4) |
+| `--max-jobs` | | Max experience entries (default: 0 = unlimited) |
+| `--llm` | | Enable LLM-based tag extraction + headline + summary from the JD |
+| `--tailor` | | LLM minimally rewrite bullets for JD (requires `--jd` + API key) |
+| `--boost` | | Second LLM pass for verified missing hard skills |
+| `--template auto` | | Pick rendercv theme from JD signals |
 | `--all-formats` | | Generate HTML, Markdown, and PNG in addition to PDF |
 | `--cover-letter` | | Also generate a cover letter .txt file |
 | `--docx` | | Also generate a .docx Word document |
@@ -308,6 +317,9 @@ Examples:
 resume-app/
 ├── base.yaml                 # ★ Single source of truth — you edit this
 ├── resume.py                 # CLI composition engine (rendercv path)
+├── compose.py                # Shared bullet ranking + caps
+├── jd_parser.py              # Structured JD keyword parsing
+├── ats.py                    # ATS scoring + multi-JD compare
 ├── transform.py              # RxResume sync (visual path)
 ├── applications.json         # Auto-generated application tracking log
 ├── README.md
@@ -328,6 +340,7 @@ resume-app/
 │   └── frontend/             # React + Vite app
 └── docs/
     ├── overview.md           # This document
+    ├── resume-quality-pipeline.md  # JD pipeline, ATS, tailor/boost
     ├── rxresume-integration-guide.md
     ├── resume-system-implementation.md
     └── superpowers/
@@ -485,6 +498,7 @@ python resume.py log
 
 ## Reference
 
+- **Quality pipeline:** [`resume-quality-pipeline.md`](resume-quality-pipeline.md)
 - Full system design: [`resume-system-implementation.md`](resume-system-implementation.md)
 - RxResume integration: [`rxresume-integration-guide.md`](rxresume-integration-guide.md)
 - User identity & links: [`init.md`](init.md)

@@ -6,8 +6,10 @@ import type {
   ResumeRunRequest,
   TransformRunRequest,
   RunResponse,
-  KeywordResult,
+  JdAnalysisResult,
   JdUploadResult,
+  JdCompareResult,
+  JdCompareItem,
   LogLine,
 } from "../types";
 
@@ -41,7 +43,9 @@ export const api = {
   listRxTemplates: () => get<RxTemplateInfo[]>("/rxresume-templates"),
   listTags: () => get<{ tags: string[] }>("/tags"),
   analyzeJd: (text: string) =>
-    post<KeywordResult>("/jd/analyze", { text }),
+    post<JdAnalysisResult>("/jd/analyze", { text }),
+  compareJds: (jds: JdCompareItem[], tags?: string[]) =>
+    post<JdCompareResult>("/jd/compare", { jds, tags: tags || [] }),
   uploadJd: async (file: File): Promise<JdUploadResult> => {
     const fd = new FormData();
     fd.append("file", file);

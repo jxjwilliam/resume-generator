@@ -17,6 +17,9 @@ from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 
+from compose import DEFAULT_MAX_BULLETS, select_experience_jobs
+from llm_config import LLMNotConfiguredError, get_llm_client, llm_chat_completion
+
 load_dotenv()
 
 API_BASE = "https://rxresu.me/api/openapi"
@@ -184,33 +187,17 @@ def build_summary_content(data: dict, target_tags: set = None, use_cover_letter:
     return data.get("summary", "").strip()
 
 
-def _bullet_relevance_score(bullet: dict, required_tags: set = None) -> int:
-    if not required_tags:
-        return {"high": 3, "medium": 2, "low": 1}.get(bullet.get("relevance", "medium"), 2)
-    overlap = len(required_tags.intersection(set(bullet.get("tags", []))))
-    rel = {"high": 3, "medium": 2, "low": 1}.get(bullet.get("relevance", "medium"), 2)
-    return overlap * 10 + rel
-
-
 def build_experience_items(
     exp_list: list,
     required_tags: set = None,
     max_bullets: int = DEFAULT_MAX_BULLETS,
 ) -> list:
     """Include jobs when any bullet matches tags; sort newest-first."""
-    active_jobs = [j for j in exp_list if j.get("status") != "deprecated"]
+    tags = list(required_tags) if required_tags else None
     items = []
-    for job in sort_jobs_reverse_chronological(active_jobs):
-        matched = filter_bullets(job.get("bullets", []), required_tags)
-        if not matched and required_tags:
-            job_tags = set(job.get("tags", []))
-            if required_tags.intersection(job_tags):
-                matched = filter_bullets(job.get("bullets", []), None)
-        if not matched:
-            continue
-        matched.sort(key=lambda b: _bullet_relevance_score(b, required_tags), reverse=True)
-        if max_bullets > 0:
-            matched = matched[:max_bullets]
+    for job, matched in select_experience_jobs(
+        exp_list, tags=tags, max_bullets=max_bullets,
+    ):
         start = iso_to_readable(job["start"])
         end = iso_to_readable(job.get("end")) or "Present"
         items.append({
@@ -417,45 +404,34 @@ def build_operations(
 
 # ── LLM enhancement (optional) ────────────────────────────────────────────────
 
-def llm_generate_headline(jd_text: str, role: str | None = None) -> str:
+def llm_generate_headline(jd_text: str, role: str | None = None, llm_provider=None) -> str:
     """Use LLM to generate a job-specific headline from the JD and target role. Falls back to empty string."""
     try:
-        from openai import OpenAI
-        client = OpenAI(
-            api_key=os.environ.get("DEEPSEEK_API_KEY"),
-            base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-        )
-        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
+        client, model, _cfg = get_llm_client(llm_provider)
         role_line = f"The target role is: {role}." if role else ""
         prompt = f"""Write a concise 1-line professional headline (10-15 words) for a resume targeting this job. {role_line} The headline MUST reflect the target role title. Include core relevant technologies. Return ONLY the headline text, nothing else.
 
 Job description:
 {jd_text[:3000]}
 """
-        response = client.chat.completions.create(
-            model=model,
+        raw = llm_chat_completion(
+            client, model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=100
+            max_tokens=4096,
         )
-        raw = response.choices[0].message.content
-        if raw is None:
-            print("LLM headline returned None", file=sys.stderr)
-            return ""
         return raw.strip().strip('"')
+    except LLMNotConfiguredError as e:
+        print(f"LLM not configured: {e}", file=sys.stderr)
+        return ""
     except Exception as e:
         print(f"LLM headline error ({type(e).__name__}: {e})", file=sys.stderr)
         return ""
 
 
-def llm_generate_summary(jd_text: str, base: dict, role: str | None = None) -> str:
-    """Use LLM to generate a job-specific summary from the JD + top experience bullets, targeting the specified role."""
+def llm_generate_summary(jd_text: str, base: dict, role: str | None = None, llm_provider=None) -> str:
+    """Use LLM to generate a job-specific summary from the JD + top experience bullets."""
     try:
-        from openai import OpenAI
-        client = OpenAI(
-            api_key=os.environ.get("DEEPSEEK_API_KEY"),
-            base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-        )
-        model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
+        client, model, _cfg = get_llm_client(llm_provider)
         active_bullets = []
         for job in base.get("experience", []):
             if job.get("status") != "active":
@@ -474,16 +450,15 @@ The summary should highlight relevant skills, years of experience, and achieveme
 Job description:
 {jd_text[:3000]}
 """
-        response = client.chat.completions.create(
-            model=model,
+        raw = llm_chat_completion(
+            client, model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=300
+            max_tokens=4096,
         )
-        raw = response.choices[0].message.content
-        if raw is None:
-            print("LLM summary returned None", file=sys.stderr)
-            return ""
         return raw.strip().strip('"')
+    except LLMNotConfiguredError as e:
+        print(f"LLM not configured: {e}", file=sys.stderr)
+        return ""
     except Exception as e:
         print(f"LLM summary error ({type(e).__name__}: {e})", file=sys.stderr)
         return ""
@@ -549,7 +524,9 @@ if __name__ == "__main__":
     parser.add_argument("--jd", default=None,
                         help="Path to job description text file (required with --llm)")
     parser.add_argument("--llm", action="store_true",
-                        help="Use DeepSeek LLM to rewrite headline + summary from JD")
+                        help="Use LLM to rewrite headline + summary from JD")
+    parser.add_argument("--llm-provider", choices=["deepseek", "kimi", "minimax"],
+                        help="LLM provider override (default: LLM_PROVIDER in .env)")
     parser.add_argument("--role", default=None,
                         help="Target role (extracted from JD first line if omitted with --llm)")
     args = parser.parse_args()
@@ -577,20 +554,24 @@ if __name__ == "__main__":
     headline_override = None
     summary_override = None
     if args.llm and jd_text:
+        from llm_config import resolve_llm_config
+        llm_provider = getattr(args, "llm_provider", None)
+        cfg = resolve_llm_config(llm_provider)
+        print(f"LLM provider: {cfg['label']} ({cfg['model']} @ {cfg['base_url']})")
         print("Running LLM enhancement...")
         if not role:
             role = jd_text.strip().split('\n')[0].strip()
             print(f"Extracted role from JD: {role}")
 
         print("Generating LLM headline...")
-        headline_override = llm_generate_headline(jd_text, role)
+        headline_override = llm_generate_headline(jd_text, role, llm_provider=llm_provider)
         if headline_override:
             print(f"LLM headline: {headline_override}")
         else:
             print("LLM headline failed, using base.yaml headline")
 
         print("Generating LLM summary...")
-        summary_override = llm_generate_summary(jd_text, base, role)
+        summary_override = llm_generate_summary(jd_text, base, role, llm_provider=llm_provider)
         if summary_override:
             print(f"LLM summary: {summary_override[:80]}...")
         else:

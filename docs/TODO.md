@@ -1,36 +1,27 @@
+# TODO — Status
 
-1. LLM to composition JD + base.yaml
-2. web UI
-3. how to update base.yaml
-4. templates: list and show viturally
-5. jd: copy & paste
-6. tags
-7. requirements.txt
-8. 
+## Completed
 
-### rxresu.me
+- [x] LLM JD composition (`--llm`, `--tailor`, `--boost`)
+- [x] WebUI (Resume, Transform, Compare, History tabs)
+- [x] JD copy & paste + PDF upload
+- [x] Template picker with visual previews
+- [x] Tag system + `python resume.py tags`
+- [x] `requirements.txt`
+- [x] Structured JD analysis (`analyze`, `score`, `compare`)
+- [x] Bullet ranking + caps (`compose.py`, `--max-bullets`, `--max-jobs`)
+- [x] ATS scoring + `ats-report.json` on every build with `--jd`
+- [x] Multi-JD compare (CLI + WebUI Compare tab)
+- [x] Documentation: [`resume-quality-pipeline.md`](resume-quality-pipeline.md)
 
-- reactive resume: williamjxj@hotmail.com/William1!
+## Optional follow-ups
 
-### Cover Letter
+- [ ] Add `variants[]` content to high-value bullets in `base.yaml`
+- [ ] Interview prep command (from ats-resume-tailor pattern)
+- [ ] Browser extension to send JD from job sites to WebUI
+- [ ] `base_zh.yaml` Chinese variant content
 
 ## Notes
 
-- Builders
-- Templates
-- CLI/Config
-
-
-## WebUI
-
-I need a webui for vidualization process:
-1. the UI will fully operate `resume.py`, `transform.py` features and process workflow. 
-2. the UI will design and layout individually for resume and transform options smartly. the 2 can be tabs, or 2 navs, or multiple-choice or whatever suitable
-3. the UI will list optional themes, templates to pick up from.
-4. the UI will monitor the different resources and monitor log
-5. for the JD: upload or copy JD.
-6. the UI underneatch call resume.py, transofrm.py individually.
-7. the UI will keep a history so can track what actually JD-related-resume have been generated.
-8. and do research online to find and add suitable feature which not mentioned here.
-
-
+- RxResume credentials: store in `.env` as `RXRESU_API_KEY` — never commit
+- Agent instructions: [`../AGENTS.md`](../AGENTS.md)

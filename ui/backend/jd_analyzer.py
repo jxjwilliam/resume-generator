@@ -28,6 +28,26 @@ def extract_keywords(text: str, top_n: int = 15) -> list[str]:
     return [word for word, _ in counts.most_common(top_n)]
 
 
+def analyze_jd_structured(text: str, base: dict | None = None) -> dict:
+    """Structured JD parse with categorized keywords."""
+    import sys
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from jd_parser import parse_jd
+
+    if base is None:
+        import yaml
+        yaml_path = repo_root / "base.yaml"
+        if yaml_path.exists():
+            with open(yaml_path) as f:
+                base = yaml.safe_load(f)
+
+    return parse_jd(text, base)
+
+
 def extract_text_from_pdf(path: str) -> Optional[str]:
     """Extract text from a PDF file. Returns None on failure."""
     try:

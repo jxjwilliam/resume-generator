@@ -15,6 +15,8 @@ from .models import (
     TransformRunRequest,
     RunResponse,
     YamlInfo,
+    JdCompareRequest,
+    JdCompareResponse,
 )
 from .runner import start_job, stream_logs, cancel_job
 from .theme_data import THEMES, RX_TEMPLATES
@@ -90,8 +92,32 @@ async def analyze_jd(data: dict):
     text = data.get("text", "")
     if not text:
         raise HTTPException(400, "text is required")
-    keywords = extract_keywords(text)
-    return {"keywords": keywords}
+
+    import sys
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from jd_parser import parse_jd, keyword_match_report
+
+    import yaml
+    base = None
+    yaml_path = REPO_ROOT / "base.yaml"
+    if yaml_path.exists():
+        with open(yaml_path) as f:
+            base = yaml.safe_load(f)
+
+    parsed = parse_jd(text, base)
+    match = keyword_match_report(parsed, base or {}, data.get("tags"))
+    return {
+        "keywords": parsed.get("keywords", []),
+        "hard_skills": parsed.get("hard_skills", []),
+        "title_keywords": parsed.get("title_keywords", []),
+        "domain_keywords": parsed.get("domain_keywords", []),
+        "role_title": parsed.get("role_title", ""),
+        "seniority": parsed.get("seniority", "unknown"),
+        "matched_skills": match.get("matched_skills", []),
+        "missing_skills": match.get("missing_skills", []),
+        "top_bullets": match.get("top_bullets", []),
+    }
 
 
 @app.post("/api/jd/upload")
@@ -109,8 +135,58 @@ async def upload_jd(file: UploadFile):
 
     if not text:
         raise HTTPException(400, "Could not extract text from file")
-    keywords = extract_keywords(text)
-    return {"text": text[:5000], "keywords": keywords}
+
+    import sys
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from jd_parser import parse_jd, keyword_match_report
+    import yaml
+
+    base = None
+    yaml_path = REPO_ROOT / "base.yaml"
+    if yaml_path.exists():
+        with open(yaml_path) as f:
+            base = yaml.safe_load(f)
+
+    parsed = parse_jd(text, base)
+    match = keyword_match_report(parsed, base or {}, None)
+    return {
+        "text": text[:5000],
+        "keywords": parsed.get("keywords", []),
+        "hard_skills": parsed.get("hard_skills", []),
+        "matched_skills": match.get("matched_skills", []),
+        "missing_skills": match.get("missing_skills", []),
+        "top_bullets": match.get("top_bullets", []),
+    }
+
+
+@app.post("/api/jd/compare", response_model=JdCompareResponse)
+async def compare_jds_api(data: JdCompareRequest):
+    if len(data.jds) < 2:
+        raise HTTPException(400, "At least 2 JDs required")
+    if len(data.jds) > 5:
+        raise HTTPException(400, "Maximum 5 JDs")
+
+    import sys
+    import yaml
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from ats import compare_jds
+
+    yaml_path = REPO_ROOT / "base.yaml"
+    base = {}
+    if yaml_path.exists():
+        with open(yaml_path) as f:
+            base = yaml.safe_load(f)
+
+    entries = [(item.label, item.text) for item in data.jds]
+    tags = ",".join(data.tags) if data.tags else None
+    result = compare_jds(
+        base, entries, tags=tags,
+        max_bullets=data.max_bullets,
+        max_jobs=data.max_jobs,
+    )
+    return result
 
 
 def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
@@ -126,6 +202,14 @@ def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
         cmd += ["--jd", jd_file]
     if args.use_llm:
         cmd += ["--llm"]
+    if args.tailor:
+        cmd += ["--tailor"]
+    if args.boost:
+        cmd += ["--boost"]
+    if args.max_bullets != 4:
+        cmd += ["--max-bullets", str(args.max_bullets)]
+    if args.max_jobs:
+        cmd += ["--max-jobs", str(args.max_jobs)]
     if args.all_formats:
         cmd += ["--all-formats"]
     if args.locale and args.locale != "en":

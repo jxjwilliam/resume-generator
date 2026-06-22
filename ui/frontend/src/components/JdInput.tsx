@@ -2,17 +2,33 @@ import { useState, useCallback, useRef } from "react";
 import { Box, TextareaAutosize, Typography, Alert } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { api } from "../api/client";
+import type { JdAnalysisResult } from "../types";
 
 interface Props {
   value: string;
   onChange: (text: string) => void;
   onKeywords: (keywords: string[]) => void;
+  onAnalysis?: (analysis: JdAnalysisResult | null) => void;
 }
 
-export default function JdInput({ value, onChange, onKeywords }: Props) {
+export default function JdInput({ value, onChange, onKeywords, onAnalysis }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const dragCounter = useRef(0);
+
+  const runAnalysis = useCallback(
+    (text: string) => {
+      if (text.length <= 50) {
+        onAnalysis?.(null);
+        return;
+      }
+      api.analyzeJd(text).then((r) => {
+        onKeywords(r.keywords);
+        onAnalysis?.(r);
+      }).catch(() => onAnalysis?.(null));
+    },
+    [onKeywords, onAnalysis],
+  );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -58,11 +74,18 @@ export default function JdInput({ value, onChange, onKeywords }: Props) {
         const result = await api.uploadJd(file);
         onChange(result.text);
         onKeywords(result.keywords);
+        onAnalysis?.({
+          keywords: result.keywords,
+          hard_skills: result.hard_skills || [],
+          matched_skills: result.matched_skills || [],
+          missing_skills: result.missing_skills || [],
+          top_bullets: result.top_bullets || [],
+        });
       } catch (err: any) {
         setError(err.message || "Upload failed.");
       }
     },
-    [onChange, onKeywords]
+    [onChange, onKeywords, onAnalysis]
   );
 
   const handlePaste = useCallback(
@@ -70,11 +93,9 @@ export default function JdInput({ value, onChange, onKeywords }: Props) {
       const text = e.target.value;
       onChange(text);
       setError("");
-      if (text.length > 50) {
-        api.analyzeJd(text).then((r) => onKeywords(r.keywords)).catch(() => {});
-      }
+      runAnalysis(text);
     },
-    [onChange, onKeywords]
+    [onChange, runAnalysis],
   );
 
   const dropProps = {

@@ -1,6 +1,10 @@
 # base.yaml — Single source of truth for William Jiang's resume system
 # This is the ONLY manually edited file. Everything else is generated.
 # Schema defined in docs/resume-system-implementation.md Section 2
+#
+# Optional per-bullet field:
+#   variants: ["alternate phrasing 1", "alternate phrasing 2"]
+# Used by --tailor to pick pre-written alternates instead of free LLM rewrites.
 
 meta:
   version: "1.0"

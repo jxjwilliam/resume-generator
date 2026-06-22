@@ -10,6 +10,10 @@ class ResumeRunRequest(BaseModel):
     theme: str = "classic"
     jd_text: Optional[str] = None
     use_llm: bool = False
+    tailor: bool = False
+    boost: bool = False
+    max_bullets: int = 4
+    max_jobs: int = 0
     all_formats: bool = False
     locale: str = "en"
     cover_letter: bool = False
@@ -61,6 +65,36 @@ class YamlInfo(BaseModel):
 
 class KeywordResult(BaseModel):
     keywords: list[str]
+
+
+class JdCompareItem(BaseModel):
+    label: str
+    text: str
+
+
+class JdCompareRequest(BaseModel):
+    jds: list[JdCompareItem]
+    tags: list[str] = []
+    max_bullets: int = 4
+    max_jobs: int = 0
+
+
+class JdCompareRanking(BaseModel):
+    label: str
+    total: float
+    grade: str
+    role_title: str = ""
+    seniority: Optional[str] = None
+    matched_skills: list[str] = []
+    missing_skills: list[str] = []
+    keyword_pct: float = 0
+
+
+class JdCompareResponse(BaseModel):
+    rankings: list[JdCompareRanking]
+    recommended: Optional[str] = None
+    best_score: float = 0
+    count: int = 0
 
 
 class RxTemplateInfo(BaseModel):

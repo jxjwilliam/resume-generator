@@ -2,6 +2,12 @@ from .models import ThemeInfo, RxTemplateInfo
 
 THEMES: list[ThemeInfo] = [
     ThemeInfo(
+        id="auto",
+        name="Auto",
+        description="Pick theme from JD signals (seniority, company type, ATS)",
+        best_for="Recommended when a JD is provided",
+    ),
+    ThemeInfo(
         id="classic",
         name="Classic",
         description="Professional, clean layout with section headers",

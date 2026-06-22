@@ -12,10 +12,12 @@ import {
 } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import TransformIcon from "@mui/icons-material/AutoFixHigh";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import HistoryIcon from "@mui/icons-material/History";
 import Logo from "./components/Logo";
 import ResumePage from "./pages/ResumePage";
 import TransformPage from "./pages/TransformPage";
+import ComparePage from "./pages/ComparePage";
 import HistoryPage from "./pages/HistoryPage";
 import { api } from "./api/client";
 import type { ThemeInfo, RunHistoryItem } from "./types";
@@ -57,7 +59,8 @@ export default function App() {
           <Tabs value={tab} onChange={(_, v) => setTab(v)}>
             <Tab icon={<DescriptionIcon />} label="Resume" {...a11yProps(0)} />
             <Tab icon={<TransformIcon />} label="Transform" {...a11yProps(1)} />
-            <Tab icon={<HistoryIcon />} label="History" {...a11yProps(2)} />
+            <Tab icon={<CompareArrowsIcon />} label="Compare" {...a11yProps(2)} />
+            <Tab icon={<HistoryIcon />} label="History" {...a11yProps(3)} />
           </Tabs>
         </Box>
 
@@ -68,6 +71,9 @@ export default function App() {
           <TransformPage onRefreshHistory={refreshHistory} />
         )}
         {tab === 2 && (
+          <ComparePage />
+        )}
+        {tab === 3 && (
           <HistoryPage
             refreshKey={refreshKey}
             onReRun={handleReRun}
