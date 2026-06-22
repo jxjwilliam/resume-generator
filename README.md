@@ -49,6 +49,18 @@ python resume.py build --company Acme --jd jds/target.txt \
 
 Set `RXRESU_API_KEY` in `.env` for Path B. Set `LLM_PROVIDER` + provider API keys for Path D. See [`docs/llm-providers.md`](docs/llm-providers.md) and [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md).
 
+## Screenshots
+
+| Resume Builder | Transform (RxResume Sync) | Compare JDs | History |
+|---|---|---|---|
+| ![Resume tab](docs/imgs/ui-resume-tab.png) | ![Transform tab](docs/imgs/ui-transform-tab.png) | ![Compare tab](docs/imgs/ui-compare-tab.png) | ![History tab](docs/imgs/ui-history-tab.png) |
+
+### Generated Output Example
+
+A beautifully designed mockup resume — the system produces real PDFs via rendercv, visual resumes via rxresu.me, and DOCX via python-docx:
+
+![Sample resume mockup](docs/imgs/output-resume-pdf.png)
+
 ## Workflow
 
 ```mermaid
@@ -260,6 +272,18 @@ Reset all generated data — variants, output, applications.json, WebUI database
 ./scripts/cleanup.sh
 ```
 
+### `scripts/screenshot_ui.py`
+
+Capture screenshots of the WebUI (all 4 tabs) and the latest output PDF using Playwright. Saved to `docs/imgs/`.
+
+```bash
+pip install playwright pdf2image
+python -m playwright install chromium
+python scripts/screenshot_ui.py
+```
+
+Requires the WebUI backend and frontend dependencies (`pip install -r requirements.txt` + `cd ui/frontend && npm install`).
+
 ## WebUI
 
 A local web interface wraps the CLI tools for visual operation. No auth — localhost only.
@@ -281,12 +305,12 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 
 ### Pages
 
-| Page | Path | Description |
-|---|---|---|
-| **Resume** | `/` | Build variants: JD analysis panel, max bullets/jobs, LLM, Tailor, Boost ATS, Auto theme, DOCX, cover letter |
-| **Transform** | `/transform` | Sync to Reactive Resume: pick template, upload JD, set resume ID |
-| **Compare** | `/compare` | Paste 2–5 JDs, ranked ATS fit table with missing skills |
-| **History** | `/history` | View all runs with status, logs, and output links |
+| Page | Path | Preview | Description |
+|---|---|---|---|
+| **Resume** | `/` | ![Resume tab](docs/imgs/ui-resume-tab.png) | Build variants: JD analysis panel, max bullets/jobs, LLM, Tailor, Boost ATS, Auto theme, DOCX, cover letter |
+| **Transform** | `/transform` | ![Transform tab](docs/imgs/ui-transform-tab.png) | Sync to Reactive Resume: pick template, upload JD, set resume ID |
+| **Compare** | `/compare` | ![Compare tab](docs/imgs/ui-compare-tab.png) | Paste 2–5 JDs, ranked ATS fit table with missing skills |
+| **History** | `/history` | ![History tab](docs/imgs/ui-history-tab.png) | View all runs with status, logs, and output links |
 
 ## Project Structure
 

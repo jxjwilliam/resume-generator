@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, sans-serif;
+    padding: 40px;
+  }
+  .resume {
+    width: 800px;
+    min-height: 1100px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+  }
+  /* Left sidebar */
+  .sidebar {
+    background: linear-gradient(180deg, #1a2a4a 0%, #2c3e6b 100%);
+    color: #fff;
+    padding: 36px 24px;
+  }
+  .avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a7cf7, #6c5ce7);
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    font-weight: 700;
+    color: #fff;
+    border: 3px solid rgba(255,255,255,0.3);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  .sidebar h1 {
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+  .sidebar .title {
+    font-size: 12px;
+    font-weight: 400;
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 28px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .sidebar .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 12px;
+    margin-top: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 8px;
+  }
+  .sidebar .section-title:first-of-type { margin-top: 0; }
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.85);
+  }
+  .contact-item .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .skill-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.9);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    margin: 0 4px 6px 0;
+  }
+  .lang-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 8px;
+    color: rgba(255,255,255,0.85);
+  }
+  .lang-item .level {
+    color: rgba(255,255,255,0.5);
+    font-size: 11px;
+  }
+  .dot { color: rgba(255,255,255,0.3); }
+
+  /* Main content */
+  .main {
+    padding: 36px 32px;
+  }
+  .main .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #1a2a4a;
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #eef1f6;
+  }
+  .summary {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #555;
+    margin-bottom: 24px;
+  }
+  .exp-item {
+    margin-bottom: 20px;
+  }
+  .exp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .exp-header .role {
+    font-size: 14px;
+    font-weight: 600;
+    color: #222;
+  }
+  .exp-header .company {
+    font-size: 13px;
+    color: #4a7cf7;
+    font-weight: 500;
+  }
+  .exp-header .date {
+    font-size: 11px;
+    color: #999;
+    font-weight: 400;
+  }
+  .exp-desc {
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: #555;
+    padding-left: 0;
+    list-style: none;
+  }
+  .exp-desc li {
+    position: relative;
+    padding-left: 16px;
+    margin-bottom: 4px;
+  }
+  .exp-desc li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #4a7cf7;
+    font-weight: 700;
+  }
+
+  .edu-item {
+    margin-bottom: 14px;
+  }
+  .edu-item .school {
+    font-size: 14px;
+    font-weight: 600;
+    color: #222;
+  }
+  .edu-item .degree {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+  }
+  .edu-item .date {
+    font-size: 11px;
+    color: #999;
+  }
+</style>
+</head>
+<body>
+<div class="resume">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="avatar">JD</div>
+    <h1>Jane Doe</h1>
+    <div class="title">Senior Product Designer</div>
+
+    <div class="section-title">Contact</div>
+    <div class="contact-item">
+      <span class="icon">📧</span>
+      jane.doe@email.com
+    </div>
+    <div class="contact-item">
+      <span class="icon">📱</span>
+      +1 (555) 123-4567
+    </div>
+    <div class="contact-item">
+      <span class="icon">📍</span>
+      San Francisco, CA
+    </div>
+    <div class="contact-item">
+      <span class="icon">🔗</span>
+      linkedin.com/in/janedoe
+    </div>
+    <div class="contact-item">
+      <span class="icon">🌐</span>
+      janedoe.design
+    </div>
+
+    <div class="section-title">Skills</div>
+    <div>
+      <span class="skill-tag">UX Research</span>
+      <span class="skill-tag">Wireframing</span>
+      <span class="skill-tag">Prototyping</span>
+      <span class="skill-tag">Figma</span>
+      <span class="skill-tag">Sketch</span>
+      <span class="skill-tag">Design Systems</span>
+      <span class="skill-tag">User Testing</span>
+      <span class="skill-tag">HTML/CSS</span>
+      <span class="skill-tag">Motion Design</span>
+      <span class="skill-tag">Accessibility</span>
+    </div>
+
+    <div class="section-title">Languages</div>
+    <div class="lang-item"><span>English</span> <span class="level">Native</span></div>
+    <div class="lang-item"><span>Spanish</span> <span class="level">Fluent</span></div>
+    <div class="lang-item"><span>French</span> <span class="level">Intermediate</span></div>
+
+    <div class="section-title">Certifications</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-bottom:6px;">🎯 Nielsen Norman Group UX Certification</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.85);">📜 Google UX Design Professional</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="section-title">Professional Summary</div>
+    <div class="summary">
+      Results-driven Senior Product Designer with 7+ years of experience crafting 
+      intuitive digital experiences for SaaS platforms. Passionate about design systems, 
+      user research, and bridging the gap between business goals and user needs. 
+      Led design initiatives that improved user engagement by 40% and reduced 
+      time-to-market by 25%.
+    </div>
+
+    <div class="section-title">Experience</div>
+
+    <div class="exp-item">
+      <div class="exp-header">
+        <div>
+          <span class="role">Senior Product Designer</span>
+          <span class="company"> &mdash; DesignHub Inc.</span>
+        </div>
+        <span class="date">2022 &ndash; Present</span>
+      </div>
+      <ul class="exp-desc">
+        <li>Led end-to-end redesign of the core analytics platform serving 50K+ users, resulting in a 35% increase in daily active usage.</li>
+        <li>Established a comprehensive design system adopted by 4 product teams, reducing design-to-dev handoff time by 40%.</li>
+        <li>Drove user research initiatives including 60+ usability sessions, translating insights into 20+ product improvements.</li>
+        <li>Mentored a team of 3 junior designers through structured design critique sessions and skill-building workshops.</li>
+      </ul>
+    </div>
+
+    <div class="exp-item">
+      <div class="exp-header">
+        <div>
+          <span class="role">Product Designer</span>
+          <span class="company"> &mdash; CloudTech Solutions</span>
+        </div>
+        <span class="date">2019 &ndash; 2022</span>
+      </div>
+      <ul class="exp-desc">
+        <li>Designed and shipped 12+ major features for a B2B collaboration platform used by 200+ enterprise clients.</li>
+        <li>Reduced user onboarding friction by 50% through iterative prototyping and A/B testing of the signup flow.</li>
+        <li>Partnered with engineering to implement a responsive design framework, improving mobile conversion by 28%.</li>
+      </ul>
+    </div>
+
+    <div class="exp-item">
+      <div class="exp-header">
+        <div>
+          <span class="role">Junior UX Designer</span>
+          <span class="company"> &mdash; StartupX</span>
+        </div>
+        <span class="date">2017 &ndash; 2019</span>
+      </div>
+      <ul class="exp-desc">
+        <li>Created wireframes, mockups, and interactive prototypes for 3 product pivots using Figma and Principle.</li>
+        <li>Conducted competitive analysis and heuristic evaluations that informed the product roadmap and UX strategy.</li>
+      </ul>
+    </div>
+
+    <div class="section-title">Education</div>
+    <div class="edu-item">
+      <div class="exp-header">
+        <div>
+          <span class="school">University of California, Berkeley</span>
+        </div>
+        <span class="date">2013 &ndash; 2017</span>
+      </div>
+      <div class="degree">B.S. in Cognitive Science &mdash; Minor in Computer Science</div>
+      <div style="font-size:11px;color:#888;margin-top:2px;">GPA: 3.8 &bull; Dean's List &bull; Design Club President</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
