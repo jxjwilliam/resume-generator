@@ -48,7 +48,3 @@ jds/                             # Job description files
 # ─── WebUI ─────────────────────────────────────────────────────
 ui/frontend/node_modules/
 .ui_temp_jd.txt
-.omo/
-assets/
-graphify-out/
-jds/
