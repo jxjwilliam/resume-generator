@@ -1,4 +1,4 @@
-opencode, cursor, deepseek
+opencode, cursor, deepseek, vscode-copilot
 
 ## CV
 
@@ -20,10 +20,10 @@ opencode, cursor, deepseek
 
 ### CodeGraph
 
-- configured in docs/opencode.jsonc:
-- docs/AGENTS.md
+- configured in opencode.jsonc (project root)
+- .claude/CLAUDE.md, .cursor/rules/codegraph.mdc
 - .codegraph/codegraph.db
-- Move the MCP config from docs/opencode.jsonc into the active config, or Run `codegraph install --agent opencode` from the project root
+- runs via `.mcp.json` (project root) — `codegraph serve --mcp`
 
 ### Graphify
 

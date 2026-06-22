@@ -53,9 +53,10 @@ flowchart TB
 | Layer | Edits | Tools | Output |
 |---|---|---|---|
 | **Layer 1** — `base.yaml` | Manual only | — | Tagged YAML data |
-| **Layer 2** — Composition | Never manually | `resume.py`, `transform.py` | Variant YAML or JSON Patch ops |
+| **Layer 2** — Composition | Never manually | `resume.py`, `transform.py`, **WebUI** | Variant YAML, JSON Patch ops, or direct CLI invocation |
 | **Layer 3A** — rendercv | Never manually | rendercv CLI | ATS PDF, HTML |
-| **Layer 3B** — rxresu.me | Tweak in UI | rxresu.me dashboard | Visual PDF, public link |
+| **Layer 3B** — python-docx | Never manually | python-docx | Word DOCX |
+| **Layer 3C** — rxresu.me | Tweak in UI | rxresu.me dashboard | Visual PDF, public link |
 
 The key rule: **`base.yaml` is the only file you touch by hand.** Everything else is generated or synced on demand.
 
@@ -64,8 +65,11 @@ The key rule: **`base.yaml` is the only file you touch by hand.** Everything els
 | Need | Command | Output |
 |---|---|---|
 | Job application, ATS scan | `resume.py build --tags ...` | `output/<slug>/William_Jiang_CV.pdf` |
+| Recruiter prefers Word | `resume.py build --tags ... --docx` | `output/<slug>/resume.docx` |
 | Visual polish, templates, sharing | `transform.py --resume-id ...` | rxresu.me builder + PDF export |
-| Both | Run both from same `base.yaml` | Two formats, one source of truth |
+| Both PDF + DOCX + cover letter | `resume.py build --docx --cover-letter` | All three in one command |
+| Chinese resume | `resume.py build --locale zh-CN --yaml base_zh.yaml` | PDF + DOCX with CJK font |
+| Visual UI for everything | `./ui/start.sh` then open http://localhost:5173 | WebUI with all options |
 
 ---
 
@@ -222,7 +226,7 @@ sequenceDiagram
     participant LLM as DeepSeek/Ollama
     participant FS as variants/ + output/
 
-    User->>CLI: --tags backend,python --jd jds/x.txt
+    User->>CLI: --tags backend,python --jd jds/x.txt [--docx] [--cover-letter]
     CLI->>Base: load_base()
     Base-->>CLI: full YAML data
 
@@ -235,13 +239,22 @@ sequenceDiagram
     CLI->>CLI: build variant dict
     CLI->>FS: write variants/bestit-swe.yaml
 
-    CLI->>FS: rendercr render → output/bestit-swe/
+    CLI->>FS: rendercv render → output/bestit-swe/
     FS-->>CLI: done
+
+    alt --docx flag set
+        CLI->>FS: generate_docx() → output/bestit-swe/resume.docx
+    end
+
+    alt --cover-letter flag set
+        CLI->>FS: generate cover letter → output/bestit-swe/cover-letter-bestit.txt
+    end
 
     CLI->>FS: log to applications.json
     FS-->>CLI: done
 
     CLI-->>User: PDF at output/bestit-swe/CV.pdf
+    CLI-->>User: DOCX at output/bestit-swe/resume.docx (if --docx)
 ```
 
 ### All commands
@@ -249,21 +262,30 @@ sequenceDiagram
 | Command | Purpose |
 |---|---|
 | `python resume.py build --company X --role Y --tags backend,python` | Build and render an ATS resume via rendercv |
+| `python resume.py build --docx --cover-letter` | Build + DOCX + cover letter |
+| `python resume.py build --locale zh-CN --yaml base_zh.yaml` | Build Chinese resume with CJK font |
 | `python resume.py tags` | List all available tags in `base.yaml` |
 | `python resume.py log` | Show application history |
+| `python resume.py cover-letter --company X --role Y` | Generate a cover letter standalone |
 | `python transform.py --dry-run` | Preview RxResume JSON Patch ops |
 | `python transform.py --resume-id <ID> --all-skills` | Sync `base.yaml` to rxresu.me |
+| `./scripts/cleanup.sh` | Reset all generated data (variants, output, DB) |
 
 ### `build` flags
 
 | Flag | Required | Description |
-|---|---|---|
+|---|---|---|---|
 | `--company` | ✅ | Target company name (used in slug + log) |
 | `--role` | ✅ | Job title |
 | `--tags` | | Comma-separated tag filter (e.g. `backend,python,react`) |
 | `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes` (default: `classic`) |
+| `--yaml` | | YAML source file (default: `base.yaml`) |
+| `--locale` | | Resume language: `en` or `zh-CN` (default: `en`) |
 | `--jd` | | Path to a job description text file (saved in `jds/` for reference) |
 | `--llm` | | Enable LLM-based tag extraction from the JD |
+| `--all-formats` | | Generate HTML, Markdown, and PNG in addition to PDF |
+| `--cover-letter` | | Also generate a cover letter .txt file |
+| `--docx` | | Also generate a .docx Word document |
 
 ### Slug convention
 
@@ -297,12 +319,20 @@ resume-app/
 │
 ├── jds/                      # Job descriptions
 ├── variants/                 # Auto-generated rendercv YAMLs
-├── output/                   # Auto-generated PDFs + HTML (gitignored)
-│
+├── output/                   # Auto-generated PDFs + DOCX + HTML (gitignored)
+├── scripts/
+│   └── cleanup.sh            # Reset all generated data
+├── ui/                       # WebUI (FastAPI + React/Vite)
+│   ├── start.sh              # One-command launcher
+│   ├── backend/              # Python API
+│   └── frontend/             # React + Vite app
 └── docs/
     ├── overview.md           # This document
     ├── rxresume-integration-guide.md
-    └── resume-system-implementation.md
+    ├── resume-system-implementation.md
+    └── superpowers/
+        ├── specs/            # Design specs
+        └── plans/            # Implementation plans
 ```
 
 ---

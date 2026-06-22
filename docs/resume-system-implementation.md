@@ -268,10 +268,22 @@ The composition script reads `base.yaml`, takes a job description, and outputs a
 
 ```bash
 # Basic — manual section selection
-python resume.py build --jd bestit-swe.txt --tags backend,python,typescript --template clean
+python resume.py build --company "BestIT" --role "SWE" --tags backend,python,typescript --template clean
 
 # With LLM analysis (optional)
-python resume.py build --jd bestit-swe.txt --llm --template clean
+python resume.py build --company "BestIT" --role "SWE" --jd jds/bestit-swe.txt --llm --template clean
+
+# Output DOCX alongside PDF
+python resume.py build --company "BestIT" --role "SWE" --tags backend,python --docx
+
+# Chinese resume with CJK font
+python resume.py build --company "BestIT" --role "SWE" --tags backend,python --locale zh-CN --yaml base_zh.yaml
+
+# Cover letter during build
+python resume.py build --company "BestIT" --role "SWE" --tags backend,python --cover-letter
+
+# All together
+python resume.py build --company "BestIT" --role "SWE" --tags backend,python --docx --cover-letter --locale zh-CN
 
 # List all available tags in your base
 python resume.py tags
@@ -288,13 +300,19 @@ The composition engine is implemented in `resume.py` at the repo root. The spec 
 
 | Function | Purpose |
 |---|---|
-| `load_base()` | Read and parse `base.yaml` |
+| `load_base()` | Read and parse a YAML file (default: `base.yaml`) |
 | `filter_by_tags()` | Filter items by tag list + status flags |
 | `build_variant()` | Assemble a rendercv-compatible variant dict from filtered base data |
 | `write_variant()` | Serialize variant dict to `variants/<slug>.yaml` |
-| `render_variant()` | Shell out to `rendercv render` to produce PDF + HTML + PNG |
+| `render_variant()` | Shell out to `rendercv render` to produce PDF (and optionally HTML/Markdown/PNG) |
+| `generate_docx()` | Build a .docx Word document from the variant YAML using `python-docx` |
 | `log_application()` | Append build metadata to `applications.json` |
 | `llm_extract_tags()` | Optional — call DeepSeek/OpenAI API to suggest tags from a JD |
+| `llm_generate_headline()` | Optional — generate a role-specific headline from a JD |
+| `llm_generate_summary()` | Optional — rewrite the summary to match a target role |
+| `llm_rewrite_cover_letter()` | Optional — tailor the cover letter body to a specific JD |
+| `cmd_cover_letter()` | Generate a standalone cover letter (CLI subcommand) |
+| `_generate_cover_letter()` | Generate a cover letter during `resume.py build --cover-letter` |
 
 **Variant mapping** (`build_variant()` produces a two-key dict):
 
@@ -368,7 +386,23 @@ design:
       section_titles: 1.4em
 ```
 
-### 4.2 Reactive Resume (optional visual layer)
+### 4.2 DOCX (Word) Output
+
+Introduced 2026-06-12. Generates a recruiter-ready .docx file alongside (or instead of) the PDF.
+
+```bash
+python resume.py build --company "BestIT" --role "SWE" --tags backend,python --docx
+# Output: output/<slug>/resume.docx
+```
+
+**Key features:**
+- Section-based layout: headings → bullet lists under each experience
+- **Calibri 11pt body, 14pt bold headings** — universal on Windows/Mac, renders correctly in Google Docs
+- Single `python-docx` dependency — no LaTeX or browser rendering needed
+- Font auto-switches to **Noto Sans SC** when `--locale zh-CN` is set
+- Programmatic generation: section order, bullet indentation, metadata fields all match the PDF variant
+
+### 4.3 Reactive Resume (optional visual layer)
 
 If you want a GUI editor or a shareable web URL on top of the same data:
 
@@ -484,11 +518,11 @@ to this company. Tighten the body to 2 paragraphs max. Output plain text only.
 Use this to pick a template before running the build command.
 
 | Role type | Seniority | Template | Renderer |
-|---|---|---|---|
-| Backend SWE, FAANG | Senior / Staff | `classic` (rendercv) | rendercv PDF |
-| Full-stack, startup | Mid / Senior | `moderncv` or Reactive Resume | PDF + web URL |
-| Dev / any role, ATS priority | Any | `engineeringresumes` | rendercv PDF |
-| Freelance / consulting | Any | Reactive Resume | Web link + PDF |
+|---|---|---|---|---|
+| Backend SWE, FAANG | Senior / Staff | `classic` (rendercv) | rendercv PDF + optional DOCX |
+| Full-stack, startup | Mid / Senior | `moderncv` or Reactive Resume | PDF + web URL + optional DOCX |
+| Dev / any role, ATS priority | Any | `engineeringresumes` | rendercv PDF + optional DOCX |
+| Freelance / consulting | Any | Reactive Resume | Web link + PDF + optional DOCX |
 | Academic / research | Any | Awesome-CV (LaTeX) | PDF only |
 
 **Decision rule for template:**
@@ -516,6 +550,7 @@ Do you want to send a web link in a cold email?
 | Data store | YAML + Git | Plain text, diffable, version-controlled |
 | Composition | Python script (`resume.py`) | Reads base, filters by tags, writes variant |
 | PDF + HTML rendering | rendercv | YAML in → clean PDF + HTML out |
+| DOCX Word output | python-docx | Build recruiter-ready .docx from variant YAML |
 | Application tracking | `applications.json` | Simple, no database needed |
 
 ### Optional (add as needed)
@@ -525,7 +560,8 @@ Do you want to send a web link in a cold email?
 | Visual editor | Reactive Resume | When you want a GUI or web URL |
 | JD analysis | DeepSeek V4 / Gemini Flash / Ollama | When manual tag selection feels slow |
 | Cover letter drafting | Any LLM | Every application — high ROI |
-| Local web dashboard | Next.js or SvelteKit | When the CLI log is hard to browse |
+| Local web dashboard | FastAPI + React/Vite (in `ui/`) | When the CLI log is hard to browse |
+| Chinese/CJK locale | Noto Sans SC font + `--locale zh-CN` | When applying to Chinese-language roles |
 
 ### LLM cost comparison
 
@@ -543,10 +579,13 @@ Do you want to send a web link in a cold email?
 
 ```bash
 # Python dependencies
-pip install pyyaml rendercv
+pip install pyyaml rendercv python-docx
 
 # Optional: LLM integration (OpenAI-compatible client + .env loading)
 pip install openai python-dotenv
+
+# Optional: WebUI
+pip install fastapi uvicorn; npm install  # in ui/backend/ and ui/frontend/ respectively
 
 # Optional: Ollama for local LLM
 brew install ollama && ollama pull llama3.1
@@ -621,19 +660,40 @@ resume-system/
 ├── applications.json          # Application tracking log (auto-generated)
 │
 ├── jds/                       # Job descriptions (paste JD text here)
-│   ├── bestit-swe-2026-06.txt
-│   └── shopify-staff-eng-2026-07.txt
-│
 ├── variants/                  # Auto-generated per-application YAMLs
-│   ├── bestit-swe-202606.yaml
-│   └── shopify-staff-eng-202607.yaml
-│
-├── output/                    # Auto-generated PDFs + HTML
+├── output/                    # Auto-generated PDFs + DOCX + HTML
 │   ├── bestit-swe-202606/
 │   │   ├── William_Chen_CV.pdf
-│   │   └── William_Chen_CV.html
+│   │   ├── William_Chen_CV.html
+│   │   └── resume.docx
 │   └── shopify-staff-eng-202607/
-│       └── William_Chen_CV.pdf
+│       └── resume.docx
+│
+├── scripts/
+│   └── cleanup.sh             # Reset generated data (variants, output, runs.db)
+│
+├── ui/                        # WebUI (FastAPI + React/Vite)
+│   ├── start.sh               # One-command launcher
+│   ├── backend/
+│   │   ├── main.py            # FastAPI server (~150 lines)
+│   │   └── models.py          # Pydantic request/response models
+│   └── frontend/
+│       ├── src/
+│       │   ├── App.tsx        # Router
+│       │   ├── pages/
+│       │   │   ├── ResumePage.tsx  # Main build form
+│       │   │   └── HistoryPage.tsx # Application log viewer
+│       │   └── types.ts       # TypeScript request/response types
+│       ├── package.json
+│       └── index.html
+│
+├── docs/
+│   ├── overview.md
+│   ├── resume-system-implementation.md
+│   ├── rxresume-integration-guide.md
+│   └── superpowers/
+│       ├── specs/
+│       └── plans/
 │
 └── .gitignore                 # See below
 ```
@@ -645,11 +705,12 @@ output/          # Large binary files — regenerate anytime
 .env             # API keys
 __pycache__/
 *.pyc
+.ui_temp_id.txt  # VSCode temp file
 ```
 
-**Commit to git:** `base.yaml`, `resume.py`, `transform.py`, `applications.json`, `variants/`, `jds/`
+**Commit to git:** `base.yaml`, `resume.py`, `transform.py`, `applications.json`, `variants/`, `jds/`, `runs.db`, `ui/`
 
-**Do not commit:** `output/` (PDFs — regenerate anytime), `.env` (API keys), `__pycache__/`
+**Do not commit:** `output/` (PDFs/DOCX — regenerate anytime), `.env` (API keys), `__pycache__/`, `.ui_temp_id.txt`
 
 ---
 
@@ -696,6 +757,15 @@ python resume.py build --company "Shopify" --role "Staff Eng" --jd jds/shopify.t
 # Build with LLM tag suggestion
 python resume.py build --company "BestIT" --role "Senior SWE" --jd jds/bestit.txt --llm
 
+# Build with DOCX output
+python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python --docx
+
+# Build with cover letter
+python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python --cover-letter
+
+# Build Chinese resume
+python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python --locale zh-CN --yaml base_zh.yaml
+
 # View application history
 python resume.py log
 
@@ -705,4 +775,4 @@ rendercv render variants/bestit-senior-swe-202606.yaml
 
 ---
 
-*Generated: 2026-06-10 | Updated: 2026-06-11 | System designed for Python 3.11+, rendercv 2.x, optional DeepSeek/Gemini/Ollama LLM integration*
+*Generated: 2026-06-10 | Updated: 2026-06-12 | System designed for Python 3.11+, rendercv 2.x, python-docx 1.x, optional DeepSeek/Gemini/Ollama LLM integration*

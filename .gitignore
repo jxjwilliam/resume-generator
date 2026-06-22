@@ -33,20 +33,22 @@ Thumbs.db
 .codegraph/                      # CodeGraph AST index
 .omo/                            # OpenCode session data
 graphify-out/                    # Graphify tool output
-assets/
-.codegraph/
-.omo/
-graphify-out/
-docs/.claude/
-docs/.cursor/
-docs/.mcp.json
-output/
+.claude/
+.cursor/
+.mcp.json
 .obsidian/
-variants/
-applications.json
-jds/
-**/*.db
 
-# ─── WebUI node_modules ──────────────────────────────────────
+# ─── Project data ──────────────────────────────────────────────
+assets/                          # Source resumes (docx/txt)
+variants/                        # Generated variant YAMLs
+applications.json                # Auto-generated app log
+jds/                             # Job description files
+**/*.db                          # SQLite databases (CodeGraph, WebUI)
+
+# ─── WebUI ─────────────────────────────────────────────────────
 ui/frontend/node_modules/
-.ui_temp_id.txt
+.ui_temp_jd.txt
+.omo/
+assets/
+graphify-out/
+jds/
