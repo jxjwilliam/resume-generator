@@ -1,7 +1,7 @@
-# ─── Generated files ───────────────────────────────────────────
-output/                          # PDFs + HTML — regenerate anytime
+# Generated files
+output/
 
-# ─── Python ────────────────────────────────────────────────────
+# Python
 __pycache__/
 *.pyc
 *.pyo
@@ -13,38 +13,38 @@ build/
 .eggs/
 *.egg
 
-# ─── Virtual environments ──────────────────────────────────────
+# Virtual environments
 .env
 .venv/
 venv/
 ENV/
 
-# ─── OS ────────────────────────────────────────────────────────
+# OS
 .DS_Store
 Thumbs.db
 
-# ─── IDE / editors ─────────────────────────────────────────────
+# IDE / editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# ─── Tool-specific ─────────────────────────────────────────────
-.codegraph/                      # CodeGraph AST index
-.omo/                            # OpenCode session data
-graphify-out/                    # Graphify tool output
+# Tool-specific
+.codegraph/
+.omo/
+graphify-out/
 .claude/
 .cursor/
 .mcp.json
 .obsidian/
 
-# ─── Project data ──────────────────────────────────────────────
-assets/                          # Source resumes (docx/txt)
-variants/                        # Generated variant YAMLs
-applications.json                # Auto-generated app log
-jds/                             # Job description files
-**/*.db                          # SQLite databases (CodeGraph, WebUI)
+# Project data — do NOT commit (job-application details)
+assets/
+variants/
+applications.json
+jds/
+**/*.db
 
-# ─── WebUI ─────────────────────────────────────────────────────
+# WebUI
 ui/frontend/node_modules/
 .ui_temp_jd.txt
