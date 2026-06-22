@@ -96,7 +96,7 @@ flowchart LR
 Generate a job-specific resume variant and render it to PDF + HTML, with optional DOCX and cover letter.
 
 | Flag | Required | Description |
-|---|---|---|---|
+|---|---|---|
 | `--company` | ✅ | Target company name |
 | `--role` | ✅* | Job title (extracted from JD first line if omitted with `--llm`) |
 | `--tags` | | Comma-separated tags to filter bullets (e.g. `backend,python,react`) |
@@ -204,7 +204,7 @@ Full reference: [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline
 Generate a cover letter from a `base.yaml` template, with optional LLM rewrite.
 
 | Flag | Required | Description |
-|---|---|---|---|
+|---|---|---|
 | `--company` | ✅ | Target company name |
 | `--role` | | Job title (extracted from JD first line if omitted with `--llm`) |
 | `--tags` | | Comma-separated tags to select cover letter template (e.g. `ai,fullstack` or `backend,api`) |
