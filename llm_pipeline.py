@@ -46,7 +46,7 @@ Job description:
         raw = llm_chat_completion(
             client, model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=2048,
+            max_tokens=4096,
         )
         if not raw:
             return heuristic

@@ -16,6 +16,7 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlF
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const dragCounter = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const runAnalysis = useCallback(
     (text: string) => {
@@ -54,23 +55,14 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlF
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback(
-    async (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setDragOver(false);
-      dragCounter.current = 0;
+  const processFile = useCallback(
+    async (file: File) => {
       setError("");
-
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-
       const ext = file.name.toLowerCase();
       if (!ext.endsWith(".txt") && !ext.endsWith(".pdf")) {
         setError("Only .txt and .pdf files are supported.");
         return;
       }
-
       try {
         const result = await api.uploadJd(file);
         onChange(result.text);
@@ -95,7 +87,33 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlF
         setError(err.message || "Upload failed.");
       }
     },
-    [onChange, onKeywords, onAnalysis]
+    [onChange, onKeywords, onAnalysis],
+  );
+
+  const handleClickUpload = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) processFile(file);
+      // clear so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [processFile],
+  );
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOver(false);
+      dragCounter.current = 0;
+      const file = e.dataTransfer.files[0];
+      if (file) processFile(file);
+    },
+    [processFile],
   );
 
   const handlePaste = useCallback(
@@ -119,8 +137,16 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlF
     <Box {...dropProps}>
       {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt,.pdf"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
       <Box
         {...dropProps}
+        onClick={handleClickUpload}
         sx={{
           border: "2px dashed",
           borderColor: dragOver ? "primary.main" : "grey.400",
@@ -130,11 +156,13 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlF
           textAlign: "center",
           bgcolor: dragOver ? "action.hover" : "transparent",
           transition: "border-color 0.15s, background-color 0.15s",
+          cursor: "pointer",
+          "&:hover": { borderColor: "primary.light", bgcolor: "action.hover" },
         }}
       >
         <CloudUploadIcon sx={{ color: "grey.500", mr: 1, verticalAlign: "middle" }} />
         <Typography variant="body2" color="text.secondary" component="span">
-          Drop .txt / .pdf here or paste below
+          Drop .txt / .pdf here, click to browse, or paste below
         </Typography>
       </Box>
       <TextareaAutosize

@@ -54,7 +54,9 @@ export interface ResumeRunRequest {
   theme?: string;
   jd_text?: string;
   use_llm?: boolean;
+  llm_provider?: string;
   tailor?: boolean;
+  enhance?: boolean;
   boost?: boolean;
   max_bullets?: number;
   max_jobs?: number;

@@ -9,12 +9,15 @@ class ResumeRunRequest(BaseModel):
     tags: list[str] = []
     theme: str = "classic"
     jd_text: Optional[str] = None
-    use_llm: bool = False
+    use_llm: bool = True
+    llm_provider: Optional[str] = None
     tailor: bool = False
+    enhance: bool = False
     boost: bool = False
     max_bullets: int = 4
     max_jobs: int = 0
-    pages: int = 1
+    pages: int = 2
+    max_projects: int = 4
     no_projects: bool = False
     all_formats: bool = False
     locale: str = "en"

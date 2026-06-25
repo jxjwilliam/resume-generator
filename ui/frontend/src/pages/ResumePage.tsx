@@ -37,23 +37,40 @@ interface Props {
   onRefreshHistory: () => void;
 }
 
+// Sync form state with localStorage so user preferences survive reloads
+function useStoredState<T>(key: string, fallback: T): [T, (v: T) => void] {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const stored = localStorage.getItem("resume:" + key);
+      if (stored !== null) return JSON.parse(stored);
+    } catch { /* ignore */ }
+    return fallback;
+  });
+  useEffect(() => {
+    try { localStorage.setItem("resume:" + key, JSON.stringify(value)); } catch { /* quota */ }
+  }, [key, value]);
+  return [value, setValue];
+}
+
 export default function ResumePage({ themes, onRefreshHistory }: Props) {
-  const [yamlFile, setYamlFile] = useState("base.yaml");
-  const [company, setCompany] = useState("");
-  const [role, setRole] = useState("");
-  const [selectedTheme, setSelectedTheme] = useState("classic");
+  const [yamlFile, setYamlFile] = useStoredState<string>("yamlFile", "base.yaml");
+  const [company, setCompany] = useStoredState<string>("company", "");
+  const [role, setRole] = useStoredState<string>("role", "");
+  const [selectedTheme, setSelectedTheme] = useStoredState<string>("theme", "classic");
   const [jdText, setJdText] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [jdAnalysis, setJdAnalysis] = useState<JdAnalysisResult | null>(null);
-  const [useLlm, setUseLlm] = useState(false);
-  const [tailor, setTailor] = useState(false);
-  const [boost, setBoost] = useState(false);
-  const [maxBullets, setMaxBullets] = useState(4);
-  const [maxJobs, setMaxJobs] = useState(5);
-  const [allFormats, setAllFormats] = useState(false);
-  const [locale, setLocale] = useState("en");
-  const [coverLetter, setCoverLetter] = useState(true);
-  const [docx, setDocx] = useState(true);
+  const [useLlm, setUseLlm] = useStoredState<boolean>("useLlm", true);
+  const [llmProvider, setLlmProvider] = useStoredState<string>("llmProvider", "");
+  const [tailor, setTailor] = useStoredState<boolean>("tailor", false);
+  const [enhance, setEnhance] = useStoredState<boolean>("enhance", false);
+  const [boost, setBoost] = useStoredState<boolean>("boost", false);
+  const [maxBullets, setMaxBullets] = useStoredState<number>("maxBullets", 4);
+  const [maxJobs, setMaxJobs] = useStoredState<number>("maxJobs", 5);
+  const [allFormats, setAllFormats] = useStoredState<boolean>("allFormats", false);
+  const [locale, setLocale] = useStoredState<string>("locale", "en");
+  const [coverLetter, setCoverLetter] = useStoredState<boolean>("coverLetter", true);
+  const [docx, setDocx] = useStoredState<boolean>("docx", true);
   const [running, setRunning] = useState(false);
   const [logLines, setLogLines] = useState<LogLine[]>([]);
   const [error, setError] = useState("");
@@ -173,7 +190,9 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         theme: selectedTheme,
         jd_text: jdText || undefined,
         use_llm: runLlm,
+        llm_provider: llmProvider || undefined,
         tailor: runTailor || undefined,
+        enhance: enhance || undefined,
         boost: runBoost || undefined,
         max_bullets: maxBullets,
         max_jobs: maxJobs,
@@ -208,10 +227,47 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      <Typography variant="subtitle2" gutterBottom>YAML Source</Typography>
-      <YamlSelector value={yamlFile} onChange={setYamlFile} />
+      <Stack direction="row" spacing={1.5} sx={{ mt: 1, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
+        <Typography variant="subtitle2">YAML:</Typography>
+        <YamlSelector value={yamlFile} onChange={setYamlFile} />
+        <Box sx={{ flexGrow: 0, width: 16 }} />
+        <Typography variant="body2" color="text.secondary">LLM:</Typography>
+        <ToggleButtonGroup
+          value={llmProvider}
+          exclusive
+          onChange={(_, v) => v !== null && setLlmProvider(v)}
+          size="small"
+        >
+          <ToggleButton value="">default</ToggleButton>
+          <ToggleButton value="deepseek">DeepSeek</ToggleButton>
+          <ToggleButton value="kimi">Kimi</ToggleButton>
+          <ToggleButton value="minimax">MiniMax</ToggleButton>
+        </ToggleButtonGroup>
+        <FormControlLabel
+          control={<Checkbox size="small" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} />}
+          label="Enhance"
+        />
+        <FormControlLabel
+          control={<Checkbox size="small" checked={tailor} onChange={(e) => setTailor(e.target.checked)} />}
+          label="Tailor"
+        />
+        <FormControlLabel
+          control={<Checkbox size="small" checked={boost} onChange={(e) => setBoost(e.target.checked)} />}
+          label="Boost"
+        />
+        <Box sx={{ flexGrow: 1 }} />
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<PlayArrowIcon />}
+          onClick={() => handleRun()}
+          disabled={running}
+        >
+          {running ? "Running..." : "Build"}
+        </Button>
+      </Stack>
 
-      <Stack direction="row" spacing={2} sx={{ mt: 2, mb: 2, alignItems: "center" }}>
+      <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: "center" }}>
         <TextField label="Company" size="small" placeholder="Unknown"
           value={company} onChange={(e) => setCompany(e.target.value)} />
         <TextField label="Role" size="small"
@@ -264,37 +320,21 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
           value={maxJobs} onChange={(e) => setMaxJobs(Number(e.target.value) || 5)}
           inputProps={{ min: 1, max: 10 }} />
         <FormControlLabel
-          control={<Checkbox checked={useLlm} onChange={(e) => setUseLlm(e.target.checked)} />}
+          control={<Checkbox size="small" checked={useLlm} onChange={(e) => setUseLlm(e.target.checked)} />}
           label="Use LLM"
         />
         <FormControlLabel
-          control={<Checkbox checked={tailor} onChange={(e) => setTailor(e.target.checked)} />}
-          label="Tailor bullets"
-        />
-        <FormControlLabel
-          control={<Checkbox checked={boost} onChange={(e) => setBoost(e.target.checked)} />}
-          label="Boost ATS"
-        />
-        <FormControlLabel
-          control={<Checkbox checked={allFormats} onChange={(e) => setAllFormats(e.target.checked)} />}
+          control={<Checkbox size="small" checked={allFormats} onChange={(e) => setAllFormats(e.target.checked)} />}
           label="All formats"
         />
         <FormControlLabel
-          control={<Checkbox checked={coverLetter} onChange={(e) => setCoverLetter(e.target.checked)} />}
+          control={<Checkbox size="small" checked={coverLetter} onChange={(e) => setCoverLetter(e.target.checked)} />}
           label="Cover letter"
         />
         <FormControlLabel
-          control={<Checkbox checked={docx} onChange={(e) => setDocx(e.target.checked)} />}
+          control={<Checkbox size="small" checked={docx} onChange={(e) => setDocx(e.target.checked)} />}
           label="Docx"
         />
-        <Button
-          variant="contained"
-          startIcon={<PlayArrowIcon />}
-          onClick={() => handleRun()}
-          disabled={running}
-        >
-          {running ? "Running..." : "Run"}
-        </Button>
       </Stack>
 
       {logLines.length > 0 && (

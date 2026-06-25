@@ -138,7 +138,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
                   max_bullets=DEFAULT_MAX_BULLETS, max_jobs=DEFAULT_MAX_JOBS,
                   jd_keywords=None, tailored_bullets=None, jd_hard_skills=None,
                   boost_skills=False, pages=1, no_projects=False,
-                  seniority=None, llm_scores=None):
+                  seniority=None, llm_scores=None, max_projects=4):
     """Assemble a job-specific variant from the base."""
     tags_list = parse_tag_list(tags)
     required_tags = set(tags_list) if tags_list else None
@@ -164,11 +164,22 @@ def build_variant(base, tags, template, company, role, jd_text=None,
         jd_hard_skills=jd_hard_skills,
         boost_missing=boost_skills,
     )
-    project_list = [
+    # Score and cap projects by JD keyword overlap
+    _all_projects = [
         p for p in base.get("projects", [])
         if p.get("status") == "active"
         and (not tags_list or any(t in p.get("tags", []) for t in tags_list))
     ]
+    if _all_projects and jd_keywords and max_projects > 0:
+        kw_set = {k.lower() for k in jd_keywords}
+        def _project_score(p: dict) -> int:
+            text = (p.get("description", "") + " " + " ".join(p.get("tags", []))).lower()
+            return sum(1 for k in kw_set if k in text) + sum(
+                1 for t in (tags_list or []) if t in p.get("tags", [])
+            )
+        project_list = sorted(_all_projects, key=_project_score, reverse=True)[:max_projects]
+    else:
+        project_list = _all_projects
     education_list = [e for e in base.get("education", []) if e.get("status") == "active"]
 
     page_budget_report = None
@@ -235,8 +246,6 @@ def build_variant(base, tags, template, company, role, jd_text=None,
             }
             for p in project_list
         ]
-    else:
-        sections["projects"] = []
 
     sections["education"] = [
         {
@@ -302,11 +311,11 @@ def build_variant(base, tags, template, company, role, jd_text=None,
     return variant, page_budget_report, job_pairs
 
 def write_variant(variant, slug):
-    Path(VARIANTS_DIR).mkdir(exist_ok=True)
-    path = f"{VARIANTS_DIR}/{slug}.yaml"
+    path = Path(VARIANTS_DIR) / f"{slug}.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         yaml.dump(variant, f, allow_unicode=True, sort_keys=False)
-    return path
+    return str(path)
 
 def render_variant(variant_path, slug, all_formats=False):
     """Call rendercv to render the variant. PDF-only by default."""
@@ -600,10 +609,13 @@ def cmd_build(args):
     base = load_base(getattr(args, "yaml", BASE_FILE))
 
     if args.llm and not args.jd:
-        print("Error: --jd is required when using --llm", file=sys.stderr)
-        exit(1)
+        print("Note: --jd not provided, LLM stages will be skipped", file=sys.stderr)
+        args.llm = False
     if not args.role and not args.llm:
-        print("Error: --role is required when not using --llm", file=sys.stderr)
+        if args.jd:
+            print("Note: --role not provided and LLM disabled, using JD first line")
+    if not args.role and not args.jd:
+        print("Error: --role is required when not using --jd", file=sys.stderr)
         exit(1)
 
     jd_text = None
@@ -615,7 +627,8 @@ def cmd_build(args):
             role = jd_text.strip().split('\n')[0].strip()
             print(f"Extracted role from JD: {role}")
 
-    slug = f"{args.company.lower().replace(' ','-')}-{role.lower().replace(' ','-')}-{datetime.now().strftime('%Y%m')}"
+    slug_raw = f"{args.company.lower()}-{role.lower()}-{datetime.now().strftime('%Y%m')}"
+    slug = re.sub(r"[^a-z0-9-]", "-", slug_raw).strip("-")
 
     from jd_parser import parse_jd
 
@@ -685,6 +698,23 @@ def cmd_build(args):
             print(f"LLM summary: {summary_override[:80]}...")
         else:
             print("LLM summary failed, using base.yaml summary")
+
+    if getattr(args, "enhance", False) and jd_text:
+        cfg = resolve_llm_config(llm_provider)
+        print(f"Enhance provider: {cfg['label']} ({cfg['model']})")
+        print("Enhancing experience sections for JD...")
+        bullet_diff_entries = llm_enhance_experience(
+            base, jd_text, tags, jd_keywords,
+            max_bullets=args.max_bullets,
+            max_jobs=args.max_jobs,
+            role=role,
+            llm_provider=llm_provider,
+        )
+        tailored_bullets = entries_to_tailored_map(bullet_diff_entries)
+        accepted = sum(1 for e in bullet_diff_entries if e["status"] == "accepted")
+        rejected = sum(1 for e in bullet_diff_entries if e["status"] == "rejected")
+        unchanged = sum(1 for e in bullet_diff_entries if e["status"] == "unchanged")
+        print(f"Enhanced {accepted} bullets ({unchanged} unchanged, {rejected} rejected by validation)")
 
     if getattr(args, "tailor", False) and jd_text:
         cfg = resolve_llm_config(llm_provider)
@@ -773,7 +803,8 @@ def cmd_build(args):
                             pages=pages,
                             no_projects=getattr(args, "no_projects", False),
                             seniority=parsed_jd.get("seniority") if parsed_jd else None,
-                            llm_scores=llm_scores or None)
+                            llm_scores=llm_scores or None,
+                            max_projects=getattr(args, "max_projects", 4))
     if page_budget_report and page_budget_report.get("enabled"):
         est = page_budget_report.get("estimated_lines")
         print(f"Estimated length: ~{est} lines (budget {page_budget_report.get('budget_lines')})")
@@ -1045,7 +1076,13 @@ def llm_rewrite_cover_letter(body: str, jd_text: str, llm_provider=None) -> str:
     """Use LLM to rewrite a cover letter body to better match the JD."""
     try:
         client, model, _cfg = get_llm_client(llm_provider)
-        prompt = f"""Given this cover letter template and job description, rewrite the body to better match the role. Keep the same professional tone and paragraph structure (3-4 paragraphs). Keep the opening and closing sentences intact. Return ONLY the rewritten body, nothing else.
+        prompt = f"""Given this cover letter template and job description, rewrite the body to better match the role and company.
+
+Rules:
+- Replace any references to other companies or products with the target company or generic equivalents
+- Keep the same professional tone and paragraph structure (3-4 paragraphs)
+- Weave in 2–3 relevant JD keywords naturally
+- Return ONLY the rewritten body, nothing else
 
 Cover letter body:
 {body}
@@ -1169,7 +1206,7 @@ Job description excerpt:
                 raw = llm_chat_completion(
                     client, model,
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=2048,
+                    max_tokens=4096,
                 )
                 if raw:
                     rewritten = raw.strip().strip('"')
@@ -1291,7 +1328,7 @@ Job description excerpt:
                 raw = llm_chat_completion(
                     client, model,
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=2048,
+                    max_tokens=4096,
                 )
                 if not raw:
                     continue
@@ -1333,6 +1370,147 @@ Job description excerpt:
                 result.append(entry)
         return result
     return list(entry_by_key.values())
+
+
+def llm_enhance_experience(
+    base: dict,
+    jd_text: str,
+    tags: str | list | None,
+    jd_keywords: list | None,
+    max_bullets: int = DEFAULT_MAX_BULLETS,
+    max_jobs: int = DEFAULT_MAX_JOBS,
+    role: str | None = None,
+    llm_provider: str | None = None,
+) -> list[dict]:
+    """
+    LLM holistically improves each experience section: rewords bullets for impact,
+    reorders by JD relevance, and suggests better job titles. Truth-first — never
+    fabricates facts.
+    Returns structured diff entries (same format as tailor/boost).
+    """
+    try:
+        client, model, _cfg = get_llm_client(llm_provider)
+    except LLMNotConfiguredError as e:
+        print(f"LLM not configured: {e}", file=sys.stderr)
+        return []
+
+    entries: list[dict] = []
+    jobs = select_experience_jobs(
+        base.get("experience", []),
+        tags=tags,
+        max_bullets=max_bullets,
+        max_jobs=max_jobs,
+        jd_keywords=jd_keywords,
+    )
+
+    role_line = f"Target role: {role}." if role else ""
+
+    for job, bullets in jobs:
+        bullets_block = "\n".join(
+            f"{i+1}. {_pick_bullet_text(b, jd_keywords, tags)}"
+            for i, b in enumerate(bullets)
+        )
+        company = job["company"]
+        title = job.get("title", "")
+
+        prompt = f"""Review this resume experience section and improve it for the job description below.
+
+Company: {company}
+Current title: {title}
+{role_line}
+
+Rules:
+- Reword each bullet for maximum impact: concise (≤22 words), strong action verb, quantified where possible
+- Reorder bullets so the most JD-relevant ones come first
+- Optionally suggest a better job title IF the current one doesn't reflect the target role well — keep it truthful to the actual role held
+- Do NOT invent employers, projects, numbers, or tools not present in the source bullets
+- Return ONLY a JSON object with "title" (string, same as current if unchanged) and "bullets" (array of strings in desired order), nothing else
+
+Source bullets:
+{bullets_block}
+
+Job description excerpt:
+{jd_text[:2000]}
+"""
+        try:
+            raw = llm_chat_completion(
+                client, model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=8192,
+            )
+            if not raw:
+                for b in bullets:
+                    source = _pick_bullet_text(b, jd_keywords, tags)
+                    entries.append(_make_diff_entry(job, b, source, pass_name="enhance"))
+                continue
+
+            text = raw.strip()
+            if text.startswith("```"):
+                text = re.sub(r"^```(?:json)?\s*", "", text)
+                text = re.sub(r"\s*```$", "", text)
+            data = json.loads(text)
+
+            enhanced_title = data.get("title", title)
+            enhanced_bullets: list[str] = data.get("bullets", [])
+
+            # Map enhanced bullets back to source bullets (best-effort alignment)
+            source_texts = [_pick_bullet_text(b, jd_keywords, tags) for b in bullets]
+            used_sources: set[int] = set()
+
+            for eb in enhanced_bullets:
+                # Find best unmatched source bullet by keyword overlap
+                eb_lower = eb.lower()
+                best_idx = -1
+                best_overlap = 0
+                for i, src in enumerate(source_texts):
+                    if i in used_sources:
+                        continue
+                    overlap = sum(1 for w in src.lower().split() if w in eb_lower)
+                    if overlap > best_overlap:
+                        best_overlap = overlap
+                        best_idx = i
+
+                if best_idx >= 0:
+                    used_sources.add(best_idx)
+                    bullet = bullets[best_idx]
+                    source = source_texts[best_idx]
+                    entry = _make_diff_entry(job, bullet, source, pass_name="enhance")
+
+                    if eb == source:
+                        entry["status"] = "unchanged"
+                    else:
+                        ok, reason = validate_tailor_rewrite(source, eb)
+                        if ok:
+                            entry["status"] = "accepted"
+                            entry["rewritten"] = eb
+                            entry["final"] = eb
+                            entry["approved"] = True
+                        else:
+                            entry["status"] = "rejected"
+                            entry["rewritten"] = eb
+                            entry["rejection_reason"] = reason
+                            print(
+                                f"Enhance rejected ({reason}): {entry['key']}",
+                                file=sys.stderr,
+                            )
+                    entries.append(entry)
+
+            # Any unmatched source bullets keep original
+            for i, b in enumerate(bullets):
+                if i not in used_sources:
+                    source = source_texts[i]
+                    entries.append(_make_diff_entry(job, b, source, pass_name="enhance"))
+
+            if enhanced_title != title:
+                print(f"Enhance title: {title} → {enhanced_title}", file=sys.stderr)
+
+        except (json.JSONDecodeError, Exception) as e:
+            print(f"Enhance skip ({type(e).__name__}) for {company}", file=sys.stderr)
+            for b in bullets:
+                source = _pick_bullet_text(b, jd_keywords, tags)
+                entries.append(_make_diff_entry(job, b, source, pass_name="enhance"))
+
+    return entries
 
 
 def select_rx_template_auto(jd_text: str) -> str:
@@ -1691,17 +1869,22 @@ def main():
                               help="Max bullets per job (default: 4, 0=unlimited)")
     build_parser.add_argument("--max-jobs", type=int, default=DEFAULT_MAX_JOBS,
                               help="Max experience entries (default: 0=unlimited)")
-    build_parser.add_argument("--pages", type=int, default=1,
-                              help="Target page count for trim (default: 1, 0=disable)")
+    build_parser.add_argument("--pages", type=int, default=2,
+                              help="Target page count for trim (default: 2, 0=disable)")
+    build_parser.add_argument("--max-projects", type=int, default=4,
+                              help="Max projects to include (default: 4, 0=unlimited)")
     build_parser.add_argument("--no-projects", action="store_true",
                               help="Omit projects section (also dropped by page budget when over limit)")
     build_parser.add_argument("--locale", default="en", choices=["en", "zh-CN"],
                               help="Resume language (en or zh-CN)")
-    build_parser.add_argument("--llm", action="store_true", help="Use LLM for JD analysis")
+    build_parser.add_argument("--llm", action=argparse.BooleanOptionalAction, default=True,
+                              help="Use LLM for JD analysis (default: on, use --no-llm to disable)")
     build_parser.add_argument("--llm-provider", choices=["deepseek", "kimi", "minimax"],
                               help="LLM provider override (default: LLM_PROVIDER in .env)")
     build_parser.add_argument("--tailor", action="store_true",
                               help="LLM-rewrite selected bullets for JD (requires --jd + API key)")
+    build_parser.add_argument("--enhance", action="store_true",
+                              help="LLM holistically improve each experience section: reword, reorder, retitle")
     build_parser.add_argument("--boost", action="store_true",
                               help="Second LLM pass: add verified missing JD skills to bullets + skills")
     build_parser.add_argument("--target-score", type=int, default=0,

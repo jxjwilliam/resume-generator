@@ -58,15 +58,11 @@ identity:
 # ─── SUMMARY (resume — not cover letter) ─────────────────────
 
 summary: >
-  Principal AI Engineer and Full-Stack Architect with 20+ years of experience
-  delivering production-grade LLM systems, RAG pipelines, and agentic AI platforms
-  for enterprise clients. Deep Python expertise across FastAPI, LangChain, LlamaIndex,
-  CrewAI, Hugging Face, and MLOps tooling — combined with strong TypeScript/React
-  for full-stack AI product delivery. Proven track record building multi-agent
-  orchestration systems, ML data pipelines (Kubeflow, distributed GPU), and
-  cloud-native microservices on AWS, GCP, and Azure. Bilingual (English / Mandarin).
-  Player-coach leader: comfortable owning architecture, staying in the codebase,
-  and mentoring cross-functional teams.
+  Principal AI Engineer and Full-Stack Architect delivering production LLM systems,
+  RAG pipelines, and agentic AI platforms for enterprise clients — from FastAPI
+  backends and LangChain orchestration to React/TypeScript frontends. Player-coach
+  leader with deep MLOps expertise (Kubeflow, distributed GPU) across AWS, GCP,
+  and Azure; bilingual English/Mandarin.
 
 # ─── EXPERIENCE ───────────────────────────────────────────────
 
@@ -512,153 +508,66 @@ skills:
 projects:
   - name: "AgentsAI / AgentsCrew"
     url: "https://github.com/williamjxj/AgentsAI"
-    description: "Enterprise AI automation platform using multi-agent orchestration with CrewAI, LangChain, and RAG pipelines — production-deployed for enterprise clients"
+    description: "Multi-agent orchestration platform (CrewAI, LangChain, RAG) for enterprise document ingestion, retrieval, and reasoning workflows."
     tags: [ai, agentic, crewai, langchain, rag, python, llm, enterprise]
     status: active
     relevance: high
-    bullets:
-      - text: "Built multi-agent orchestration system (CrewAI) with specialized agents for document ingestion, retrieval, reasoning, and response synthesis"
-        tags: [ai, agentic, crewai, llm, python]
-        status: active
-      - text: "Implemented end-to-end RAG pipeline: document chunking, embedding (OpenAI / HuggingFace), vector storage (Chroma/Pinecone), and LLM-based answer generation with citation"
-        tags: [ai, rag, llm, python, vector-db]
-        status: active
-      - text: "Designed agent routing and task decomposition logic enabling complex multi-step enterprise automation workflows"
-        tags: [ai, agentic, llm, architecture]
-        status: active
 
   - name: "AutoBidder"
     url: "https://github.com/williamjxj/AutoBidder"
-    description: "AI-powered bidding automation system integrating LLM decision engines with real-time workflow automation for procurement and contract bidding"
+    description: "LLM-powered bidding automation with React/TypeScript frontend and FastAPI backend for real-time bid evaluation."
     tags: [ai, llm, python, typescript, automation, fullstack]
     status: active
     relevance: high
-    bullets:
-      - text: "Integrated LLM decision engine (OpenAI API) with rule-based bidding logic for real-time bid evaluation and automated submission"
-        tags: [ai, llm, python, automation]
-        status: active
-      - text: "Built React/TypeScript frontend with FastAPI backend; implemented prompt engineering strategies for structured bid analysis and scoring"
-        tags: [fullstack, react, typescript, fastapi, python, prompt-engineering]
-        status: active
-      - text: "Designed event-driven workflow automation with configurable business rules and audit logging"
-        tags: [backend, automation, architecture]
-        status: active
 
   - name: "memweaver"
     url: "https://github.com/williamjxj/memweaver"
-    description: "Long-term memory management system for LLM agents — implements hierarchical behavioral and cognitive memory to enable persistent, context-aware multi-session agent interactions"
+    description: "Long-term memory system for LLM agents with graph-based indexing and incremental update for persistent multi-session context."
     tags: [ai, llm, agentic, python, memory, rag, vector-db]
     status: active
     relevance: high
-    bullets:
-      - text: "Designed dual-component memory architecture: behavioral memory (short-term, context-specific actions) and cognitive memory (long-term preference abstraction) for LLM agents"
-        tags: [ai, agentic, llm, python, architecture]
-        status: active
-      - text: "Implemented graph-based memory indexing with temporal and semantic edges enabling multi-hop reasoning and traceable agent decision history"
-        tags: [ai, llm, python, graph, memory]
-        status: active
-      - text: "Built incremental memory update mechanism achieving near-full-rebuild accuracy at a fraction of the computational cost"
-        tags: [ai, python, performance, optimization]
-        status: active
 
   - name: "idea2spec"
     url: "https://github.com/williamjxj/idea2spec"
-    description: "AI-powered spec-driven development tool that transforms natural language product ideas into structured technical specifications, user stories, and implementation plans"
+    description: "AI tool that converts product ideas into structured specs (PRD, API contracts, task breakdowns) via LLM pipelines."
     tags: [ai, llm, python, typescript, spec-driven, productivity, fullstack]
     status: active
     relevance: high
-    bullets:
-      - text: "Built LLM pipeline (Claude / OpenAI) that converts unstructured product ideas into structured specs: PRD, architecture diagrams, API contracts, and task breakdowns"
-        tags: [ai, llm, python, prompt-engineering, spec-driven]
-        status: active
-      - text: "Implemented structured output parsing with Pydantic models; integrated multi-turn refinement loop for iterative spec improvement"
-        tags: [ai, python, pydantic, llm, structured-output]
-        status: active
-      - text: "React/TypeScript UI with real-time streaming LLM responses and exportable markdown/YAML spec artifacts"
-        tags: [fullstack, react, typescript, streaming, llm]
-        status: active
 
   - name: "agenticAP / AgenticOmini"
     url: "https://github.com/williamjxj/agenticAP"
-    description: "Agentic accounts payable automation system — multi-agent pipeline for invoice ingestion, extraction, validation, and approval routing using LLMs and document AI"
+    description: "Multi-agent accounts payable automation: OCR ingestion → LLM extraction → validation → approval routing."
     tags: [ai, agentic, llm, python, fastapi, document-ai, automation, enterprise]
     status: active
     relevance: high
-    bullets:
-      - text: "Designed multi-agent pipeline: OCR ingestion agent → LLM extraction agent → validation agent → routing/approval agent — end-to-end AP automation"
-        tags: [ai, agentic, llm, python, document-ai, automation]
-        status: active
-      - text: "Integrated document AI (vision LLMs + OCR) for structured data extraction from unstructured invoices and receipts; achieved high field-extraction accuracy"
-        tags: [ai, llm, document-ai, python, ocr]
-        status: active
-      - text: "Built FastAPI backend with async task queues and React dashboard for real-time AP workflow monitoring and exception handling"
-        tags: [fullstack, fastapi, react, typescript, async, python]
-        status: active
 
   - name: "distill-wki-pipeline"
     url: "https://github.com/williamjxj/distill-wki-pipeline"
-    description: "Knowledge distillation pipeline that extracts, processes, and distills Wikipedia-scale structured knowledge into fine-tuning datasets and compressed knowledge bases for domain-specific LLMs"
+    description: "Wikipedia-scale knowledge distillation pipeline producing fine-tuning datasets for domain-specific LLMs."
     tags: [ai, ml, python, finetuning, distillation, data-pipeline, llm, huggingface]
     status: active
     relevance: high
-    bullets:
-      - text: "Built scalable data pipeline for extracting and preprocessing Wikipedia articles into structured training datasets for LLM fine-tuning"
-        tags: [ai, ml, python, data-pipeline, llm, finetuning]
-        status: active
-      - text: "Implemented knowledge distillation techniques to compress large teacher model outputs into efficient student model training signals"
-        tags: [ai, ml, python, distillation, huggingface]
-        status: active
-      - text: "Integrated Hugging Face Transformers and Datasets for model training, evaluation, and checkpoint management"
-        tags: [ai, ml, python, huggingface, finetuning]
-        status: active
 
   - name: "jinyong-finetune"
     url: "https://github.com/williamjxj/jinyong-finetune"
-    description: "Domain-specific LLM fine-tuning project: fine-tunes language models on Jin Yong (Louis Cha) wuxia novel corpus for Chinese literary style generation and character dialogue simulation"
+    description: "LoRA/QLoRA fine-tuning of open-source LLMs on Jin Yong wuxia novels for Chinese literary style generation."
     tags: [ai, ml, python, finetuning, llm, huggingface, nlp, chinese]
     status: active
     relevance: high
-    bullets:
-      - text: "Curated and preprocessed domain-specific Chinese text corpus (Jin Yong novels); implemented data cleaning, tokenization, and dataset formatting pipelines for LLM fine-tuning"
-        tags: [ai, ml, python, nlp, data-pipeline, finetuning]
-        status: active
-      - text: "Fine-tuned open-source LLMs (Hugging Face Transformers) using LoRA/QLoRA techniques for parameter-efficient training on consumer GPU hardware"
-        tags: [ai, ml, python, finetuning, lora, huggingface, gpu]
-        status: active
-      - text: "Evaluated model outputs using perplexity metrics and human evaluation; implemented inference pipeline for interactive style-consistent text generation"
-        tags: [ai, ml, python, evaluation, inference, nlp]
-        status: active
 
   - name: "Site-RAG-Chatbot"
     url: "https://github.com/williamjxj/site-rag-chatbot"
-    description: "RAG-powered chatbot for website content Q&A — enables natural language querying across site documentation and knowledge bases"
+    description: "RAG-powered website Q&A chatbot with hybrid semantic + keyword retrieval and source attribution."
     tags: [ai, rag, python, llm, langchain, fullstack]
     status: active
     relevance: high
-    bullets:
-      - text: "Built end-to-end RAG pipeline using LangChain/LlamaIndex: web content ingestion, chunking, embedding, vector storage, and LLM-based answer generation with source attribution"
-        tags: [ai, rag, llm, python, langchain]
-        status: active
-      - text: "Implemented hybrid retrieval (semantic + keyword) with re-ranking for improved answer relevance on domain-specific content"
-        tags: [ai, rag, python, retrieval, optimization]
-        status: active
 
   - name: "MLDP (Machine Learning Data Pipelines)"
     url: ""
-    description: "Enterprise ML data pipeline system at Xperi — production platform managing AI/ML experiment data, GPU/CPU workload scheduling, and model lifecycle at scale (hundreds of millions of events/year)"
+    description: "Production ML platform at Xperi managing GPU/CPU scheduling, experiment tracking, and model lifecycle at 100M+ events/year."
     tags: [ai, ml, fullstack, devops, mlops, kubeflow, python]
     status: active
     relevance: high
-    bullets:
-      - text: "Designed and implemented microservices-based ML pipeline platform (React.js, Python, Node.js, Java) managing end-to-end experiment lifecycle and model versioning"
-        tags: [fullstack, ai, ml, react, node, python, architecture]
-        status: active
-      - text: "Built Kubeflow-based GPU scheduling and distributed training workflows supporting hundreds of millions of inference events annually"
-        tags: [ai, ml, kubeflow, python, mlops, gpu, kubernetes]
-        status: active
-      - text: "Implemented observability stack (Prometheus, ElasticSearch) for real-time GPU/CPU performance tracking and alerting"
-        tags: [devops, ml, kubernetes, performance, observability]
-        status: active
 
 # ─── EDUCATION ────────────────────────────────────────────────
 
@@ -756,13 +665,17 @@ cover_letters:
       delivery. At Best IT Consulting Inc., I delivered end-to-end AI
       applications — React/TypeScript frontends, Python FastAPI backends,
       LLM-powered RAG pipelines, and agentic workflows — owning every layer
-      from architecture through deployment.
+      from architecture through deployment. My background spans the modern
+      AI stack: React/Next.js, FastAPI, and orchestration of GenAI pipelines
+      using models like Gemini and Azure OpenAI.
 
       I bring deep experience with AI-assisted development (Cursor, Claude
       Code, GitHub Copilot) and apply Spec-Driven Development and Context
       Engineering to ship AI products faster without sacrificing quality.
       My open-source projects — idea2spec, agenticAP, memweaver — reflect
-      my focus on practical, production-grade AI tools.
+      my focus on practical, production-grade AI tools. I am comfortable
+      embedding into cross-functional teams and delivering on fixed
+      contracts without quality compromise.
 
       {closing}
 

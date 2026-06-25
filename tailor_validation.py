@@ -68,7 +68,8 @@ def extract_skill_tokens(text: str) -> set[str]:
 
     words = text.split()
     for i, word in enumerate(words):
-        clean = re.sub(r"[^\w+#./-]", "", word)
+        # Strip punctuation from both ends but keep internal dots/slashes/hyphens
+        clean = re.sub(r"[^\w+#./-]", "", word).strip(".,;:!?\"'()[]{}")
         if not clean or len(clean) < 3:
             continue
         if not clean[0].isupper():
@@ -76,6 +77,12 @@ def extract_skill_tokens(text: str) -> set[str]:
         low = clean.lower()
         if i == 0 and (low in STRONG_VERBS or low.rstrip("ed") in STRONG_VERBS):
             continue
+        # For slash-separated tokens (e.g. "React/TypeScript"), check each part
+        if "/" in clean:
+            for part in clean.split("/"):
+                part_low = part.strip().lower()
+                if len(part_low) >= 3:
+                    found.add(part_low)
         found.add(low)
     return found
 

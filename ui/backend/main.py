@@ -256,18 +256,24 @@ def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
         cmd += ["--tags", ",".join(args.tags)]
     if jd_file:
         cmd += ["--jd", jd_file]
-    if args.use_llm:
-        cmd += ["--llm"]
+    if not args.use_llm:
+        cmd += ["--no-llm"]
+    if args.llm_provider:
+        cmd += ["--llm-provider", args.llm_provider]
     if args.tailor:
         cmd += ["--tailor"]
+    if args.enhance:
+        cmd += ["--enhance"]
     if args.boost:
         cmd += ["--boost"]
     if args.max_bullets != 4:
         cmd += ["--max-bullets", str(args.max_bullets)]
     if args.max_jobs:
         cmd += ["--max-jobs", str(args.max_jobs)]
-    if args.pages != 1:
+    if args.pages != 2:
         cmd += ["--pages", str(args.pages)]
+    if args.max_projects != 4:
+        cmd += ["--max-projects", str(args.max_projects)]
     if args.no_projects:
         cmd += ["--no-projects"]
     if args.all_formats:
