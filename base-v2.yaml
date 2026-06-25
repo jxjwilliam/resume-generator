@@ -1,0 +1,766 @@
+# base.yaml — Single source of truth for William Jiang's resume system
+# This is the ONLY manually edited file. Everything else is generated.
+# Schema defined in docs/resume-system-implementation.md Section 2
+#
+# Optional per-bullet field:
+#   variants: ["alternate phrasing 1", "alternate phrasing 2"]
+# Used by --tailor to pick pre-written alternates instead of free LLM rewrites.
+#
+# Version 2.0 — AI/ML/Python/TS forward upgrade
+# Updated: 2026-06-25
+
+meta:
+  version: "2.0"
+  last_updated: "2026-06-25"
+  name: "William Jiang"
+
+# ─── IDENTITY ─────────────────────────────────────────────────
+
+identity:
+  name: "William Jiang"
+  headline: "Principal AI Engineer | LLM Orchestration • RAG • Agentic AI | Python • TypeScript"
+  email: "jxjwilliam@gmail.com"
+  phone: "(236) 992-3846"
+  location: "Vancouver, Canada"
+  photo: "assets/william-jiang.jpg"
+
+  urls:
+    - label: "GitHub"
+      url: "https://github.com/williamjxj"
+      status: active
+      note: "Primary — 400+ commits, AI/ML projects"
+    - label: "GitHub (AI Projects)"
+      url: "https://github.com/aixtianc"
+      status: active
+      note: "AI-focused repos: AgentsAI, AutoBidder, RAG pipelines"
+    - label: "LinkedIn"
+      url: "https://www.linkedin.com/in/william-jiang-226a7616/"
+      status: active
+      note: ""
+    - label: "Portfolio"
+      url: "https://williamjxj.github.io/"
+      status: active
+      note: ""
+
+  cover_letter_base:
+    opening: >
+      I am writing to express my interest in the {role} role at {company}.
+      With 20+ years of experience as a Principal AI Engineer and Full-Stack
+      Architect, I bring a proven record of shipping production LLM systems,
+      RAG pipelines, and agentic AI platforms — alongside deep Python and
+      TypeScript expertise and hands-on cloud-native delivery at scale.
+    closing: >
+      Thank you for considering my application. I look forward to discussing
+      how my background in LLM orchestration, agentic AI systems, and
+      enterprise-scale delivery aligns with your team's goals.
+
+# ─── SUMMARY (resume — not cover letter) ─────────────────────
+
+summary: >
+  Principal AI Engineer and Full-Stack Architect with 20+ years of experience
+  delivering production-grade LLM systems, RAG pipelines, and agentic AI platforms
+  for enterprise clients. Deep Python expertise across FastAPI, LangChain, LlamaIndex,
+  CrewAI, Hugging Face, and MLOps tooling — combined with strong TypeScript/React
+  for full-stack AI product delivery. Proven track record building multi-agent
+  orchestration systems, ML data pipelines (Kubeflow, distributed GPU), and
+  cloud-native microservices on AWS, GCP, and Azure. Bilingual (English / Mandarin).
+  Player-coach leader: comfortable owning architecture, staying in the codebase,
+  and mentoring cross-functional teams.
+
+# ─── EXPERIENCE ───────────────────────────────────────────────
+
+experience:
+  - company: "ZTE (Zhongxing Telecom)"
+    title: "Software Engineer"
+    location: "Shenzhen, China"
+    start: "1995-09"
+    end: "2000-09"
+    status: deprecated
+    tags: [legacy, telecom, embedded, c]
+    note: "Only include for legacy telecom or very early-career roles"
+    bullets:
+      - text: "Developed CDMA system security modules and network communication between Data Centers and CDMA Base Stations using TCP/IP, C/C++, and Oracle"
+        tags: [c, embedded, telecom, security]
+        status: deprecated
+        relevance: low
+
+  - company: "FedEx"
+    title: "Computer Programmer Analyst"
+    location: "Singapore"
+    start: "2000-10"
+    end: "2004-12"
+    status: deprecated
+    tags: [legacy, enterprise, supply-chain, java]
+    note: "Only include for logistics/supply-chain roles or very early-career roles"
+    bullets:
+      - text: "Designed and developed FedEx GIVS (Global Inventory Visibility System) and EC-IV (E-Commerce Inventory Visibility) handling Asia-Pacific tracking data"
+        tags: [enterprise, java, supply-chain]
+        status: deprecated
+        relevance: low
+      - text: "Built wireless mobile application for FedEx tracking — awarded at APEC 2002 in Shanghai"
+        tags: [enterprise, mobile, innovation]
+        status: deprecated
+        relevance: low
+
+  - company: "Best Buy Canada"
+    title: "Senior JavaScript Engineer"
+    location: "Vancouver, Canada"
+    start: "2007-03"
+    end: "2014-07"
+    status: active
+    tags: [frontend, javascript, ecommerce, ui, react, fullstack]
+    bullets:
+      - text: "Led frontend delivery for bestbuy.ca and futureshop.ca: multi-video support, 360-degree product rotation, and responsive UI across Desktop, Tablet, and Mobile"
+        tags: [frontend, javascript, ui, mobile]
+        status: active
+        relevance: medium
+      - text: "Delivered Best Buy Warranties and Shopping Cart Clearance features; improved checkout conversion through performance-optimized JavaScript"
+        tags: [frontend, javascript, ecommerce, performance]
+        status: active
+        relevance: medium
+
+  - company: "WebMD"
+    title: "Senior Frontend Engineer"
+    location: "New York City, USA"
+    start: "2014-11"
+    end: "2017-08"
+    status: active
+    tags: [frontend, javascript, advertising, node, angular, data]
+    bullets:
+      - text: "Led Consumer-UI team delivering high-revenue ad services; integrated Google DFP, Media.net header-bidding, and 3rd-party ad networks (PubMatic, Nativo, Adobe Cloud) using JavaScript, Node.js, and jQuery"
+        tags: [frontend, javascript, node, advertising]
+        status: active
+        relevance: medium
+      - text: "Drove measurable advertising revenue uplift by integrating Google DFP with Adobe Analytics and Media.net header-bidding across WebMD's high-traffic properties"
+        tags: [frontend, javascript, advertising, performance]
+        status: active
+        relevance: high
+      - text: "Built Big Data pipeline with real-time processing and document store using AngularJS, Node.js, MongoDB, and Amazon S3"
+        tags: [fullstack, angular, node, mongodb, aws, data]
+        status: active
+        relevance: medium
+
+  - company: "China Soft International (HSBC)"
+    title: "Software Architect / Full-Stack Engineer"
+    location: "Xi'an, China"
+    start: "2017-09"
+    end: "2018-12"
+    status: active
+    tags: [fullstack, react, java, banking, architecture, microservices]
+    bullets:
+      - text: "Architected and built Retail Banking Onboarding platform for SME customers: React/Redux frontend, Java Spring Boot microservices, Node.js APIs, MongoDB — serving multi-country enterprise clients"
+        tags: [fullstack, react, java, spring-boot, node, banking, architecture]
+        status: active
+        relevance: high
+      - text: "Led architecture design and cross-functional stakeholder coordination across multiple countries for HSBC's SME digital banking rollout"
+        tags: [leadership, architecture, banking, stakeholder]
+        status: active
+        relevance: high
+      - text: "Developed React.js mobile applications for SME banking customers; established frontend best practices across the team"
+        tags: [frontend, react, mobile, banking]
+        status: active
+        relevance: medium
+
+  - company: "EPAM Systems (Credit Suisse)"
+    title: "Software Architect / Full-Stack Engineer"
+    location: "Shenzhen, China"
+    start: "2018-12"
+    end: "2020-02"
+    status: active
+    tags: [fullstack, react, node, python, finance, architecture, websockets]
+    bullets:
+      - text: "Architected real-time stock trading integration platform for Credit Suisse: React/Node.js frontend, WebSocket event streams, Python microservices, MongoDB — handling mission-critical uptime requirements"
+        tags: [fullstack, react, node, python, finance, websockets, architecture]
+        status: active
+        relevance: high
+        variants:
+          - "Built high-availability real-time data integration system for Credit Suisse stock trading operations using React, Node.js, WebSockets, and Python microservices"
+      - text: "Mentored development team on event-driven microservice design patterns; established code review practices and scalable architecture standards"
+        tags: [leadership, mentorship, architecture, microservices]
+        status: active
+        relevance: high
+
+  - company: "Xperi Inc."
+    title: "Senior Full-Stack & AI/ML Engineer"
+    location: "San Jose, USA (Remote)"
+    start: "2021-03"
+    end: "2024-09"
+    status: active
+    tags: [fullstack, ai, ml, python, react, node, devops, mlops, kubeflow]
+    bullets:
+      - text: "Led design and implementation of MLDP (Machine Learning Data Pipeline) — production platform managing ML experiments, GPU/CPU workload scheduling, and model lifecycle for hundreds of millions of inference events annually; stack: React.js, Python, Node.js, Java, Kubernetes on AWS & GCP"
+        tags: [fullstack, ai, ml, react, node, python, architecture, mlops]
+        status: active
+        relevance: high
+        variants:
+          - "Designed and shipped MLDP production ML pipeline managing model training, GPU scheduling, and experiment lifecycle at scale (hundreds of millions of events/year) using Python, Kubeflow, and Kubernetes"
+      - text: "Built and optimized ML training workflows using Kubeflow and distributed GPU clusters; managed experiment tracking and model versioning pipelines"
+        tags: [ai, ml, kubeflow, python, mlops, gpu]
+        status: active
+        relevance: high
+      - text: "Designed REST APIs and backend services for real-time GPU/CPU performance tracking; drove observability improvements with Prometheus and ElasticSearch that measurably improved service reliability"
+        tags: [backend, api, devops, kubernetes, performance, observability]
+        status: active
+        relevance: high
+      - text: "Implemented MLOps workflows: Kubernetes, Docker, Jenkins CI/CD, AWS, Kubeflow, Airflow, and Weights & Biases for end-to-end ML training and deployment automation"
+        tags: [ai, ml, devops, mlops, kubernetes, airflow]
+        status: active
+        relevance: high
+      - text: "Contributed to technical roadmap and architecture decisions in cross-functional AI teams; mentored junior engineers and reviewed ML platform pull requests across time zones"
+        tags: [leadership, mentorship, architecture, collaboration]
+        status: active
+        relevance: medium
+
+  - company: "Best IT Consulting Inc."
+    title: "Co-Founder · Principal AI Engineer"
+    location: "Vancouver, Canada"
+    start: "2024-10"
+    end: null
+    status: active
+    tags: [fullstack, ai, llm, rag, agentic, consulting, founder, python, node, typescript]
+    bullets:
+      - text: "Architected and shipped production-grade GenAI document intelligence and RAG pipeline for Shaanxi Coal & Chemical Industry Group: multi-LLM orchestration (OpenAI, Claude, OSS) over structured/unstructured enterprise data using Python FastAPI, LangChain, LlamaIndex, and React — handling real-time inference at scale"
+        tags: [ai, llm, rag, python, fastapi, langchain, llamaindex, react, enterprise]
+        status: active
+        relevance: high
+        variants:
+          - "Built enterprise RAG system for Shaanxi Coal integrating LLMs with corporate document repositories via Python FastAPI, LangChain, and vector DBs — reducing document retrieval time significantly"
+      - text: "Implemented agentic multi-agent workflows using CrewAI for complex enterprise automation; designed prompt engineering and context engineering strategies that reduced hallucination rates and improved retrieval precision"
+        tags: [ai, agentic, crewai, prompt-engineering, llm, python]
+        status: active
+        relevance: high
+      - text: "Evaluated and selected LLM providers (OpenAI, Anthropic Claude, OSS) based on latency, cost, accuracy, and enterprise security constraints; maintained production monitoring and observability pipelines for AI services"
+        tags: [ai, llm, mlops, observability, enterprise]
+        status: active
+        relevance: high
+      - text: "Deployed cloud-native AI microservices on GCP and Azure using Kubernetes and Docker; owned full delivery lifecycle from architecture through DevOps to client handoff"
+        tags: [devops, docker, kubernetes, gcp, azure, architecture]
+        status: active
+        relevance: high
+      - text: "Built production React + TypeScript frontends integrated with AI-enhanced FastAPI backends; implemented AutoBidder LLM decision engine and Site-RAG-Chatbot for enterprise clients"
+        tags: [fullstack, react, typescript, python, fastapi, ai]
+        status: active
+        relevance: high
+      - text: "Mentored engineers on scalable AI-driven Python and Node.js patterns; introduced Spec-Driven Development and Context Engineering practices to accelerate AI product delivery"
+        tags: [leadership, mentorship, ai, python, methodology]
+        status: active
+        relevance: medium
+
+# ─── SKILLS ───────────────────────────────────────────────────
+
+skills:
+  languages:
+    - name: Python
+      level: expert
+      status: active
+      tags: [backend, ai, ml, scripting, data]
+      note: "Primary language for all AI/ML work: FastAPI, LangChain, training pipelines, data processing"
+    - name: TypeScript
+      level: expert
+      status: active
+      tags: [backend, frontend, node, fullstack]
+    - name: JavaScript
+      level: expert
+      status: active
+      tags: [frontend, node, fullstack]
+    - name: Java
+      level: intermediate
+      status: active
+      tags: [backend, spring-boot, enterprise]
+    - name: SQL
+      level: advanced
+      status: active
+      tags: [data, backend]
+    - name: Bash / Shell
+      level: advanced
+      status: active
+      tags: [devops, scripting, automation]
+    - name: C / C++
+      level: intermediate
+      status: deprecated
+      tags: [legacy, embedded]
+      note: "Only include for legacy or embedded roles"
+
+  frameworks:
+    - name: React.js / Next.js
+      level: expert
+      status: active
+      tags: [frontend, fullstack, ui]
+    - name: Node.js / Express.js
+      level: expert
+      status: active
+      tags: [backend, fullstack, api]
+    - name: Python / FastAPI
+      level: expert
+      status: active
+      tags: [backend, ai, api, python]
+    - name: LangChain / LlamaIndex
+      level: expert
+      status: active
+      tags: [ai, llm, rag, python]
+    - name: CrewAI / Multi-Agent Systems
+      level: advanced
+      status: active
+      tags: [ai, agentic, llm, python]
+    - name: Hugging Face Transformers
+      level: advanced
+      status: active
+      tags: [ai, ml, llm, python, finetuning]
+    - name: TailwindCSS / Shadcn/ui
+      level: advanced
+      status: active
+      tags: [frontend, ui]
+    - name: Spring Boot
+      level: intermediate
+      status: active
+      tags: [backend, java, enterprise]
+    - name: Flask
+      level: intermediate
+      status: active
+      tags: [backend, python, api]
+    - name: Gatsby
+      level: intermediate
+      status: active
+      tags: [frontend, react]
+    - name: AngularJS
+      level: intermediate
+      status: deprecated
+      tags: [frontend, legacy]
+      note: "Only include for Angular migration roles"
+
+  ai_ml:
+    - name: LLM Orchestration (OpenAI, Claude, OSS)
+      level: expert
+      status: active
+      tags: [ai, llm, production]
+    - name: RAG Pipelines
+      level: expert
+      status: active
+      tags: [ai, rag, llm, python]
+    - name: Agentic AI / Multi-Agent (CrewAI)
+      level: expert
+      status: active
+      tags: [ai, agentic, llm]
+    - name: Prompt Engineering / Context Engineering
+      level: expert
+      status: active
+      tags: [ai, llm, methodology]
+    - name: Vector Databases (Pinecone, Weaviate, Chroma)
+      level: advanced
+      status: active
+      tags: [ai, rag, data]
+    - name: Embedding Models
+      level: advanced
+      status: active
+      tags: [ai, ml, llm]
+    - name: MLOps / Model Lifecycle
+      level: advanced
+      status: active
+      tags: [ai, ml, devops, mlops]
+    - name: Kubeflow
+      level: advanced
+      status: active
+      tags: [ai, ml, mlops, kubernetes]
+    - name: Weights & Biases
+      level: advanced
+      status: active
+      tags: [ai, ml, mlops, experiment-tracking]
+    - name: Hugging Face / Fine-tuning
+      level: advanced
+      status: active
+      tags: [ai, ml, finetuning, python]
+    - name: Stable Diffusion / ComfyUI
+      level: intermediate
+      status: active
+      tags: [ai, generative, image]
+    - name: Airflow
+      level: intermediate
+      status: active
+      tags: [data, ml, pipeline, orchestration]
+    - name: Knowledge Distillation
+      level: intermediate
+      status: active
+      tags: [ai, ml, finetuning, python]
+
+  tools:
+    - name: Git / GitHub
+      level: expert
+      status: active
+      tags: [general, devops, ci/cd]
+    - name: Docker / Kubernetes
+      level: advanced
+      status: active
+      tags: [devops, cloud]
+    - name: AWS (EKS, Lambda, S3, API Gateway, EC2)
+      level: advanced
+      status: active
+      tags: [devops, cloud, aws]
+    - name: GCP (Vertex AI, GKE, Cloud Run)
+      level: advanced
+      status: active
+      tags: [devops, cloud, gcp, ai]
+    - name: Azure (AKS, OpenAI Service)
+      level: intermediate
+      status: active
+      tags: [devops, cloud, azure, ai]
+    - name: Jenkins / CI/CD
+      level: advanced
+      status: active
+      tags: [devops, ci/cd]
+    - name: Kafka
+      level: intermediate
+      status: active
+      tags: [data, backend, streaming]
+    - name: ElasticSearch
+      level: intermediate
+      status: active
+      tags: [data, backend, search]
+    - name: Prometheus / Observability
+      level: intermediate
+      status: active
+      tags: [devops, monitoring]
+    - name: PostgreSQL
+      level: advanced
+      status: active
+      tags: [backend, data]
+    - name: MongoDB
+      level: advanced
+      status: active
+      tags: [backend, data]
+    - name: MySQL / Oracle
+      level: intermediate
+      status: active
+      tags: [backend, data]
+    - name: Agile / Scrum / JIRA
+      level: expert
+      status: active
+      tags: [general, methodology]
+    - name: TDD
+      level: advanced
+      status: active
+      tags: [general, methodology]
+
+  ai_dev_tools:
+    - name: Cursor
+      level: expert
+      status: active
+      tags: [ai, development]
+    - name: Claude Code
+      level: expert
+      status: active
+      tags: [ai, development]
+    - name: GitHub Copilot
+      level: expert
+      status: active
+      tags: [ai, development]
+    - name: OpenAI API / Assistants
+      level: expert
+      status: active
+      tags: [ai, llm]
+    - name: Anthropic Claude API
+      level: expert
+      status: active
+      tags: [ai, llm]
+    - name: Supabase
+      level: advanced
+      status: active
+      tags: [backend, data, ai]
+    - name: Vercel
+      level: advanced
+      status: active
+      tags: [frontend, devops, deployment]
+    - name: Spec-Driven Development
+      level: advanced
+      status: active
+      tags: [ai, development, methodology]
+    - name: Context Engineering
+      level: advanced
+      status: active
+      tags: [ai, development, methodology]
+    - name: Vibe Coding
+      level: advanced
+      status: active
+      tags: [ai, development, methodology]
+
+# ─── PROJECTS ─────────────────────────────────────────────────
+# All projects: https://github.com/williamjxj
+# Tag guide: use 'relevance: high' for roles matching the project's primary domain
+
+projects:
+  - name: "AgentsAI / AgentsCrew"
+    url: "https://github.com/williamjxj/AgentsAI"
+    description: "Enterprise AI automation platform using multi-agent orchestration with CrewAI, LangChain, and RAG pipelines — production-deployed for enterprise clients"
+    tags: [ai, agentic, crewai, langchain, rag, python, llm, enterprise]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Built multi-agent orchestration system (CrewAI) with specialized agents for document ingestion, retrieval, reasoning, and response synthesis"
+        tags: [ai, agentic, crewai, llm, python]
+        status: active
+      - text: "Implemented end-to-end RAG pipeline: document chunking, embedding (OpenAI / HuggingFace), vector storage (Chroma/Pinecone), and LLM-based answer generation with citation"
+        tags: [ai, rag, llm, python, vector-db]
+        status: active
+      - text: "Designed agent routing and task decomposition logic enabling complex multi-step enterprise automation workflows"
+        tags: [ai, agentic, llm, architecture]
+        status: active
+
+  - name: "AutoBidder"
+    url: "https://github.com/williamjxj/AutoBidder"
+    description: "AI-powered bidding automation system integrating LLM decision engines with real-time workflow automation for procurement and contract bidding"
+    tags: [ai, llm, python, typescript, automation, fullstack]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Integrated LLM decision engine (OpenAI API) with rule-based bidding logic for real-time bid evaluation and automated submission"
+        tags: [ai, llm, python, automation]
+        status: active
+      - text: "Built React/TypeScript frontend with FastAPI backend; implemented prompt engineering strategies for structured bid analysis and scoring"
+        tags: [fullstack, react, typescript, fastapi, python, prompt-engineering]
+        status: active
+      - text: "Designed event-driven workflow automation with configurable business rules and audit logging"
+        tags: [backend, automation, architecture]
+        status: active
+
+  - name: "memweaver"
+    url: "https://github.com/williamjxj/memweaver"
+    description: "Long-term memory management system for LLM agents — implements hierarchical behavioral and cognitive memory to enable persistent, context-aware multi-session agent interactions"
+    tags: [ai, llm, agentic, python, memory, rag, vector-db]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Designed dual-component memory architecture: behavioral memory (short-term, context-specific actions) and cognitive memory (long-term preference abstraction) for LLM agents"
+        tags: [ai, agentic, llm, python, architecture]
+        status: active
+      - text: "Implemented graph-based memory indexing with temporal and semantic edges enabling multi-hop reasoning and traceable agent decision history"
+        tags: [ai, llm, python, graph, memory]
+        status: active
+      - text: "Built incremental memory update mechanism achieving near-full-rebuild accuracy at a fraction of the computational cost"
+        tags: [ai, python, performance, optimization]
+        status: active
+
+  - name: "idea2spec"
+    url: "https://github.com/williamjxj/idea2spec"
+    description: "AI-powered spec-driven development tool that transforms natural language product ideas into structured technical specifications, user stories, and implementation plans"
+    tags: [ai, llm, python, typescript, spec-driven, productivity, fullstack]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Built LLM pipeline (Claude / OpenAI) that converts unstructured product ideas into structured specs: PRD, architecture diagrams, API contracts, and task breakdowns"
+        tags: [ai, llm, python, prompt-engineering, spec-driven]
+        status: active
+      - text: "Implemented structured output parsing with Pydantic models; integrated multi-turn refinement loop for iterative spec improvement"
+        tags: [ai, python, pydantic, llm, structured-output]
+        status: active
+      - text: "React/TypeScript UI with real-time streaming LLM responses and exportable markdown/YAML spec artifacts"
+        tags: [fullstack, react, typescript, streaming, llm]
+        status: active
+
+  - name: "agenticAP / AgenticOmini"
+    url: "https://github.com/williamjxj/agenticAP"
+    description: "Agentic accounts payable automation system — multi-agent pipeline for invoice ingestion, extraction, validation, and approval routing using LLMs and document AI"
+    tags: [ai, agentic, llm, python, fastapi, document-ai, automation, enterprise]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Designed multi-agent pipeline: OCR ingestion agent → LLM extraction agent → validation agent → routing/approval agent — end-to-end AP automation"
+        tags: [ai, agentic, llm, python, document-ai, automation]
+        status: active
+      - text: "Integrated document AI (vision LLMs + OCR) for structured data extraction from unstructured invoices and receipts; achieved high field-extraction accuracy"
+        tags: [ai, llm, document-ai, python, ocr]
+        status: active
+      - text: "Built FastAPI backend with async task queues and React dashboard for real-time AP workflow monitoring and exception handling"
+        tags: [fullstack, fastapi, react, typescript, async, python]
+        status: active
+
+  - name: "distill-wki-pipeline"
+    url: "https://github.com/williamjxj/distill-wki-pipeline"
+    description: "Knowledge distillation pipeline that extracts, processes, and distills Wikipedia-scale structured knowledge into fine-tuning datasets and compressed knowledge bases for domain-specific LLMs"
+    tags: [ai, ml, python, finetuning, distillation, data-pipeline, llm, huggingface]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Built scalable data pipeline for extracting and preprocessing Wikipedia articles into structured training datasets for LLM fine-tuning"
+        tags: [ai, ml, python, data-pipeline, llm, finetuning]
+        status: active
+      - text: "Implemented knowledge distillation techniques to compress large teacher model outputs into efficient student model training signals"
+        tags: [ai, ml, python, distillation, huggingface]
+        status: active
+      - text: "Integrated Hugging Face Transformers and Datasets for model training, evaluation, and checkpoint management"
+        tags: [ai, ml, python, huggingface, finetuning]
+        status: active
+
+  - name: "jinyong-finetune"
+    url: "https://github.com/williamjxj/jinyong-finetune"
+    description: "Domain-specific LLM fine-tuning project: fine-tunes language models on Jin Yong (Louis Cha) wuxia novel corpus for Chinese literary style generation and character dialogue simulation"
+    tags: [ai, ml, python, finetuning, llm, huggingface, nlp, chinese]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Curated and preprocessed domain-specific Chinese text corpus (Jin Yong novels); implemented data cleaning, tokenization, and dataset formatting pipelines for LLM fine-tuning"
+        tags: [ai, ml, python, nlp, data-pipeline, finetuning]
+        status: active
+      - text: "Fine-tuned open-source LLMs (Hugging Face Transformers) using LoRA/QLoRA techniques for parameter-efficient training on consumer GPU hardware"
+        tags: [ai, ml, python, finetuning, lora, huggingface, gpu]
+        status: active
+      - text: "Evaluated model outputs using perplexity metrics and human evaluation; implemented inference pipeline for interactive style-consistent text generation"
+        tags: [ai, ml, python, evaluation, inference, nlp]
+        status: active
+
+  - name: "Site-RAG-Chatbot"
+    url: "https://github.com/williamjxj/site-rag-chatbot"
+    description: "RAG-powered chatbot for website content Q&A — enables natural language querying across site documentation and knowledge bases"
+    tags: [ai, rag, python, llm, langchain, fullstack]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Built end-to-end RAG pipeline using LangChain/LlamaIndex: web content ingestion, chunking, embedding, vector storage, and LLM-based answer generation with source attribution"
+        tags: [ai, rag, llm, python, langchain]
+        status: active
+      - text: "Implemented hybrid retrieval (semantic + keyword) with re-ranking for improved answer relevance on domain-specific content"
+        tags: [ai, rag, python, retrieval, optimization]
+        status: active
+
+  - name: "MLDP (Machine Learning Data Pipelines)"
+    url: ""
+    description: "Enterprise ML data pipeline system at Xperi — production platform managing AI/ML experiment data, GPU/CPU workload scheduling, and model lifecycle at scale (hundreds of millions of events/year)"
+    tags: [ai, ml, fullstack, devops, mlops, kubeflow, python]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Designed and implemented microservices-based ML pipeline platform (React.js, Python, Node.js, Java) managing end-to-end experiment lifecycle and model versioning"
+        tags: [fullstack, ai, ml, react, node, python, architecture]
+        status: active
+      - text: "Built Kubeflow-based GPU scheduling and distributed training workflows supporting hundreds of millions of inference events annually"
+        tags: [ai, ml, kubeflow, python, mlops, gpu, kubernetes]
+        status: active
+      - text: "Implemented observability stack (Prometheus, ElasticSearch) for real-time GPU/CPU performance tracking and alerting"
+        tags: [devops, ml, kubernetes, performance, observability]
+        status: active
+
+# ─── EDUCATION ────────────────────────────────────────────────
+
+education:
+  - institution: "Xi'an Jiaotong University"
+    degree: "Bachelor of Engineering"
+    start: "1991-09"
+    graduation: "1995-07"
+    location: "China"
+    status: active
+    tags: [general]
+  - institution: "Universal Learning Institute"
+    degree: "Diploma of Business Management"
+    start: "2005-03"
+    graduation: "2006-03"
+    location: "Vancouver, Canada"
+    status: active
+    tags: [general]
+
+# ─── COVER LETTER TEMPLATES ───────────────────────────────────
+
+cover_letters:
+  - id: "ai-principal-focused"
+    label: "Principal AI Engineer / AI Lead roles"
+    tags: [ai, llm, rag, agentic, python, mlops, architecture]
+    body: >
+      {opening}
+
+      At Best IT Consulting Inc. and Xperi, I have owned the full lifecycle
+      of production AI systems — from LLM provider selection and RAG pipeline
+      architecture through Kubernetes deployment and post-launch monitoring.
+      For Shaanxi Coal & Chemical Industry Group, I designed and shipped a
+      multi-LLM orchestration system integrating OpenAI, Claude, and OSS
+      models with enterprise document repositories using Python FastAPI,
+      LangChain, and vector databases — handling real-time inference at
+      enterprise scale.
+
+      I bring deep expertise in agentic multi-agent systems (CrewAI),
+      prompt and context engineering, and MLOps — alongside the full-stack
+      TypeScript/React skills to deliver complete AI products end-to-end.
+      I actively build and maintain open-source AI projects: memweaver
+      (long-term agent memory), idea2spec (spec-driven AI development),
+      agenticAP (AP automation), and jinyong-finetune (LoRA fine-tuning).
+
+      {closing}
+
+  - id: "ml-engineering-focused"
+    label: "ML Engineering / MLOps / AI Platform roles"
+    tags: [ml, mlops, python, kubeflow, gpu, pipeline, devops]
+    body: >
+      {opening}
+
+      At Xperi, I led the design and delivery of MLDP — a production ML
+      data pipeline platform managing model experiments, distributed GPU
+      scheduling, and training workflows at a scale of hundreds of millions
+      of inference events annually. The platform ran on Kubernetes across
+      AWS and GCP, with Kubeflow for orchestration, Weights & Biases for
+      experiment tracking, and Prometheus for GPU/CPU observability.
+
+      My hands-on Python expertise spans FastAPI, LangChain, Hugging Face
+      Transformers, and LoRA fine-tuning — complemented by strong
+      infrastructure skills in Docker, Kubernetes, CI/CD, and cloud-native
+      architecture. I am equally comfortable defining ML system architecture
+      and staying deep in the codebase.
+
+      {closing}
+
+  - id: "backend-focused"
+    label: "Backend / API / Platform roles"
+    tags: [backend, python, node, api, devops, microservices]
+    body: >
+      {opening}
+
+      In my most recent roles at Xperi and Best IT Consulting Inc., I have
+      combined hands-on Python and TypeScript engineering with architectural
+      leadership to deliver enterprise-scale systems. I have designed and
+      shipped event-driven microservices and API-first platforms using
+      Python FastAPI, Node.js, and Java Spring Boot — with a strong focus
+      on scalability, observability, and production reliability.
+
+      My infrastructure experience spans Kubernetes on AWS and GCP, Docker,
+      Jenkins CI/CD, and MLOps pipelines. I have built real-time data
+      integration systems, optimized high-throughput APIs, and owned
+      cloud-native deployments from architecture through production.
+
+      {closing}
+
+  - id: "ai-fullstack-focused"
+    label: "AI / Full-Stack / Product roles"
+    tags: [fullstack, ai, react, typescript, llm, python]
+    body: >
+      {opening}
+
+      I specialize in bridging AI system engineering with full-stack product
+      delivery. At Best IT Consulting Inc., I delivered end-to-end AI
+      applications — React/TypeScript frontends, Python FastAPI backends,
+      LLM-powered RAG pipelines, and agentic workflows — owning every layer
+      from architecture through deployment.
+
+      I bring deep experience with AI-assisted development (Cursor, Claude
+      Code, GitHub Copilot) and apply Spec-Driven Development and Context
+      Engineering to ship AI products faster without sacrificing quality.
+      My open-source projects — idea2spec, agenticAP, memweaver — reflect
+      my focus on practical, production-grade AI tools.
+
+      {closing}
+
+  - id: "leadership-focused"
+    label: "Lead / Staff / Principal / Architecture roles"
+    tags: [leadership, architecture, mentorship, fullstack, ai]
+    body: >
+      {opening}
+
+      As a player-coach engineering leader, I balance hands-on coding with
+      architectural ownership and team mentorship. At Xperi, I drove
+      architecture decisions for the MLDP ML platform while staying deep
+      in the Python and React codebase. At EPAM and China Soft, I led
+      cross-functional teams across multiple countries, established
+      microservice best practices, and coordinated enterprise stakeholder
+      delivery for Credit Suisse and HSBC.
+
+      I thrive in principal/lead roles where I can define technical
+      direction, make hard architectural trade-offs, and elevate the team
+      — while remaining the person who reviews the trickiest pull requests.
+      Bilingual in English and Mandarin, with extensive experience in
+      distributed teams across North America and Asia.
+
+      {closing}

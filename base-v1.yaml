@@ -1,0 +1,538 @@
+# base.yaml — Single source of truth for William Jiang's resume system
+# This is the ONLY manually edited file. Everything else is generated.
+# Schema defined in docs/resume-system-implementation.md Section 2
+#
+# Optional per-bullet field:
+#   variants: ["alternate phrasing 1", "alternate phrasing 2"]
+# Used by --tailor to pick pre-written alternates instead of free LLM rewrites.
+
+meta:
+  version: "1.0"
+  last_updated: "2026-06-10"
+  name: "William Jiang"
+
+# ─── IDENTITY ─────────────────────────────────────────────────
+
+identity:
+  name: "William Jiang"
+  headline: "Senior Full-Stack & AI Engineer | Node.js • Python | Agentic AI & AI Solutions"
+  email: "jxjwilliam@gmail.com"
+  phone: "(236) 992-3846"
+  location: "Vancouver, Canada"
+  photo: "assets/william-jiang.jpg"
+
+  urls:
+    - label: "GitHub"
+      url: "https://github.com/williamjxj"
+      status: active
+      note: ""
+    - label: "LinkedIn"
+      url: "https://www.linkedin.com/in/william-jiang-226a7616/"
+      status: active
+      note: ""
+
+  # Reusable opening and closing paragraphs used by all cover letter templates
+  cover_letter_base:
+    opening: >
+      I am writing to express my interest in the {role} role at {company}.
+      With over 20 years of experience as a Senior Full-Stack Engineer and
+      AI-driven solutions architect, I bring a strong record of building
+      scalable platforms, leading engineering teams, and modernizing
+      technology environments through cloud-native and AI-driven solutions.
+    closing: >
+      Thank you for considering my application. I look forward to the
+      opportunity to discuss how my background aligns with your team's
+      goals and how I can contribute to your company's continued growth
+      and modernization.
+
+# ─── SUMMARY (resume — not cover letter) ─────────────────────
+
+summary: >
+  Senior Full-Stack Engineer with 20+ years of experience designing, developing,
+  and scaling enterprise-grade applications across Next.js, React.js, Node.js,
+  Microservices, and cloud platforms (AWS, GCP, Azure), with deep expertise in
+  AI-driven development, LLM integration, and intelligent system architecture.
+  Proven track record in RESTful APIs, database optimization, CI/CD pipelines, and
+  distributed systems. Skilled mentor and problem solver with global experience
+  across North America, APAC, and Europe.
+
+# ─── EXPERIENCE ───────────────────────────────────────────────
+
+experience:
+  - company: "ZTE (Zhongxing Telecom)"
+    title: "Software Engineer"
+    location: "Shenzhen, China"
+    start: "1995-09"
+    end: "2000-09"
+    status: deprecated
+    tags: [legacy, telecom, embedded, c]
+    note: "Only include for legacy telecom or very early-career roles"
+    bullets:
+      - text: "Performed CDMA system security programming and network communication between Data Center and CDMA Base Stations using TCP/IP, C/C++, and Oracle"
+        tags: [c, embedded, telecom, security]
+        status: deprecated
+        relevance: low
+
+  - company: "FedEx"
+    title: "Computer Programmer Analyst"
+    location: "Singapore"
+    start: "2000-10"
+    end: "2004-12"
+    status: deprecated
+    tags: [legacy, enterprise, supply-chain, java]
+    note: "Only include for logistics/supply-chain roles or very early-career roles"
+    bullets:
+      - text: "Designed and developed FedEx GIVS (Global Inventory Visibility System) and EC-IV (E-Commerce Inventory Visibility) System"
+        tags: [enterprise, java, supply-chain]
+        status: deprecated
+        relevance: low
+      - text: "Developed FedEx Global Clearance System for Australia, South Korea, and China"
+        tags: [enterprise, java, integration]
+        status: deprecated
+        relevance: low
+      - text: "Integrated and maintained FedEx Asia-Pacific tracking shipment data source (inbound and outbound), improving performance and simplifying structure"
+        tags: [enterprise, data, integration]
+        status: deprecated
+        relevance: low
+      - text: "Built wireless application providing mobile users easy access to the FedEx tracking system — awarded at APEC 2002 in Shanghai, China"
+        tags: [enterprise, mobile, innovation]
+        status: deprecated
+        relevance: low
+
+  - company: "Best Buy"
+    title: "Senior JavaScript Engineer"
+    location: "Vancouver, Canada"
+    start: "2007-03"
+    end: "2014-07"
+    status: active
+    tags: [frontend, javascript, ecommerce, ui, react, fullstack]
+    bullets:
+      - text: "Updated Best Buy product gallery images/thumbnails and added new features including multi-video support, 360-degree rotation for Desktop, Tablet, and Mobile at bestbuy.ca and futureshop.ca"
+        tags: [frontend, javascript, ui, mobile]
+        status: active
+        relevance: medium
+      - text: "Contributed to Best Buy Warranties and Shopping Cart Clearance project"
+        tags: [frontend, javascript, ecommerce]
+        status: active
+        relevance: medium
+
+  - company: "WebMD"
+    title: "Senior Frontend Engineer"
+    location: "New York City, USA"
+    start: "2014-11"
+    end: "2017-08"
+    status: active
+    tags: [frontend, javascript, advertising, node, angular]
+    bullets:
+      - text: "Built web-based bridges to deliver advertisements using JavaScript, HTML5/CSS3, Google DFP, Node.js, jQuery, and third-party libraries (Nativo, Akamai, PubMatic, Lotame, Adobe Cloud)"
+        tags: [frontend, javascript, node, advertising]
+        status: active
+        relevance: medium
+      - text: "Integrated Google DFP and Adobe analytics tools with Media.net header-bidding to significantly improve WebMD's advertising revenue"
+        tags: [frontend, javascript, advertising, performance]
+        status: active
+        relevance: high
+      - text: "Implemented advertisement document store and access system using AngularJS, Node.js, MongoDB, and Amazon S3"
+        tags: [fullstack, angular, node, mongodb, aws]
+        status: active
+        relevance: medium
+      - text: "Collaborated across teams to implement a complete Big Data pipeline with real-time processing capabilities"
+        tags: [data, pipeline, integration]
+        status: active
+        relevance: medium
+
+  - company: "China Soft (HSBC)"
+    title: "Full-stack Engineer / Software Architect"
+    location: "Xi'an, China"
+    start: "2017-09"
+    end: "2018-12"
+    status: active
+    tags: [fullstack, react, java, banking, architecture]
+    bullets:
+      - text: "Built Retail Business Banking Onboarding services for SME customers using React, Redux, Java Spring Boot microservices, Node.js, and MongoDB"
+        tags: [fullstack, react, java, spring-boot, node, banking]
+        status: active
+        relevance: high
+      - text: "Developed React.js mobile applications for SME banking customers"
+        tags: [frontend, react, mobile, banking]
+        status: active
+        relevance: medium
+
+  - company: "EPAM (Credit Suisse)"
+    title: "React/Full-stack Engineer / Software Architect"
+    location: "Shenzhen, China"
+    start: "2018-12"
+    end: "2020-02"
+    status: active
+    tags: [fullstack, react, node, python, finance, architecture]
+    bullets:
+      - text: "Architected Credit Suisse Stock real-time integration with existing datasets via pipelines and microservices using React, Node.js, WebSockets, MongoDB, and Python"
+        tags: [fullstack, react, node, python, finance, websockets]
+        status: active
+        relevance: high
+      - text: "Mentored and guided development team on best practices for building scalable, event-driven microservice systems"
+        tags: [leadership, mentorship, architecture]
+        status: active
+        relevance: high
+
+  - company: "Xperi"
+    title: "Senior Full-stack Engineer"
+    location: "San Jose, USA (Remote)"
+    start: "2021-03"
+    end: "2024-09"
+    status: active
+    tags: [fullstack, ai, ml, python, react, node, devops]
+    bullets:
+      - text: "Led development of MLDP (Machine Learning Data Pipelines) and Experiment Collection Manager using microservices architecture with React.js, Node.js, Python, and Java for AI/ML tasks"
+        tags: [fullstack, ai, ml, react, node, python, architecture]
+        status: active
+        relevance: high
+      - text: "Built and optimized REST APIs and backend workflows to support real-time GPU/CPU performance tracking in Kubernetes environments"
+        tags: [backend, api, devops, kubernetes, performance]
+        status: active
+        relevance: high
+      - text: "Deployed and maintained production services on Kubernetes (AWS and GCP)"
+        tags: [devops, kubernetes, aws, gcp]
+        status: active
+        relevance: high
+      - text: "Improved scalability and reliability of backend services through observability, caching, and monitoring"
+        tags: [backend, devops, performance, observability]
+        status: active
+        relevance: high
+      - text: "Implemented MLOps workflows using Kubernetes, Docker, Jenkins, AWS, Kubeflow, Airflow, and Weights & Biases for ML training and deployment"
+        tags: [ai, ml, devops, mlops, kubernetes]
+        status: active
+        relevance: high
+      - text: "Collaborated across product and design teams to deliver seamless user experiences"
+        tags: [leadership, collaboration]
+        status: active
+        relevance: medium
+
+  - company: "Best IT Consulting Inc."
+    title: "Founder / Full-Stack & AI Engineer"
+    location: "Vancouver, Canada"
+    start: "2024-10"
+    end: null
+    status: active
+    tags: [fullstack, ai, consulting, founder, node, python]
+    bullets:
+      - text: "Founded and scaled a consulting firm delivering Node.js- and AI-driven digital solutions for enterprise clients"
+        tags: [fullstack, ai, consulting, leadership]
+        status: active
+        relevance: high
+      - text: "Working on e-invoicing and e-documents for Shaanxi Coal and Chemical Industry Group using Node.js, FastAPI, and RAG"
+        tags: [fullstack, node, python, fastapi, ai, enterprise]
+        status: active
+        relevance: high
+      - text: "Built production-grade React + Node.js applications and AI-enhanced backend services focusing on automation, reliability, and scalability"
+        tags: [fullstack, react, node, ai]
+        status: active
+        relevance: high
+      - text: "Designed microservices and API-first systems with Node.js, Express, and PostgreSQL"
+        tags: [backend, node, architecture, api]
+        status: active
+        relevance: high
+      - text: "Built cloud-native applications with Docker, Kubernetes, and AWS"
+        tags: [devops, docker, kubernetes, aws]
+        status: active
+        relevance: high
+      - text: "Implemented AutoBidder and Site-RAG-Chatbot using JavaScript/Python tech stack"
+        tags: [fullstack, ai, python, node]
+        status: active
+        relevance: high
+      - text: "Mentored junior engineers and introduced best practices for scalable Node.js development"
+        tags: [leadership, mentorship]
+        status: active
+        relevance: medium
+
+# ─── SKILLS ───────────────────────────────────────────────────
+
+skills:
+  languages:
+    - name: Python
+      level: expert
+      status: active
+      tags: [backend, ai, ml, scripting, data]
+    - name: TypeScript
+      level: expert
+      status: active
+      tags: [backend, frontend, node, fullstack]
+    - name: JavaScript
+      level: expert
+      status: active
+      tags: [frontend, node, fullstack]
+    - name: Java
+      level: intermediate
+      status: active
+      tags: [backend, spring-boot, enterprise]
+    - name: C
+      level: intermediate
+      status: deprecated
+      tags: [legacy, embedded]
+      note: "Only include for legacy or embedded roles"
+    - name: SQL
+      level: advanced
+      status: active
+      tags: [data, backend]
+
+  frameworks:
+    - name: React.js / Next.js
+      level: expert
+      status: active
+      tags: [frontend, fullstack, ui]
+    - name: Node.js / Express.js
+      level: expert
+      status: active
+      tags: [backend, fullstack, api]
+    - name: Python / FastAPI
+      level: advanced
+      status: active
+      tags: [backend, ai, api]
+    - name: LangChain / LlamaIndex
+      level: advanced
+      status: active
+      tags: [ai, llm, rag]
+    - name: Spring Boot
+      level: intermediate
+      status: active
+      tags: [backend, java, enterprise]
+    - name: TailwindCSS / Shadcn/ui
+      level: advanced
+      status: active
+      tags: [frontend, ui]
+    - name: AngularJS
+      level: intermediate
+      status: deprecated
+      tags: [frontend, legacy]
+      note: "Only include for Angular migration roles"
+    - name: Gatsby
+      level: intermediate
+      status: active
+      tags: [frontend, react]
+
+  tools:
+    - name: Git / GitHub
+      level: expert
+      status: active
+      tags: [general, devops, ci/cd]
+    - name: Docker / Kubernetes
+      level: advanced
+      status: active
+      tags: [devops, cloud]
+    - name: AWS (Lambda, S3, API Gateway, EC2)
+      level: advanced
+      status: active
+      tags: [devops, cloud, aws]
+    - name: GCP
+      level: intermediate
+      status: active
+      tags: [devops, cloud, gcp]
+    - name: Azure
+      level: intermediate
+      status: active
+      tags: [devops, cloud]
+    - name: Jenkins / CI/CD
+      level: advanced
+      status: active
+      tags: [devops, ci/cd]
+    - name: Kafka
+      level: intermediate
+      status: active
+      tags: [data, backend, streaming]
+    - name: ElasticSearch
+      level: intermediate
+      status: active
+      tags: [data, backend, search]
+    - name: Prometheus / Observability
+      level: intermediate
+      status: active
+      tags: [devops, monitoring]
+    - name: PostgreSQL
+      level: advanced
+      status: active
+      tags: [backend, data]
+    - name: MongoDB
+      level: advanced
+      status: active
+      tags: [backend, data]
+    - name: MySQL / Oracle
+      level: intermediate
+      status: active
+      tags: [backend, data]
+    - name: Agile / Scrum / JIRA
+      level: expert
+      status: active
+      tags: [general, methodology]
+    - name: TDD
+      level: advanced
+      status: active
+      tags: [general, methodology]
+    - name: Airflow
+      level: intermediate
+      status: active
+      tags: [data, ml, pipeline]
+
+  ai_tools:
+    - name: Cursor
+      level: expert
+      status: active
+      tags: [ai, development]
+    - name: GitHub Copilot
+      level: expert
+      status: active
+      tags: [ai, development]
+    - name: Claude Code
+      level: expert
+      status: active
+      tags: [ai, development]
+    - name: OpenAI API
+      level: advanced
+      status: active
+      tags: [ai, llm]
+    - name: Hugging Face
+      level: intermediate
+      status: active
+      tags: [ai, ml]
+    - name: Stable Diffusion / ComfyUI
+      level: intermediate
+      status: active
+      tags: [ai, generative]
+    - name: Vibe Coding
+      level: advanced
+      status: active
+      tags: [ai, development, methodology]
+    - name: Spec-Driven Development
+      level: advanced
+      status: active
+      tags: [ai, development, methodology]
+    - name: Context Engineering
+      level: advanced
+      status: active
+      tags: [ai, development, methodology]
+
+# ─── PROJECTS ─────────────────────────────────────────────────
+
+projects:
+  - name: "AutoBidder"
+    url: ""
+    description: "Automated bidding system built with JavaScript/Python tech stack for intelligent price optimization"
+    tags: [fullstack, python, node, automation, ai]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Designed and implemented automated bidding algorithms for real-time price optimization"
+        tags: [python, automation, ai]
+        status: active
+
+  - name: "Site-RAG-Chatbot"
+    url: ""
+    description: "RAG-powered chatbot for website content Q&A, enabling natural language querying across site documentation"
+    tags: [ai, rag, python, llm]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Built Retrieval-Augmented Generation pipeline using LangChain/LlamaIndex for document retrieval and LLM-based answer generation"
+        tags: [ai, rag, llm, python]
+        status: active
+      - text: "Integrated with website content sources for domain-specific question answering"
+        tags: [ai, fullstack, python]
+        status: active
+
+  - name: "MLDP (Machine Learning Data Pipelines)"
+    url: ""
+    description: "Enterprise ML data pipeline system at Xperi for managing AI/ML experiment data, GPU/CPU performance tracking, and model lifecycle management"
+    tags: [ai, ml, fullstack, devops]
+    status: active
+    relevance: high
+    bullets:
+      - text: "Developed microservices-based AI/ML data pipeline system using React.js, Node.js, Python, and Java"
+        tags: [fullstack, ai, ml, react, node, python]
+        status: active
+      - text: "Optimized GPU/CPU performance in Kubernetes environments for ML training workloads"
+        tags: [devops, ml, kubernetes, performance]
+        status: active
+
+# ─── EDUCATION ────────────────────────────────────────────────
+
+education:
+  - institution: "Xi'an Jiaotong University"
+    degree: "Bachelor of Engineering"
+    start: "1987-09"
+    graduation: "1991-07"
+    location: "China"
+    status: active
+    tags: [general]
+  - institution: "Universal Learning Institute"
+    degree: "Diploma of Business Management"
+    start: "2005-03"
+    graduation: "2006-03"
+    location: "Vancouver, Canada"
+    status: active
+    tags: [general]
+
+# ─── COVER LETTER TEMPLATES ───────────────────────────────────
+
+cover_letters:
+  - id: "backend-focused"
+    label: "Backend / API / Platform roles"
+    tags: [backend, python, node, api, devops]
+    body: >
+      {opening}
+
+      In my most recent roles at Xperi and as the founder of Best IT
+      Consulting Inc., I have combined hands-on coding with architectural
+      leadership to deliver enterprise-scale digital transformation
+      projects. I have led hybrid teams across Canada, the US, and Asia,
+      guiding both in-house and offshore engineers to build reliable and
+      innovative systems.
+
+      I have architected and deployed event-driven microservices and
+      API-first systems using Node.js, Python, and FastAPI, with a strong
+      focus on scalability, observability, and performance. My experience
+      includes designing real-time data pipelines, optimizing cloud-native
+      deployments on Kubernetes (AWS and GCP), and building robust REST
+      APIs for high-throughput data processing.
+
+      {closing}
+
+  - id: "ai-fullstack-focused"
+    label: "AI / Full-stack / Product roles"
+    tags: [fullstack, ai, react, frontend, llm]
+    body: >
+      {opening}
+
+      In my recent work at Xperi and Best IT Consulting Inc., I have
+      delivered end-to-end AI-driven applications — from React.js
+      frontends to LLM-powered backends and RAG pipelines. I specialize
+      in bridging modern frontend development with AI innovation, using
+      tools like LangChain, LlamaIndex, and agentic AI frameworks to
+      build intelligent, user-facing products.
+
+      I bring deep experience with AI-assisted development tools
+      including Cursor, GitHub Copilot, and Claude Code, and I apply
+      Spec-Driven Development and Context Engineering to accelerate
+      delivery without sacrificing quality. I am equally comfortable
+      owning system architecture, mentoring engineers, and shipping
+      production features.
+
+      {closing}
+
+  - id: "leadership-focused"
+    label: "Lead / Staff / Architecture roles"
+    tags: [leadership, architecture, mentorship, fullstack]
+    body: >
+      {opening}
+
+      As a technical architect at EPAM and China Soft, and as Senior
+      Full-stack Engineer at Xperi, I have consistently balanced
+      hands-on coding with architectural leadership. I have mentored
+      engineering teams across Canada, the US, and Asia, establishing
+      best practices for scalable, event-driven microservice systems.
+
+      I have architected real-time data integration systems, led
+      microservices-based platform builds, and designed API-first
+      architectures that serve high-volume enterprise workloads. I
+      thrive in roles where I can shape technical direction while
+      remaining deeply involved in code and system design.
+
+      {closing}
