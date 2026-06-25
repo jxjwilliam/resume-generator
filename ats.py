@@ -23,6 +23,31 @@ def _word_count(text: str) -> int:
     return len(text.split())
 
 
+def _has_quantification(text: str) -> bool:
+    """Check if a bullet contains metrics, percentages, or numeric impact."""
+    return bool(re.search(
+        r'\d+%|\d+x\b|\$\d+|\d+\s*(?:users|customers|requests|QPS|RPS|GB|TB|ms|seconds|minutes|hours|days)'
+        r'|\b(?:reduced|increased|improved|cut|saved|grew|scaled|boosted|lowered|raised)\b.*\d+'
+        r'|\d+.*\b(?:reduced|increased|improved|cut|saved|grew|scaled|boosted)',
+        text.lower()
+    ))
+
+
+STRONG_VERBS = {
+    "architected", "designed", "built", "led", "optimized", "delivered",
+    "implemented", "launched", "scaled", "reduced", "increased", "automated",
+    "engineered", "developed", "established", "orchestrated", "spearheaded",
+    "drove", "created", "deployed", "migrated", "transformed", "integrated",
+    "streamlined", "accelerated", "pioneered",
+}
+
+
+def _starts_strong(bullet_text: str) -> bool:
+    """Check if bullet starts with a strong action verb."""
+    first_word = bullet_text.strip().split()[0] if bullet_text.strip() else ""
+    return first_word.lower().rstrip("ed") in STRONG_VERBS or first_word.lower() in STRONG_VERBS
+
+
 def score_resume(
     base: dict,
     jd_text: str,
@@ -51,64 +76,75 @@ def score_resume(
         jd_keywords=jd_keywords,
     )
 
-    # --- Keyword match (40%) ---
-    resume_tokens: set[str] = set()
+    # Build combined text for keyword matching (bullets + skills + headline + summary)
     bullet_texts: list[str] = []
-    for job, bullets in jobs:
+    for _, bullets in jobs:
         for b in bullets:
-            t = b.get("text", "")
-            bullet_texts.append(t)
-            resume_tokens.update(re.findall(r"[a-z0-9+#./-]+", t.lower()))
-        for item in base.get("skills", {}).values():
-            for s in item if isinstance(item, list) else []:
-                if s.get("status", "active") == "active":
-                    resume_tokens.update(re.findall(r"[a-z0-9+#./-]+", s.get("name", "").lower()))
-
-    if headline:
-        resume_tokens.update(re.findall(r"[a-z0-9+#./-]+", headline.lower()))
+            bullet_texts.append(b.get("text", ""))
+    combined = " ".join(bullet_texts).lower()
     if summary:
-        resume_tokens.update(re.findall(r"[a-z0-9+#./-]+", summary.lower()))
+        combined += " " + summary.lower()
+    if headline:
+        combined += " " + headline.lower()
+    for items in base.get("skills", {}).values():
+        for s in items:
+            if isinstance(s, dict) and s.get("status", "active") == "active":
+                combined += " " + s.get("name", "").lower()
+            elif isinstance(s, str):
+                combined += " " + s.lower()
 
+    # --- Keyword match (40%) ---
+    soft_skills = parsed.get("soft_skills", [])
+    domain_kw = parsed.get("domain_keywords", [])
+    soft_domain = soft_skills + domain_kw
+
+    # Sub-score A: Hard skills
     if hard_skills:
-        combined = " ".join(bullet_texts).lower()
-        if summary:
-            combined += " " + summary.lower()
-        if headline:
-            combined += " " + headline.lower()
-        for items in base.get("skills", {}).values():
-            for s in items:
-                if s.get("status", "active") == "active":
-                    combined += " " + s.get("name", "").lower()
-        matched_count = sum(1 for s in hard_skills if s.lower() in combined)
-        keyword_pct = matched_count / len(hard_skills)
+        hard_pct = sum(1 for s in hard_skills if s.lower() in combined) / len(hard_skills)
         match_report = {
             "matched_skills": [s for s in hard_skills if s.lower() in combined],
             "missing_skills": [s for s in hard_skills if s.lower() not in combined],
         }
     else:
-        keyword_pct = 0.5
-        combined = ""
+        hard_pct = 0.5
         match_report = {"matched_skills": [], "missing_skills": []}
+
+    # Sub-score B: Soft skills + domain (40% of keyword weight when present)
+    # Soft skills only boost — they never penalize the score
+    if soft_domain:
+        soft_pct = sum(1 for s in soft_domain if s.lower() in combined) / len(soft_domain)
+        match_report["matched_soft_skills"] = [s for s in soft_domain if s.lower() in combined]
+        match_report["missing_soft_skills"] = [s for s in soft_domain if s.lower() not in combined]
+        # Blend: 75% hard skills, 25% soft/domain — only if soft match exceeds hard
+        keyword_pct = hard_pct * 0.75 + soft_pct * 0.25 if soft_pct > hard_pct else hard_pct
+    else:
+        soft_pct = None
+        keyword_pct = hard_pct
 
     keyword_score = round(keyword_pct * WEIGHT_KEYWORD, 1)
 
     # --- Title alignment (10%) ---
     headline_text = (headline or base.get("identity", {}).get("headline", "")).lower()
+    # Also scan selected job titles (the strongest signal for role fit)
+    job_titles_text = " ".join(job.get("title", "") for job, _ in jobs).lower()
+    summary_text = (summary or base.get("summary", "")).lower()
+    # Combined search space: headline + experience titles + summary
+    title_search_space = f"{headline_text} {job_titles_text} {summary_text}"
     role_lower = role_title.lower()
     role_tokens = [w for w in re.findall(r"[a-z]+", role_lower) if len(w) > 3]
     if role_tokens:
-        title_hits = sum(1 for t in role_tokens if t in headline_text)
+        title_hits = sum(1 for t in role_tokens if t in title_search_space)
         title_pct = title_hits / len(role_tokens)
     else:
         title_pct = 0.5
     title_score = round(title_pct * WEIGHT_TITLE, 1)
 
-    # --- Completeness (20%) ---
-    sections_present = 0
+    # --- Completeness (20%) — 5 checks, each worth 4% ---
     section_checks = [
         bool(summary or base.get("summary")),
         len(jobs) > 0,
         bool(base.get("skills")),
+        bool(base.get("projects")),
         bool(base.get("education")),
     ]
     sections_present = sum(1 for c in section_checks if c)
@@ -117,21 +153,33 @@ def score_resume(
     # --- Formatting (20%) — rendercv output is ATS-safe by default ---
     formatting_score = WEIGHT_FORMATTING  # full marks for YAML→rendercv path
 
-    # --- Conciseness (10%) ---
-    long_bullets = 0
+    # --- Conciseness + Impact (10%) ---
+    penalty_points = 0
     total_bullets = 0
+    quantified_count = 0
+    strong_verb_count = 0
     for _, bullets in jobs:
+        if len(bullets) > MAX_BULLETS_PER_JOB:
+            penalty_points += len(bullets) - MAX_BULLETS_PER_JOB
         for b in bullets:
+            text = b.get("text", "")
             total_bullets += 1
-            if _word_count(b.get("text", "")) > MAX_WORDS_PER_BULLET:
-                long_bullets += 1
-            if len(bullets) > MAX_BULLETS_PER_JOB:
-                long_bullets += 1
+            if _word_count(text) > MAX_WORDS_PER_BULLET:
+                penalty_points += 1
+            if _has_quantification(text):
+                quantified_count += 1
+            if _starts_strong(text):
+                strong_verb_count += 1
 
     if total_bullets:
-        conciseness_pct = 1.0 - (long_bullets / max(total_bullets, 1))
+        length_pct = max(0, 1.0 - (penalty_points / total_bullets))
+        quant_pct = quantified_count / total_bullets
+        verb_pct = strong_verb_count / total_bullets
+        # 70% length, 15% quantification, 15% strong verbs
+        conciseness_pct = length_pct * 0.7 + quant_pct * 0.15 + verb_pct * 0.15
     else:
         conciseness_pct = 0.0
+        length_pct = quant_pct = verb_pct = 0.0
     conciseness_score = round(max(0, conciseness_pct) * WEIGHT_CONCISENESS, 1)
 
     total = round(keyword_score + title_score + completeness_score + formatting_score + conciseness_score, 1)
@@ -141,10 +189,19 @@ def score_resume(
         "grade": _grade(total),
         "breakdown": {
             "keyword_match": {"score": keyword_score, "max": WEIGHT_KEYWORD, "pct": round(keyword_pct * 100)},
+            "keyword_sub": {
+                "hard_skills": {"pct": round(hard_pct * 100) if hard_skills else None},
+                "soft_skills_domain": {"pct": round(soft_pct * 100) if soft_pct is not None else None},
+            },
             "title_alignment": {"score": title_score, "max": WEIGHT_TITLE, "pct": round(title_pct * 100)},
             "completeness": {"score": completeness_score, "max": WEIGHT_COMPLETENESS},
             "formatting": {"score": formatting_score, "max": WEIGHT_FORMATTING},
             "conciseness": {"score": conciseness_score, "max": WEIGHT_CONCISENESS},
+            "conciseness_sub": {
+                "length": {"pct": round(length_pct * 100)},
+                "quantified": {"pct": round(quant_pct * 100), "count": quantified_count},
+                "strong_verbs": {"pct": round(verb_pct * 100), "count": strong_verb_count},
+            },
         },
         "hard_skills": hard_skills,
         "role_title": role_title,

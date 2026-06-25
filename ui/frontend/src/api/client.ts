@@ -3,6 +3,7 @@ import type {
   RxTemplateInfo,
   YamlInfo,
   RunHistoryItem,
+  OutputFile,
   ResumeRunRequest,
   TransformRunRequest,
   RunResponse,
@@ -80,6 +81,8 @@ export const api = {
   },
   getRunDetail: (jobId: string) =>
     get<RunHistoryItem>(`/history/${jobId}`),
+  getOutputFiles: (jobId: string) =>
+    get<{ files: OutputFile[] }>(`/output/${jobId}/files`),
   streamLogs: (jobId: string, onLine: (line: LogLine) => void): (() => void) => {
     const es = new EventSource(`${BASE}/log/${jobId}`);
     const abort = () => es.close();

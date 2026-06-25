@@ -12,9 +12,11 @@ import os
 import re
 import sys
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from dotenv import load_dotenv
+
+import history_db
 
 from compose import (
     DEFAULT_MAX_BULLETS,
@@ -82,6 +84,47 @@ def _font_for_locale(locale: str) -> str:
         "en": "Source Sans 3",
         "zh-CN": "Noto Sans SC",
     }.get(locale, "Source Sans 3")
+
+# rendercv only accepts these social network names
+_RENDERC_NETWORKS = {
+    "LinkedIn", "GitHub", "GitLab", "IMDB", "Instagram", "ORCID",
+    "Mastodon", "StackOverflow", "ResearchGate", "YouTube",
+    "Google Scholar", "Telegram", "WhatsApp", "Leetcode", "X",
+    "Bluesky", "Reddit",
+}
+
+# URL host fragments → valid rendercv network name
+_URL_TO_NETWORK = {
+    "github.com": "GitHub",
+    "linkedin.com": "LinkedIn",
+    "gitlab.com": "GitLab",
+    "stackoverflow.com": "StackOverflow",
+    "researchgate.net": "ResearchGate",
+    "youtube.com": "YouTube",
+    "scholar.google.com": "Google Scholar",
+    "t.me": "Telegram",
+    "wa.me": "WhatsApp",
+    "leetcode.com": "Leetcode",
+    "x.com": "X",
+    "twitter.com": "X",
+    "bsky.app": "Bluesky",
+    "reddit.com": "Reddit",
+    "imdb.com": "IMDB",
+    "instagram.com": "Instagram",
+    "orcid.org": "ORCID",
+    "mastodon.social": "Mastodon",
+}
+
+
+def _resolve_network(label: str, url: str) -> str | None:
+    """Map a label+url to a valid rendercv network name, or None if impossible."""
+    if label in _RENDERC_NETWORKS:
+        return label
+    for fragment, name in _URL_TO_NETWORK.items():
+        if fragment in url.lower():
+            return name
+    return None
+
 
 def build_variant(base, tags, template, company, role, jd_text=None,
                   headline_override=None, summary_override=None, locale="en",
@@ -157,9 +200,10 @@ def build_variant(base, tags, template, company, role, jd_text=None,
             "headline": headline_override or base["identity"].get("headline", ""),
             "photo": str(Path("..") / base["identity"]["photo"]) if base["identity"].get("photo") else None,
             "social_networks": [
-                {"network": u["label"], "username": _extract_username(u["url"])}
+                {"network": n, "username": _extract_username(u["url"])}
                 for u in base["identity"]["urls"]
                 if u["status"] == "active"
+                and (n := _resolve_network(u["label"], u["url"])) is not None
             ],
             "sections": sections,
         },
@@ -413,7 +457,38 @@ def generate_docx(variant_path: str, slug: str) -> str | None:
     return output_path
 
 
-def log_application(slug, company, role, tags, template, jd_file):
+def _write_history_from_build(slug, company, role, tags, template, args, variant_path, jd_text=None):
+    """Write a build record to the shared SQLite DB and keep applications.json for backward compat."""
+    from history_db import insert_run, scan_output_files
+    now = datetime.now(timezone.utc).isoformat() if hasattr(datetime, 'timezone') else datetime.now().isoformat()
+    run = {
+        "id": slug,
+        "type": "build",
+        "status": "success",
+        "yaml_file": getattr(args, "yaml", "base.yaml"),
+        "company": company,
+        "role": role,
+        "tags": [t.strip() for t in tags.split(",") if t.strip()] if tags else [],
+        "theme": getattr(args, "template", ""),
+        "max_bullets": getattr(args, "max_bullets", 4),
+        "max_jobs": getattr(args, "max_jobs", 0),
+        "use_llm": getattr(args, "llm", False),
+        "cover_letter": getattr(args, "cover_letter", False),
+        "docx": getattr(args, "docx", False),
+        "variant_file": variant_path,
+        "jd_source": getattr(args, "jd", None) or (".ui_temp_jd.txt" if jd_text else None),
+        "jd_snippet": (jd_text or "")[:200],
+        "created_at": now,
+    }
+    try:
+        insert_run(run)
+        files = scan_output_files(slug)
+        if files:
+            from history_db import update_run
+            update_run(slug, status="success", output_files=files, output_path=str(Path(OUTPUT_DIR) / slug))
+    except Exception as e:
+        print(f"Warning: could not write history: {e}", file=sys.stderr)
+    # Legacy: still write applications.json for any scripts that depend on it
     log = load_log()
     log["applications"].append({
         "id": slug,
@@ -421,9 +496,9 @@ def log_application(slug, company, role, tags, template, jd_file):
         "role": role,
         "date": datetime.now().isoformat()[:10],
         "tags_used": tags,
-        "template": template,
-        "jd_source": jd_file,
-        "variant_file": f"{VARIANTS_DIR}/{slug}.yaml",
+        "template": getattr(args, "template", ""),
+        "jd_source": getattr(args, "jd", None),
+        "variant_file": variant_path,
         "output_dir": f"{OUTPUT_DIR}/{slug}"
     })
     save_log(log)
@@ -561,8 +636,8 @@ def cmd_build(args):
     if success:
         print(f"Output: {OUTPUT_DIR}/{slug}/")
 
-    log_application(slug, args.company, role, tags, template, args.jd)
-    print(f"Logged to {LOG_FILE}")
+    _write_history_from_build(slug, args.company, role, tags, template, args, variant_path, jd_text)
+    print(f"Logged to history DB + {LOG_FILE}")
 
     if jd_text:
         from ats import score_resume
@@ -613,17 +688,28 @@ def cmd_tags(args):
     print("Available tags:\n" + "\n".join(sorted(all_tags)))
 
 def cmd_log(args):
-    log = load_log()
-    apps = log.get("applications", [])
-    if not apps:
+    from history_db import list_runs
+    runs = list_runs(limit=200)
+    if not runs:
         print("No applications logged yet.")
         return
-    for a in apps:
-        print(f"\n{a['date']} — {a['company']} / {a['role']}")
-        print(f"  ID:       {a['id']}")
-        print(f"  Tags:     {a['tags_used']}")
-        print(f"  Template: {a['template']}")
-        print(f"  Output:   {a['output_dir']}")
+    for r in runs:
+        created = (r.get("created_at") or "")[:10]
+        print(f"\n{created} — {r.get('company') or '?'} / {r.get('role') or '?'}")
+        print(f"  ID:       {r['id']}")
+        tags_str = ", ".join(r.get("tags") or []) or "(none)"
+        print(f"  Tags:     {tags_str}")
+        print(f"  Template: {r.get('theme') or '-'}")
+        print(f"  Status:   {r.get('status', '?')}")
+        dur = r.get("run_duration_seconds")
+        if dur:
+            print(f"  Duration: {dur:.1f}s")
+        files = r.get("output_files") or []
+        if files:
+            print(f"  Files:    {', '.join(f['name'] for f in files)}")
+        err = r.get("error_log")
+        if err:
+            print(f"  Error:    {err[:120]}")
 
 def llm_extract_tags(jd_text, base, llm_provider=None):
     """
@@ -1013,9 +1099,28 @@ def cmd_score(args):
     print(f"ATS Score: {result['total']}/100 ({result['grade']})")
     print("\nBreakdown:")
     for name, info in result["breakdown"].items():
-        print(f"  {name}: {info['score']}/{info['max']}")
+        if "score" in info and "max" in info:
+            print(f"  {name}: {info['score']}/{info['max']}")
+    # Show sub-scores
+    kw_sub = result["breakdown"].get("keyword_sub", {})
+    if kw_sub:
+        hard = kw_sub.get("hard_skills", {})
+        soft = kw_sub.get("soft_skills_domain", {})
+        if hard.get("pct") is not None:
+            print(f"    └ hard skills: {hard['pct']}%")
+        if soft.get("pct") is not None:
+            print(f"    └ soft skills / domain: {soft['pct']}%")
+    conc_sub = result["breakdown"].get("conciseness_sub", {})
+    if conc_sub:
+        print(f"    └ bullet length: {conc_sub.get('length', {}).get('pct', '—')}%")
+        print(f"    └ quantified: {conc_sub.get('quantified', {}).get('pct', '—')}% ({conc_sub.get('quantified', {}).get('count', 0)} of {result.get('bullets_included', 0)})")
+        print(f"    └ strong verbs: {conc_sub.get('strong_verbs', {}).get('pct', '—')}% ({conc_sub.get('strong_verbs', {}).get('count', 0)} of {result.get('bullets_included', 0)})")
     print(f"\nMatched skills: {', '.join(result['skill_match']['matched_skills']) or '(none)'}")
+    if result['skill_match'].get('matched_soft_skills'):
+        print(f"Matched soft skills: {', '.join(result['skill_match']['matched_soft_skills'])}")
     print(f"Missing skills: {', '.join(result['skill_match']['missing_skills']) or '(none)'}")
+    if result['skill_match'].get('missing_soft_skills'):
+        print(f"Missing soft skills: {', '.join(result['skill_match']['missing_soft_skills'])}")
 
     if args.output:
         with open(args.output, "w") as f:
@@ -1079,13 +1184,22 @@ def cmd_compare(args):
 
 def _generate_cover_letter(base: dict, company: str, role: str | None,
                            jd_text: str | None, tags: str, slug: str, yaml_file: str = BASE_FILE):
-    """Generate a cover letter .txt file in the output directory."""
+    """Generate a cover letter .txt file in the output directory.
+
+    NOTE: jd_text is raw text content (not a file path). It gets written to a
+    temp file because cmd_cover_letter reads from a file path.
+    """
     from argparse import Namespace
+    jd_path = None
+    if jd_text:
+        Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+        jd_path = f"{OUTPUT_DIR}/{slug}/.cl_jd.txt"
+        Path(jd_path).write_text(jd_text)
     cl_args = Namespace(
         yaml=yaml_file,
         company=company,
         role=role or "",
-        jd=jd_text,
+        jd=jd_path,
         tags=tags,
         llm=bool(jd_text),
         output=f"{OUTPUT_DIR}/{slug}/cover-letter-{company.lower().replace(' ','-')}.txt",
@@ -1174,6 +1288,7 @@ def cmd_llm_providers(args):
 
 def main():
     load_dotenv(override=True)
+    history_db.init_db()
     parser = argparse.ArgumentParser(description="Resume composition engine")
     subparsers = parser.add_subparsers()
 

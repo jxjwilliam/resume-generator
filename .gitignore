@@ -44,6 +44,7 @@ variants/
 applications.json
 jds/
 **/*.db
+!/runs.db
 
 # WebUI
 ui/frontend/node_modules/

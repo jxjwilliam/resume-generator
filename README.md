@@ -78,15 +78,15 @@ flowchart LR
     W --> X["📄 output/&lt;slug&gt;/resume.docx"]
     T --> R["🎨 rxresu.me"]
     R --> G["📑 Visual PDF + share link"]
-    B -.-> H["📋 applications.json"]
+    B -.-> H["📋 runs.db<br/><small>(shared SQLite)</small>"]
     B -.-> L["✉️ cover letter .txt"]
 ```
 
 1. **Edit `base.yaml`** — single source of truth: experience, skills, projects, education, summary, headline, cover letter templates.
 2. **Choose a render path:**
-   - **`resume.py build`** — tag-filtered variant → rendercv → ATS PDF/HTML, optionally DOCX + cover letter, logged in `applications.json`.
+   - **`resume.py build`** — tag-filtered variant → rendercv → ATS PDF/HTML, optionally DOCX + cover letter, logged in `runs.db` (shared SQLite) + legacy `applications.json`.
    - **`transform.py`** — sync to rxresu.me for designer templates and live editing.
-   - **WebUI** ([http://localhost:5173](http://localhost:5173)) — visual interface for both paths.
+   - **WebUI** ([http://localhost:5173](http://localhost:5173)) — visual interface for both paths, storing history in the same shared `runs.db`.
 3. **Ship** — download PDF from `output/`, DOCX from `output/{slug}/resume.docx`, or export from the rxresu.me builder.
 
 ## CLI Reference
@@ -157,17 +157,21 @@ backend
 
 ### `python resume.py log`
 
-View your application history — every resume you've built, with company, role, tags, template, and output path.
+View your application history from the shared SQLite database — every build from CLI or WebUI, with status, timing, and generated output files.
 
 ```bash
 $ python resume.py log
 
-2026-06-10 — Google / SWE
+2026-06-25 — Google / SWE
   ID:       google-swe-202606
   Tags:     backend,python
   Template: classic
-  Output:   output/google-swe-202606/
+  Status:   success
+  Duration: 12.3s
+  Files:    William_Jiang_CV.pdf, resume.docx
 ```
+
+Both CLI builds and WebUI builds appear in the same log.
 
 ### `python resume.py analyze`
 
@@ -317,6 +321,8 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 ```
 ├── base.yaml                # ★ Single source of truth — edit this
 ├── resume.py                # CLI composition engine (rendercv path)
+├── history_db.py             # Shared SQLite DB for CLI + WebUI history
+├── runs.db                   # SQLite database (shared by CLI + WebUI)
 ├── compose.py               # Shared bullet ranking + caps (resume.py + transform.py)
 ├── jd_parser.py             # Structured JD keyword parsing
 ├── ats.py                   # Deterministic ATS scoring + multi-JD compare
@@ -355,10 +361,9 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │   │   ├── main.py          # FastAPI app (API routes)
 │   │   ├── models.py        # Pydantic request/response schemas
 │   │   ├── runner.py        # Async subprocess job runner
-│   │   ├── db.py            # SQLite history tracking
+│   │   ├── db.py            # Thin async wrapper around repo-root history_db.py
 │   │   ├── jd_analyzer.py   # JD keyword extraction
 │   │   ├── theme_data.py    # Rendercv themes + RxResume templates
-│   │   └── runs.db          # SQLite DB (tracked)
 │   └── frontend/
 │       ├── src/
 │       │   ├── App.tsx          # Tab navigation (Resume / Transform / Compare / History)
@@ -548,13 +553,15 @@ open output/test-engineer-202606/William_Jiang_CV.pdf
 # Commit these:
 base.yaml
 resume.py
+history_db.py          # Shared history database module
+runs.db                # SQLite history (shared by CLI + WebUI)
 transform.py
 applications.json
 variants/
 jds/
 
 # Ignore these (already in .gitignore):
-output/          # PDFs — regenerate anytime
+output/          # PDFs/DOCX — regenerate anytime
 .env             # API keys (RXRESU_API_KEY, DEEPSEEK_API_KEY)
 __pycache__/
 ```

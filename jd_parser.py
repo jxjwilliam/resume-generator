@@ -62,6 +62,23 @@ DOMAIN_HINTS = [
     "enterprise", "startup", "consulting", "banking", "insurance",
 ]
 
+# Soft / professional skill terms commonly found in JDs
+SOFT_SKILL_TERMS = {
+    "leadership", "mentoring", "mentor", "team lead", "tech lead",
+    "ownership", "initiative", "self-starter", "autonomy",
+    "stakeholder management", "stakeholder",
+    "cross-functional", "cross functional",
+    "client-facing", "customer-facing",
+    "communication", "presentation", "technical writing",
+    "collaboration", "interpersonal",
+    "project management", "product management",
+    "roadmap", "strategic", "strategy", "execution",
+    "fast-paced", "startup", "scale-up",
+    "delivery", "deadlines", "milestones",
+    "problem solving", "analytical", "innovation",
+    "best practices", "code review", "architecture",
+}
+
 
 def _tokenize(text: str) -> list[str]:
     text = text.lower()
@@ -136,6 +153,12 @@ def parse_jd(text: str, base: dict | None = None) -> dict:
         and w not in STOPWORDS
     ]
 
+    # Soft skills from JD
+    soft_skills = _find_matches(text_lower, SOFT_SKILL_TERMS)
+    # Remove any that also appear as hard skills to avoid double-counting
+    hard_set_skills = set(hard_skills)
+    soft_skills = [s for s in soft_skills if s not in hard_set_skills]
+
     # Weighted flat list for bullet scoring (hard skills repeated for weight)
     all_keywords: list[str] = []
     for s in hard_skills:
@@ -145,6 +168,8 @@ def parse_jd(text: str, base: dict | None = None) -> dict:
         all_keywords.append(t)
     all_keywords.extend(domain_keywords)
     all_keywords.extend(business_context[:10])
+    for s in soft_skills:
+        all_keywords.append(s)
 
     return {
         "role_title": role_title,
@@ -155,6 +180,7 @@ def parse_jd(text: str, base: dict | None = None) -> dict:
         "domain_keywords": domain_keywords,
         "business_context": business_context[:10],
         "all_keywords": list(dict.fromkeys(all_keywords)),  # dedupe, preserve order
+        "soft_skills": soft_skills,
         "keywords": extract_keywords(text, top_n=15),  # backward compat
     }
 

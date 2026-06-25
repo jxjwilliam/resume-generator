@@ -286,11 +286,55 @@ async def get_run_detail(job_id: str):
     return run
 
 
-@app.get("/api/output/{job_id}")
-async def get_output(job_id: str):
+@app.get("/api/output/{job_id}/files")
+async def get_output_files(job_id: str):
+    """Return list of output files for a completed run."""
     run = await get_run(job_id)
     if not run:
         raise HTTPException(404, "Run not found")
+    files = run.get("output_files") or []
+    # If DB has no output_files but files exist on disk, scan now
+    if not files:
+        output_dir = REPO_ROOT / "output"
+        if output_dir.exists():
+            candidates = sorted(output_dir.rglob("*"))
+            # Try to match by slug from run metadata
+            if run.get("company") and run.get("role"):
+                from .db import scan_output_files
+                files = scan_output_files(run.get("slug") or run.get("id") or "")
+    return {"files": files}
+
+
+@app.get("/api/output/{job_id}")
+async def get_output(job_id: str, name: str | None = None):
+    run = await get_run(job_id)
+    if not run:
+        raise HTTPException(404, "Run not found")
+
+    if name:
+        # Serve a specific file by name
+        output_dir = REPO_ROOT / "output"
+        if not output_dir.exists():
+            raise HTTPException(404, "No output directory")
+        if run.get("output_files"):
+            for f in run["output_files"]:
+                if f["name"] == name:
+                    fpath = output_dir / f["slug"] / f["name"]
+                    if fpath.exists():
+                        media_type = _mime_for_file(name)
+                        return FileResponse(str(fpath), media_type=media_type,
+                                            filename=name)
+        # Fallback: search output dirs
+        for subdir in sorted(output_dir.iterdir()):
+            if subdir.is_dir():
+                candidate = subdir / name
+                if candidate.exists():
+                    return FileResponse(str(candidate),
+                                        media_type=_mime_for_file(name),
+                                        filename=name)
+        raise HTTPException(404, f"File '{name}' not found")
+
+    # Legacy: serve first PDF
     output_path = run.get("output_path")
     if not output_path:
         output_dir = REPO_ROOT / "output"
@@ -302,6 +346,20 @@ async def get_output(job_id: str):
         raise HTTPException(404, "No output files found")
     return FileResponse(output_path, media_type="application/pdf",
                         filename=Path(output_path).name)
+
+
+def _mime_for_file(name: str) -> str:
+    ext = Path(name).suffix.lower()
+    return {
+        ".pdf": "application/pdf",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".html": "text/html",
+        ".txt": "text/plain",
+        ".json": "application/json",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".typ": "text/plain",
+    }.get(ext, "application/octet-stream")
 
 
 if __name__ == "__main__":

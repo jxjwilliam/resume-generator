@@ -11,11 +11,16 @@ import {
   IconButton,
   Collapse,
   Box,
+  Stack,
   Typography,
 } from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import ReplayIcon from "@mui/icons-material/Replay";
+import DescriptionIcon from "@mui/icons-material/Description";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import TextSnippetIcon from "@mui/icons-material/TextSnippet";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import { api } from "../api/client";
 import type { RunHistoryItem } from "../types";
 
@@ -30,6 +35,16 @@ function statusColor(status: string): "success" | "error" | "warning" | "default
     case "error": return "error";
     case "running": return "warning";
     default: return "default";
+  }
+}
+
+function fileIcon(type: string) {
+  switch (type) {
+    case "pdf": return <PictureAsPdfIcon fontSize="small" />;
+    case "cover-letter": return <TextSnippetIcon fontSize="small" />;
+    case "ats-report":
+    case "bullet-diff": return <AssessmentIcon fontSize="small" />;
+    default: return <DescriptionIcon fontSize="small" />;
   }
 }
 
@@ -59,25 +74,51 @@ function Row({ item, onReRun }: { item: RunHistoryItem; onReRun: (i: RunHistoryI
       <TableRow>
         <TableCell colSpan={7} sx={{ py: 0 }}>
           <Collapse in={open}>
-            <Box sx={{ p: 2, display: "flex", gap: 2, alignItems: "center" }}>
-              <Box flex={1}>
-                <Typography variant="caption" color="text.secondary">
-                  JD snippet: {item.jd_snippet || "(none)"}
-                </Typography>
-                {item.tags && (
-                  <Typography variant="caption" display="block" color="text.secondary">
-                    Tags: {item.tags}
+            <Box sx={{ p: 2 }}>
+              <Stack direction="row" spacing={2} alignItems="flex-start">
+                <Box flex={1}>
+                  <Typography variant="caption" color="text.secondary">
+                    JD snippet: {item.jd_snippet || "(none)"}
                   </Typography>
-                )}
-                {item.error_log && (
-                  <Typography variant="caption" display="block" color="error">
-                    Error: {item.error_log}
-                  </Typography>
-                )}
-              </Box>
-              <IconButton onClick={() => onReRun(item)} title="Re-run">
-                <ReplayIcon />
-              </IconButton>
+                  {item.tags && (
+                    <Typography variant="caption" display="block" color="text.secondary">
+                      Tags: {item.tags}
+                    </Typography>
+                  )}
+                  {item.error_log && (
+                    <Typography variant="caption" display="block" color="error">
+                      Error: {item.error_log}
+                    </Typography>
+                  )}
+                  {item.output_files && item.output_files.length > 0 && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 0.5 }}>
+                        Output files:
+                      </Typography>
+                      <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                        {item.output_files.map((f) => (
+                          <MuiChip
+                            key={f.name}
+                            icon={fileIcon(f.type)}
+                            label={`${f.name} (${(f.size / 1024).toFixed(0)} KB)`}
+                            component="a"
+                            href={`/api/output/${item.id}/download?name=${encodeURIComponent(f.name)}`}
+                            target="_blank"
+                            clickable
+                            size="small"
+                            variant="outlined"
+                            color={f.type === "pdf" ? "error" : f.type === "cover-letter" ? "info" : "default"}
+                            sx={{ cursor: "pointer" }}
+                          />
+                        ))}
+                      </Stack>
+                    </Box>
+                  )}
+                </Box>
+                <IconButton onClick={() => onReRun(item)} title="Re-run">
+                  <ReplayIcon />
+                </IconButton>
+              </Stack>
             </Box>
           </Collapse>
         </TableCell>

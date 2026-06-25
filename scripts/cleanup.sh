@@ -30,12 +30,18 @@ else
     echo "  ✓ applications.json — does not exist"
 fi
 
-# ── WebUI SQLite DB ──────────────────────────────────────────────
+# ── Shared SQLite history DB (repo-root) ─────────────────────────
+if [ -f "$REPO_ROOT/runs.db" ]; then
+    rm -f "$REPO_ROOT/runs.db"
+    echo "  ✗ runs.db — removed"
+else
+    echo "  ✓ runs.db — does not exist"
+fi
+
+# ── Legacy WebUI SQLite DB (removed in favor of repo-root runs.db) ──
 if [ -f "$REPO_ROOT/ui/backend/runs.db" ]; then
     rm -f "$REPO_ROOT/ui/backend/runs.db"
-    echo "  ✗ ui/backend/runs.db — removed"
-else
-    echo "  ✓ ui/backend/runs.db — does not exist"
+    echo "  ✗ ui/backend/runs.db — removed (legacy)"
 fi
 
 # ── Python cache ─────────────────────────────────────────────────

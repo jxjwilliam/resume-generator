@@ -19,7 +19,7 @@ flowchart TB
         RP["resume.py<br/>filter · assemble · log"]
         TP["transform.py<br/>JSON Patch · rxresu.me sync"]
         VY["variants/&lt;slug&gt;.yaml"]
-        AJ["applications.json"]
+        AJ["runs.db + applications.json"]
         style RP fill:#fff3e0,stroke:#f57c00
         style TP fill:#fff3e0,stroke:#f57c00
         style VY fill:#fff3e0,stroke:#f57c00
@@ -250,7 +250,7 @@ sequenceDiagram
         CLI->>FS: generate cover letter → output/bestit-swe/cover-letter-bestit.txt
     end
 
-    CLI->>FS: log to applications.json
+    CLI->>FS: log to runs.db (SQLite) + legacy applications.json
     FS-->>CLI: done
 
     CLI-->>User: PDF at output/bestit-swe/CV.pdf
@@ -317,11 +317,13 @@ Examples:
 resume-app/
 ├── base.yaml                 # ★ Single source of truth — you edit this
 ├── resume.py                 # CLI composition engine (rendercv path)
+├── history_db.py              # Shared SQLite DB module (CLI + WebUI)
+├── runs.db                    # Shared history database (tracked)
 ├── compose.py                # Shared bullet ranking + caps
 ├── jd_parser.py              # Structured JD keyword parsing
 ├── ats.py                    # ATS scoring + multi-JD compare
 ├── transform.py              # RxResume sync (visual path)
-├── applications.json         # Auto-generated application tracking log
+├── applications.json         # Legacy tracking log (still written for backward compat)
 ├── README.md
 ├── .gitignore
 │
@@ -439,10 +441,12 @@ flowchart LR
     subgraph Commit["✅ Commit to git"]
         C1["base.yaml"]
         C2["resume.py"]
-        C3["transform.py"]
-        C4["applications.json"]
-        C5["variants/"]
-        C6["jds/"]
+        C3["history_db.py"]
+        C4["runs.db"]
+        C5["transform.py"]
+        C6["applications.json"]
+        C7["variants/"]
+        C8["jds/"]
     end
 
     subgraph Ignore["🚫 Ignore (.gitignore)"]

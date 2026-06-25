@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import {
   Box,
   Button,
+  Chip,
   TextField,
   Checkbox,
   FormControlLabel,
@@ -12,6 +13,10 @@ import {
   ToggleButton,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import DescriptionIcon from "@mui/icons-material/Description";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import TextSnippetIcon from "@mui/icons-material/TextSnippet";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import ThemeCard from "../components/ThemeCard";
 import LogStream from "../components/LogStream";
 import JdInput from "../components/JdInput";
@@ -19,7 +24,7 @@ import YamlSelector from "../components/YamlSelector";
 import TagChips from "../components/TagChips";
 import JdAnalysisPanel from "../components/JdAnalysisPanel";
 import { api } from "../api/client";
-import type { ThemeInfo, LogLine, JdAnalysisResult } from "../types";
+import type { ThemeInfo, OutputFile, LogLine, JdAnalysisResult } from "../types";
 
 interface Props {
   themes: ThemeInfo[];
@@ -34,18 +39,20 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   const [jdText, setJdText] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [jdAnalysis, setJdAnalysis] = useState<JdAnalysisResult | null>(null);
-  const [useLlm, setUseLlm] = useState(true);
+  const [useLlm, setUseLlm] = useState(false);
   const [tailor, setTailor] = useState(false);
   const [boost, setBoost] = useState(false);
   const [maxBullets, setMaxBullets] = useState(4);
   const [maxJobs, setMaxJobs] = useState(5);
   const [allFormats, setAllFormats] = useState(false);
   const [locale, setLocale] = useState("en");
-  const [coverLetter, setCoverLetter] = useState(false);
-  const [docx, setDocx] = useState(false);
+  const [coverLetter, setCoverLetter] = useState(true);
+  const [docx, setDocx] = useState(true);
   const [running, setRunning] = useState(false);
   const [logLines, setLogLines] = useState<LogLine[]>([]);
   const [error, setError] = useState("");
+  const [outputFiles, setOutputFiles] = useState<OutputFile[]>([]);
+  const [lastJobId, setLastJobId] = useState<string | null>(null);
 
   const handleLocaleChange = (
     _: React.MouseEvent<HTMLElement>,
@@ -61,11 +68,23 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     }
   };
 
+  const fileIcon = (type: string) => {
+    switch (type) {
+      case "pdf": return <PictureAsPdfIcon fontSize="small" />;
+      case "cover-letter": return <TextSnippetIcon fontSize="small" />;
+      case "ats-report":
+      case "bullet-diff": return <AssessmentIcon fontSize="small" />;
+      default: return <DescriptionIcon fontSize="small" />;
+    }
+  };
+
   const handleRun = useCallback(async () => {
     if (!company.trim()) { setCompany("Unknown"); }
     setError("");
     setRunning(true);
     setLogLines([]);
+    setOutputFiles([]);
+    setLastJobId(null);
 
     try {
       const { job_id } = await api.runResume({
@@ -94,6 +113,13 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         if (detail.status !== "running") {
           clearInterval(poll);
           setRunning(false);
+          setLastJobId(job_id);
+          if (detail.status === "success") {
+            try {
+              const resp = await api.getOutputFiles(job_id);
+              setOutputFiles(resp.files);
+            } catch { /* no output files */ }
+          }
           onRefreshHistory();
         }
       }, 1000);
@@ -189,6 +215,34 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
       {logLines.length > 0 && (
         <Box sx={{ mt: 2 }}>
           <LogStream lines={logLines} onClear={() => setLogLines([])} />
+        </Box>
+      )}
+
+      {outputFiles.length > 0 && (
+        <Box sx={{ mt: 2, p: 2, bgcolor: "success.50", borderRadius: 1, border: "1px solid", borderColor: "success.200" }}>
+          <Typography variant="subtitle2" gutterBottom sx={{ color: "success.700" }}>
+            Generated Output Files
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            {outputFiles.map((f) => {
+              const downloadUrl = `/api/output/${lastJobId}/download?name=${encodeURIComponent(f.name)}`;
+              const sizeKb = (f.size / 1024).toFixed(1);
+              return (
+                <Chip
+                  key={f.name}
+                  icon={fileIcon(f.type)}
+                  label={`${f.name} (${sizeKb} KB)`}
+                  component="a"
+                  href={downloadUrl}
+                  target="_blank"
+                  clickable
+                  variant="outlined"
+                  color={f.type === "pdf" ? "error" : f.type === "cover-letter" ? "info" : "default"}
+                  sx={{ cursor: "pointer" }}
+                />
+              );
+            })}
+          </Stack>
         </Box>
       )}
     </Box>

@@ -54,8 +54,9 @@
                     ▼
 ┌─────────────────────────────────────────┐
 │  TRACKING LOG                           │
-│  applications.json — what went where,   │
+│  runs.db (SQLite) — what went where,     │
 │  which sections, which template, when   │
+│  (shared by CLI + WebUI)                │
 └─────────────────────────────────────────┘
 ```
 
@@ -308,7 +309,7 @@ The composition engine is implemented in `resume.py` at the repo root. The spec 
 | `write_variant()` | Serialize variant dict to `variants/<slug>.yaml` |
 | `render_variant()` | Shell out to `rendercv render` to produce PDF (and optionally HTML/Markdown/PNG) |
 | `generate_docx()` | Build a .docx Word document from the variant YAML using `python-docx` |
-| `log_application()` | Append build metadata to `applications.json` |
+| `_write_history_from_build()` | Write build metadata to shared `runs.db` (SQLite) + legacy `applications.json` |
 | `llm_extract_tags()` | Optional — call DeepSeek/OpenAI API to suggest tags from a JD |
 | `llm_generate_headline()` | Optional — generate a role-specific headline from a JD |
 | `llm_generate_summary()` | Optional — rewrite the summary to match a target role |
@@ -417,36 +418,46 @@ Use Reactive Resume for roles where you want to send a live web link (e.g. in yo
 
 ---
 
-## 5. Application Tracking Log
+## 5. Application Tracking History
 
-Every time you run `resume.py build`, it appends to `applications.json`:
+Every build from the CLI (`resume.py build`) or WebUI writes to a shared SQLite database (`runs.db` at repo root). This replaces the old split of `applications.json` (CLI-only) and `ui/backend/runs.db` (WebUI-only).
 
-```json
-{
-  "applications": [
-    {
-      "id": "bestit-senior-swe-202606",
-      "company": "BestIT",
-      "role": "Senior Software Engineer",
-      "date": "2026-06-10",
-      "tags_used": "backend,python,typescript,api",
-      "template": "classic",
-      "jd_source": "jds/bestit-swe.txt",
-      "variant_file": "variants/bestit-senior-swe-202606.yaml",
-      "output_dir": "output/bestit-senior-swe-202606",
-      "status": "applied",
-      "notes": ""
-    }
-  ]
-}
+The shared module [`history_db.py`](../history_db.py) provides:
+- **Sync API** (`insert_run`, `get_run`, `list_runs`, `update_run`, `scan_output_files`) for `resume.py`
+- **Async wrappers** (`async_insert_run`, etc.) for the WebUI FastAPI backend
+
+Schema highlights (per `runs` table):
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | TEXT PK | Unique ID (slug for CLI, hex hash for WebUI) |
+| `type` | TEXT | `build` or `resume` |
+| `status` | TEXT | `running`, `success`, `error`, `cancelled` |
+| `company` | TEXT | Target company |
+| `role` | TEXT | Target role |
+| `tags` | TEXT | JSON array of tags |
+| `theme` | TEXT | rendercv theme |
+| `output_files` | TEXT | JSON array of generated files (name, type, size) |
+| `run_duration_seconds` | REAL | Build duration |
+| `created_at` / `finished_at` | TEXT | Timestamps |
+
+On first run, `init_db()` automatically migrates existing entries from:
+1. `applications.json` (old CLI log)
+2. `ui/backend/runs.db` (old WebUI DB)
+
+The legacy `applications.json` is still written for backward compatibility.
+
+### History via CLI
+
+```bash
+python resume.py log
 ```
 
-You can add `status` and `notes` fields manually after applying:
+Shows all runs from both CLI and WebUI, with status, duration, and output file list.
 
-```json
-"status": "phone screen booked",
-"notes": "Spoke with recruiter Sarah. Focus on distributed systems in interview."
-```
+### History via WebUI
+
+The **History** tab shows the same data — same SQLite database.
 
 ---
 
@@ -553,7 +564,7 @@ Do you want to send a web link in a cold email?
 | Composition | Python script (`resume.py`) | Reads base, filters by tags, writes variant |
 | PDF + HTML rendering | rendercv | YAML in → clean PDF + HTML out |
 | DOCX Word output | python-docx | Build recruiter-ready .docx from variant YAML |
-| Application tracking | `applications.json` | Simple, no database needed |
+| Application tracking | `runs.db` + `history_db.py` | Shared SQLite — CLI + WebUI see same history |
 
 ### Optional (add as needed)
 
@@ -641,7 +652,7 @@ Build the minimum system that solves your actual problem. Do this in order.
      --template classic \
      --jd jds/bestit-swe.txt
    ```
-3. Check the PDF. Check `applications.json`. You now have a tracked, reproducible application.
+ 3. Check the PDF. Check the history via `python resume.py log`. You now have a tracked, reproducible application.
 
 ### Week 2 — Add LLM (optional, 1–2 hours)
 
@@ -659,7 +670,9 @@ Build the minimum system that solves your actual problem. Do this in order.
 resume-system/
 ├── base.yaml                  # Single source of truth (edit this)
 ├── resume.py                  # Composition engine CLI
-├── applications.json          # Application tracking log (auto-generated)
+├── history_db.py              # Shared SQLite DB module (CLI + WebUI)
+├── runs.db                    # Shared history database (tracked)
+├── applications.json          # Legacy tracking log (still written for compat)
 │
 ├── jds/                       # Job descriptions (paste JD text here)
 ├── variants/                  # Auto-generated per-application YAMLs
@@ -710,7 +723,7 @@ __pycache__/
 .ui_temp_id.txt  # VSCode temp file
 ```
 
-**Commit to git:** `base.yaml`, `resume.py`, `transform.py`, `applications.json`, `variants/`, `jds/`, `runs.db`, `ui/`
+**Commit to git:** `base.yaml`, `resume.py`, `history_db.py`, `transform.py`, `applications.json`, `variants/`, `jds/`, `runs.db`, `ui/`
 
 **Do not commit:** `output/` (PDFs/DOCX — regenerate anytime), `.env` (API keys), `__pycache__/`, `.ui_temp_id.txt`
 

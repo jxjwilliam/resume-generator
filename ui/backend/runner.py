@@ -3,11 +3,13 @@ import os
 import time
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
-from .db import insert_run, update_run
+from .db import insert_run, update_run, scan_output_files
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+OUTPUT_DIR = os.path.join(REPO_ROOT, "output")
 
 _running_jobs: dict[str, dict] = {}
 
@@ -56,8 +58,15 @@ async def _run_process(cmd: list[str], job_id: str, log_queue: asyncio.Queue):
         duration = time.monotonic() - start
 
         if proc.returncode == 0:
-            await update_run(job_id, status="success", run_duration_seconds=duration)
+            output_files = scan_output_files()
+            await update_run(
+                job_id, status="success", run_duration_seconds=duration,
+                output_files=output_files,
+            )
             await log_queue.put("[SYSTEM] Job completed successfully")
+            if output_files:
+                urls = "\n".join(f"  /api/output/{job_id}/download?name={f['name']}" for f in output_files)
+                await log_queue.put(f"[SYSTEM] Output files:\n{urls}")
         else:
             await update_run(
                 job_id, status="error", run_duration_seconds=duration,

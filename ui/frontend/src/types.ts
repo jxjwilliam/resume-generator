@@ -17,6 +17,13 @@ export interface YamlInfo {
   path: string;
 }
 
+export interface OutputFile {
+  name: string;
+  type: string;
+  slug: string;
+  size: number;
+}
+
 export interface RunHistoryItem {
   id: string;
   type: "resume" | "transform";
@@ -28,6 +35,7 @@ export interface RunHistoryItem {
   jd_snippet?: string;
   use_llm: boolean;
   output_path?: string;
+  output_files?: OutputFile[];
   error_log?: string;
   run_duration_seconds?: number;
   created_at: string;
