@@ -29,7 +29,7 @@ export default function YamlSelector({ value, onChange }: Props) {
         onChange={(e) => onChange(e.target.value)}
       >
         {yamls.map((y) => (
-          <MenuItem key={y.name} value={y.name}>
+          <MenuItem key={y.path} value={y.path}>
             {y.name}
           </MenuItem>
         ))}

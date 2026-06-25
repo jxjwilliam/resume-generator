@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 from typing import Optional
 
+DEFAULT_YAML = "profiles/base.yaml"
+
 
 class ResumeRunRequest(BaseModel):
-    yaml_file: str = "base.yaml"
+    yaml_file: str = DEFAULT_YAML
     company: str
     role: Optional[str] = None
     tags: list[str] = []
@@ -26,7 +28,7 @@ class ResumeRunRequest(BaseModel):
 
 
 class TransformRunRequest(BaseModel):
-    yaml_file: str = "base.yaml"
+    yaml_file: str = DEFAULT_YAML
     jd_text: str
     tags: list[str] = []
     template: str = "kakuna"
@@ -110,8 +112,13 @@ class RxTemplateInfo(BaseModel):
 
 
 class JdPreviewRequest(BaseModel):
-    yaml_file: str = "base.yaml"
+    yaml_file: str = DEFAULT_YAML
     text: str
     tags: list[str] = []
     max_bullets: int = 4
     max_jobs: int = 0
+
+
+class YamlSaveRequest(BaseModel):
+    path: str = DEFAULT_YAML
+    content: str

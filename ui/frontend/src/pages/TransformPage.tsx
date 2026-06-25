@@ -16,6 +16,7 @@ import YamlSelector from "../components/YamlSelector";
 import TagChips from "../components/TagChips";
 import RxTemplateCard from "../components/RxTemplateCard";
 import { api } from "../api/client";
+import { DEFAULT_YAML_PATH } from "../types";
 import type { LogLine, RxTemplateInfo } from "../types";
 
 interface Props {
@@ -23,7 +24,7 @@ interface Props {
 }
 
 export default function TransformPage({ onRefreshHistory }: Props) {
-  const [yamlFile, setYamlFile] = useState("base.yaml");
+  const [yamlFile, setYamlFile] = useState(DEFAULT_YAML_PATH);
   const [jdText, setJdText] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [templates, setTemplates] = useState<RxTemplateInfo[]>([]);

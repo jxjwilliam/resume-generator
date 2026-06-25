@@ -26,6 +26,7 @@ import JdAnalysisPanel from "../components/JdAnalysisPanel";
 import AtsScoreWidget from "../components/AtsScoreWidget";
 import BulletDiffView from "../components/BulletDiffView";
 import BulletPreviewPanel from "../components/BulletPreviewPanel";
+import { DEFAULT_YAML_PATH } from "../types";
 import { api } from "../api/client";
 import type {
   ThemeInfo, OutputFile, LogLine, JdAnalysisResult,
@@ -53,7 +54,7 @@ function useStoredState<T>(key: string, fallback: T): [T, (v: T) => void] {
 }
 
 export default function ResumePage({ themes, onRefreshHistory }: Props) {
-  const [yamlFile, setYamlFile] = useStoredState<string>("yamlFile", "base.yaml");
+  const [yamlFile, setYamlFile] = useStoredState<string>("yamlFile", DEFAULT_YAML_PATH);
   const [company, setCompany] = useStoredState<string>("company", "");
   const [role, setRole] = useStoredState<string>("role", "");
   const [selectedTheme, setSelectedTheme] = useStoredState<string>("theme", "classic");
@@ -118,10 +119,12 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     if (!newLocale) return;
     setLocale(newLocale);
     // Auto-switch YAML file when language changes
-    if (newLocale === "zh-CN" && yamlFile === "base.yaml") {
-      setYamlFile("base_zh.yaml");
-    } else if (newLocale === "en" && yamlFile === "base_zh.yaml") {
-      setYamlFile("base.yaml");
+    const prefix = DEFAULT_YAML_PATH.substring(0, DEFAULT_YAML_PATH.lastIndexOf("/") + 1);
+    const zhPath = prefix + "base_zh.yaml";
+    if (newLocale === "zh-CN" && yamlFile === DEFAULT_YAML_PATH) {
+      setYamlFile(zhPath);
+    } else if (newLocale === "en" && yamlFile === zhPath) {
+      setYamlFile(DEFAULT_YAML_PATH);
     }
   };
 

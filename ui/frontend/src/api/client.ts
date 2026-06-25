@@ -2,6 +2,8 @@ import type {
   ThemeInfo,
   RxTemplateInfo,
   YamlInfo,
+  YamlContent,
+  YamlSaveResponse,
   RunHistoryItem,
   OutputFile,
   ResumeRunRequest,
@@ -14,6 +16,7 @@ import type {
   LogLine,
   ComposePreviewResult,
 } from "../types";
+import { DEFAULT_YAML_PATH } from "../types";
 
 const BASE = "/api";
 
@@ -41,11 +44,17 @@ async function get<T>(path: string): Promise<T> {
 
 export const api = {
   listYamls: () => get<YamlInfo[]>("/yamls"),
+  getYaml: (path?: string) => {
+    const q = path ? `?path=${encodeURIComponent(path)}` : "";
+    return get<YamlContent>(`/yaml${q}`);
+  },
+  saveYaml: (path: string, content: string) =>
+    post<YamlSaveResponse>("/yaml", { path, content }),
   listThemes: () => get<ThemeInfo[]>("/themes"),
   listRxTemplates: () => get<RxTemplateInfo[]>("/rxresume-templates"),
   listTags: () => get<{ tags: string[] }>("/tags"),
   analyzeJd: (text: string, yamlFile?: string) =>
-    post<JdAnalysisResult>("/jd/analyze", { text, yaml_file: yamlFile || "base.yaml" }),
+    post<JdAnalysisResult>("/jd/analyze", { text, yaml_file: yamlFile || DEFAULT_YAML_PATH }),
   previewComposition: (req: {
     text: string;
     yaml_file?: string;

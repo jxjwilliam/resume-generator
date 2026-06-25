@@ -2,6 +2,8 @@ import re
 from collections import Counter
 from typing import Optional
 
+PROFILES_DIR = "profiles"
+
 STOPWORDS = {
     "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
     "of", "with", "by", "from", "as", "is", "are", "was", "were", "be",
@@ -40,7 +42,8 @@ def analyze_jd_structured(text: str, base: dict | None = None) -> dict:
 
     if base is None:
         import yaml
-        yaml_path = repo_root / "base.yaml"
+        yaml_path = repo_root / PROFILES_DIR / "base.yaml"
+        # ^ currently unused; kept for API stability
         if yaml_path.exists():
             with open(yaml_path) as f:
                 base = yaml.safe_load(f)

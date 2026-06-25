@@ -41,7 +41,8 @@ from llm_config import (
     resolve_llm_config,
 )
 
-BASE_FILE = "base.yaml"
+PROFILES_DIR = "profiles"
+BASE_FILE = f"{PROFILES_DIR}/base.yaml"
 LOG_FILE = "applications.json"
 OUTPUT_DIR = "output"
 VARIANTS_DIR = "variants"
@@ -531,7 +532,7 @@ def _write_history_from_build(slug, company, role, tags, template, args, variant
         "id": slug,
         "type": "build",
         "status": "success",
-        "yaml_file": getattr(args, "yaml", "base.yaml"),
+        "yaml_file": getattr(args, "yaml", BASE_FILE),
         "company": company,
         "role": role,
         "tags": [t.strip() for t in tags.split(",") if t.strip()] if tags else [],
@@ -688,7 +689,7 @@ def cmd_build(args):
         if headline_override:
             print(f"LLM headline: {headline_override}")
         else:
-            print("LLM headline failed, using base.yaml headline")
+            print(f"LLM headline failed, using {BASE_FILE} headline")
 
         print("Generating LLM summary...")
         summary_override = llm_generate_summary(
@@ -697,7 +698,7 @@ def cmd_build(args):
         if summary_override:
             print(f"LLM summary: {summary_override[:80]}...")
         else:
-            print("LLM summary failed, using base.yaml summary")
+            print(f"LLM summary failed, using {BASE_FILE} summary")
 
     if getattr(args, "enhance", False) and jd_text:
         cfg = resolve_llm_config(llm_provider)
@@ -1803,7 +1804,7 @@ def cmd_cover_letter(args):
         match = next((c for c in cls if c["id"] == "leadership-focused"), None)
 
     if not match:
-        print("Error: No cover letter template found in base.yaml", file=sys.stderr)
+        print(f"Error: No cover letter template found in {BASE_FILE}", file=sys.stderr)
         exit(1)
 
     cl_base = base.get("identity", {}).get("cover_letter_base", {})
@@ -1858,7 +1859,7 @@ def main():
     subparsers = parser.add_subparsers()
 
     build_parser = subparsers.add_parser("build", help="Build a job-specific resume variant")
-    build_parser.add_argument("--yaml", default="base.yaml", help="YAML source file (default: base.yaml)")
+    build_parser.add_argument("--yaml", default=BASE_FILE, help=f"YAML source file (default: {BASE_FILE})")
     build_parser.add_argument("--jd", help="Path to job description text file")
     build_parser.add_argument("--tags", default="", help="Comma-separated tags to filter by")
     build_parser.add_argument("--template", default="classic",
@@ -1894,16 +1895,16 @@ def main():
     build_parser.add_argument("--docx", action="store_true", help="Also generate a .docx Word document")
     build_parser.set_defaults(func=cmd_build)
 
-    analyze_parser = subparsers.add_parser("analyze", help="Analyze a JD against base.yaml")
+    analyze_parser = subparsers.add_parser("analyze", help=f"Analyze a JD against {BASE_FILE}")
     analyze_parser.add_argument("--jd", required=True, help="Path to job description text file")
-    analyze_parser.add_argument("--yaml", default="base.yaml", help="YAML source file")
+    analyze_parser.add_argument("--yaml", default=BASE_FILE, help="YAML source file")
     analyze_parser.add_argument("--tags", default="", help="Comma-separated tags filter")
     analyze_parser.add_argument("--json", action="store_true", help="Output full JSON")
     analyze_parser.set_defaults(func=cmd_analyze)
 
     score_parser = subparsers.add_parser("score", help="Score resume fit against a JD")
     score_parser.add_argument("--jd", required=True, help="Path to job description text file")
-    score_parser.add_argument("--yaml", default="base.yaml", help="YAML source file")
+    score_parser.add_argument("--yaml", default=BASE_FILE, help="YAML source file")
     score_parser.add_argument("--tags", default="", help="Comma-separated tags filter")
     score_parser.add_argument("--max-bullets", type=int, default=DEFAULT_MAX_BULLETS)
     score_parser.add_argument("--max-jobs", type=int, default=DEFAULT_MAX_JOBS)
@@ -1915,7 +1916,7 @@ def main():
     compare_parser = subparsers.add_parser("compare", help="Compare resume fit against 2-5 JDs")
     compare_parser.add_argument("--jd", nargs="*", default=[], help="JD file paths (2-5)")
     compare_parser.add_argument("--jds-dir", help="Compare all .txt files in a directory")
-    compare_parser.add_argument("--yaml", default="base.yaml", help="YAML source file")
+    compare_parser.add_argument("--yaml", default=BASE_FILE, help="YAML source file")
     compare_parser.add_argument("--tags", default="", help="Comma-separated tags filter")
     compare_parser.add_argument("--max-bullets", type=int, default=DEFAULT_MAX_BULLETS)
     compare_parser.add_argument("--max-jobs", type=int, default=DEFAULT_MAX_JOBS)
@@ -1925,7 +1926,7 @@ def main():
 
     interview_parser = subparsers.add_parser("interview", help="Gap analysis + interview prep from JD")
     interview_parser.add_argument("--jd", required=True, help="Path to job description text file")
-    interview_parser.add_argument("--yaml", default="base.yaml", help="YAML source file")
+    interview_parser.add_argument("--yaml", default=BASE_FILE, help="YAML source file")
     interview_parser.add_argument("--tags", default="", help="Comma-separated tags filter")
     interview_parser.add_argument("--llm", action="store_true", help="Generate LLM interview Q&A outlines")
     interview_parser.add_argument("--llm-provider", choices=["deepseek", "kimi", "minimax"],
@@ -1939,8 +1940,8 @@ def main():
     log_parser = subparsers.add_parser("log", help="Show application history")
     log_parser.set_defaults(func=cmd_log)
 
-    cl_parser = subparsers.add_parser("cover-letter", help="Generate a cover letter from base.yaml template")
-    cl_parser.add_argument("--yaml", default="base.yaml", help="YAML source file (default: base.yaml)")
+    cl_parser = subparsers.add_parser("cover-letter", help=f"Generate a cover letter from {BASE_FILE} template")
+    cl_parser.add_argument("--yaml", default=BASE_FILE, help=f"YAML source file (default: {BASE_FILE})")
     cl_parser.add_argument("--company", required=True, help="Target company name")
     cl_parser.add_argument("--role", help="Role title (extracted from JD first line if omitted with --llm)")
     cl_parser.add_argument("--jd", help="Path to job description text file")

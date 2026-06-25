@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { Box, TextareaAutosize, Typography, Alert } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { api } from "../api/client";
+import { DEFAULT_YAML_PATH } from "../types";
 import type { JdAnalysisResult } from "../types";
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
   yamlFile?: string;
 }
 
-export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlFile = "base.yaml" }: Props) {
+export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlFile = DEFAULT_YAML_PATH }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const dragCounter = useRef(0);

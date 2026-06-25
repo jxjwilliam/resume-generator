@@ -19,12 +19,15 @@ from .models import (
     JdCompareRequest,
     JdCompareResponse,
     JdPreviewRequest,
+    YamlSaveRequest,
 )
 from .runner import start_job, stream_logs, cancel_job
 from .theme_data import THEMES, RX_TEMPLATES
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 YAML_GLOBS = ["*.yaml", "*.yml"]
+PROFILES_DIR = "profiles"
+DEFAULT_YAML = f"{PROFILES_DIR}/base.yaml"
 
 
 @asynccontextmanager
@@ -44,10 +47,13 @@ app.add_middleware(
 
 def _list_yaml_files() -> list[YamlInfo]:
     files = []
-    for glob in YAML_GLOBS:
-        for p in REPO_ROOT.glob(glob):
-            if p.is_file():
-                files.append(YamlInfo(name=p.name, path=str(p)))
+    profiles_dir = REPO_ROOT / PROFILES_DIR
+    if profiles_dir.exists():
+        for glob in YAML_GLOBS:
+            for p in profiles_dir.glob(glob):
+                if p.is_file():
+                    rel = p.relative_to(REPO_ROOT)
+                    files.append(YamlInfo(name=p.name, path=str(rel)))
     return sorted(files, key=lambda f: f.name)
 
 
@@ -112,6 +118,51 @@ async def list_yamls():
     return _list_yaml_files()
 
 
+def _resolve_yaml_path(path: str) -> Path:
+    """Resolve and validate a YAML path under profiles/."""
+    full = (REPO_ROOT / path).resolve()
+    profiles_dir = (REPO_ROOT / PROFILES_DIR).resolve()
+    if not str(full).startswith(str(profiles_dir)):
+        raise HTTPException(403, "Path must be under profiles/ directory")
+    if full.suffix.lower() not in (".yaml", ".yml"):
+        raise HTTPException(400, "File must have .yaml or .yml extension")
+    return full
+
+
+@app.get("/api/yaml")
+async def get_yaml(path: str = DEFAULT_YAML):
+    fpath = _resolve_yaml_path(path)
+    if not fpath.exists():
+        raise HTTPException(404, f"File not found: {path}")
+    content = fpath.read_text(encoding="utf-8")
+    return {"path": path, "content": content}
+
+
+@app.put("/api/yaml")
+async def save_yaml(data: YamlSaveRequest):
+    import yaml
+
+    # Validate YAML is parseable
+    try:
+        yaml.safe_load(data.content)
+    except yaml.YAMLError as e:
+        line = getattr(e, "problem_mark", None)
+        line_num = line.line + 1 if line is not None else None
+        detail = f"YAML parse error"
+        if line_num:
+            detail += f" on line {line_num}"
+        raise HTTPException(422, detail=detail)
+
+    fpath = _resolve_yaml_path(data.path)
+    # Create backup
+    backup = fpath.with_suffix(f"{fpath.suffix}~")
+    if fpath.exists():
+        import shutil
+        shutil.copy2(str(fpath), str(backup))
+    fpath.write_text(data.content, encoding="utf-8")
+    return {"status": "saved", "path": data.path}
+
+
 @app.get("/api/themes")
 async def list_themes():
     return THEMES
@@ -124,7 +175,7 @@ async def list_rx_templates():
 
 @app.get("/api/tags")
 async def list_tags():
-    yaml_path = REPO_ROOT / "base.yaml"
+    yaml_path = REPO_ROOT / DEFAULT_YAML
     if not yaml_path.exists():
         return {"tags": []}
     try:
@@ -151,7 +202,7 @@ async def analyze_jd(data: dict):
     if not text:
         raise HTTPException(400, "text is required")
 
-    yaml_file = data.get("yaml_file", "base.yaml")
+    yaml_file = data.get("yaml_file", DEFAULT_YAML)
     base = _load_yaml(yaml_file)
     tags = data.get("tags")
     if isinstance(tags, list):
@@ -211,7 +262,7 @@ async def upload_jd(file: UploadFile):
     if not text:
         raise HTTPException(400, "Could not extract text from file")
 
-    base = _load_yaml("base.yaml")
+    base = _load_yaml(DEFAULT_YAML)
     payload = _jd_analysis_payload(text, base, None)
     return {"text": text[:5000], **payload}
 
@@ -229,7 +280,7 @@ async def compare_jds_api(data: JdCompareRequest):
         sys.path.insert(0, str(REPO_ROOT))
     from ats import compare_jds
 
-    yaml_path = REPO_ROOT / "base.yaml"
+    yaml_path = REPO_ROOT / DEFAULT_YAML
     base = {}
     if yaml_path.exists():
         with open(yaml_path) as f:

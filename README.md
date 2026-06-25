@@ -1,6 +1,6 @@
 # Resume Management System
 
-Maintain a **single source of truth** for your resume (`base.yaml`), compose job-specific variants, and render to **PDF** (via rendercv), **DOCX** (via python-docx), or **visual resumes** (via Reactive Resume). Includes a local **WebUI** (FastAPI + React) for visual operation.
+Maintain a **single source of truth** for your resume (`profiles/base.yaml`), compose job-specific variants, and render to **PDF** (via rendercv), **DOCX** (via python-docx), or **visual resumes** (via Reactive Resume). Includes a local **WebUI** (FastAPI + React) for visual operation.
 
 Stop juggling 7 different resume files. Edit one YAML file — generate any variant you need.
 
@@ -51,9 +51,9 @@ Set `RXRESU_API_KEY` in `.env` for Path B. Set `LLM_PROVIDER` + provider API key
 
 ## Screenshots
 
-| Resume Builder | Transform (RxResume Sync) | Compare JDs | History |
-|---|---|---|---|
-| ![Resume tab](docs/imgs/ui-resume-tab.png) | ![Transform tab](docs/imgs/ui-transform-tab.png) | ![Compare tab](docs/imgs/ui-compare-tab.png) | ![History tab](docs/imgs/ui-history-tab.png) |
+| Resume Builder | Transform (RxResume Sync) | Compare JDs | History | Editor |
+|---|---|---|---|---|
+| ![Resume tab](docs/imgs/ui-resume-tab.png) | ![Transform tab](docs/imgs/ui-transform-tab.png) | ![Compare tab](docs/imgs/ui-compare-tab.png) | ![History tab](docs/imgs/ui-history-tab.png) | — |
 
 ### Generated Output Example
 
@@ -65,7 +65,7 @@ A beautifully designed mockup resume — the system produces real PDFs via rende
 
 ```mermaid
 flowchart LR
-    A["✏️ base.yaml<br/>(manual edit)"] --> B["⚙️ resume.py build"]
+    A["✏️ profiles/base.yaml<br/>(manual edit)"] --> B["⚙️ resume.py build"]
     A --> T["⚙️ transform.py"]
     A --> U["🌐 WebUI"]
     U --> B
@@ -82,7 +82,7 @@ flowchart LR
     B -.-> L["✉️ cover letter .txt"]
 ```
 
-1. **Edit `base.yaml`** — single source of truth: experience, skills, projects, education, summary, headline, cover letter templates.
+1. **Edit `profiles/base.yaml`** — single source of truth: experience, skills, projects, education, summary, headline, cover letter templates.
 2. **Choose a render path:**
    - **`resume.py build`** — tag-filtered variant → rendercv → ATS PDF/HTML, optionally DOCX + cover letter, logged in `runs.db` (shared SQLite) + legacy `applications.json`.
    - **`transform.py`** — sync to rxresu.me for designer templates and live editing.
@@ -101,7 +101,7 @@ Generate a job-specific resume variant and render it to PDF + HTML, with optiona
 | `--role` | ✅* | Job title (extracted from JD first line if omitted with `--llm`) |
 | `--tags` | | Comma-separated tags to filter bullets (e.g. `backend,python,react`) |
 | `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes`, or `auto` (default: `classic`) |
-| `--yaml` | | YAML source file (default: `base.yaml`) |
+| `--yaml` | | YAML source file (default: `profiles/base.yaml`) |
 | `--locale` | | Resume language: `en` or `zh-CN` (default: `en`) |
 | `--jd` | ** | Path to a job description text file (required with `--llm`) |
 | `--max-bullets` | | Max bullets per job (default: `4`; `0` = unlimited) |
@@ -146,7 +146,7 @@ python resume.py build --company "BestIT" --role "高级工程师" --yaml base_z
 
 ### `python resume.py tags`
 
-List every tag used across your `base.yaml`. Use these tags with `--tags` in the build command.
+List every tag used across your `profiles/base.yaml`. Use these tags with `--tags` in the build command.
 
 ```bash
 $ python resume.py tags
@@ -179,7 +179,7 @@ Both CLI builds and WebUI builds appear in the same log.
 
 ### `python resume.py analyze`
 
-Parse a JD against `base.yaml`: hard skills, matched/missing skills, top-scored bullets.
+Parse a JD against `profiles/base.yaml`: hard skills, matched/missing skills, top-scored bullets.
 
 ```bash
 python resume.py analyze --jd jds/target.txt
@@ -219,7 +219,7 @@ Full reference: [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline
 
 ### `python resume.py cover-letter`
 
-Generate a cover letter from a `base.yaml` template, with optional LLM rewrite.
+Generate a cover letter from a `profiles/base.yaml` template, with optional LLM rewrite.
 
 | Flag | Required | Description |
 |---|---|---|
@@ -253,7 +253,7 @@ See [`docs/llm-providers.md`](docs/llm-providers.md) for Kimi (Moonshot) and Min
 
 ### `python transform.py` — RxResume sync
 
-Push `base.yaml` to [rxresu.me](https://rxresu.me) for visual editing and PDF export.
+Push `profiles/base.yaml` to [rxresu.me](https://rxresu.me) for visual editing and PDF export.
 
 | Flag | Description |
 |---|---|
@@ -295,7 +295,7 @@ Reset all generated data — variants, output, applications.json, WebUI database
 
 ### `scripts/screenshot_ui.py`
 
-Capture screenshots of the WebUI (all 4 tabs) and the latest output PDF using Playwright. Saved to `docs/imgs/`.
+Capture screenshots of the WebUI (all 5 tabs) and the latest output PDF using Playwright. Saved to `docs/imgs/`.
 
 ```bash
 pip install playwright pdf2image
@@ -332,11 +332,17 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 | **Transform** | `/transform` | ![Transform tab](docs/imgs/ui-transform-tab.png) | Sync to Reactive Resume: pick template, upload JD, set resume ID |
 | **Compare** | `/compare` | ![Compare tab](docs/imgs/ui-compare-tab.png) | Paste 2–5 JDs, ranked ATS fit table with missing skills |
 | **History** | `/history` | ![History tab](docs/imgs/ui-history-tab.png) | Run log with ATS scores, status, logs, and output links |
+| **Editor** | `/editor` | — | Direct YAML editor with CodeMirror 6: edit any `profiles/*.yaml` file with syntax highlighting, save with backup |
 
 ## Project Structure
 
 ```
-├── base.yaml                # ★ Single source of truth — edit this
+├── profiles/                # ★ Resume profile YAML files (base*.yaml)
+│   ├── base.yaml            #   Single source of truth — edit this
+│   ├── base-v2.yaml
+│   ├── base-v1.yaml
+│   ├── base-zh.yaml         #   Chinese variant
+│   └── base-2-zh.yaml
 ├── resume.py                # CLI composition engine (rendercv path)
 ├── history_db.py             # Shared SQLite DB for CLI + WebUI history
 ├── runs.db                   # SQLite database (shared by CLI + WebUI)
@@ -389,14 +395,15 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │   │   ├── theme_data.py    # Rendercv themes + RxResume templates
 │   └── frontend/
 │       ├── src/
-│       │   ├── App.tsx          # Tab navigation (Resume / Transform / Compare / History)
+│       │   ├── App.tsx          # Tab navigation (Resume / Transform / Compare / History / Editor)
 │       │   ├── api/client.ts    # API client
 │       │   ├── types.ts         # TypeScript interfaces
 │       │   ├── pages/
 │       │   │   ├── ResumePage.tsx
 │       │   │   ├── TransformPage.tsx
 │       │   │   ├── ComparePage.tsx
-│       │   │   └── HistoryPage.tsx
+│       │   │   ├── HistoryPage.tsx
+│       │   │   └── EditorPage.tsx    # YAML editor with CodeMirror
 │       │   └── components/
 │       │       ├── JdAnalysisPanel.tsx
 │       │       ├── BulletPreviewPanel.tsx
@@ -427,7 +434,7 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 ```mermaid
 flowchart TB
     subgraph L1["Layer 1 — Data"]
-        BY["base.yaml<br/>all experience, skills,<br/>projects, education"]
+        BY["profiles/base.yaml<br/>all experience, skills,<br/>projects, education"]
         AG["Tagging System<br/>backend, react, ai, ...<br/>active / deprecated / conflicted"]
     end
 
@@ -463,9 +470,9 @@ flowchart TB
     RX --> VIS
 ```
 
-### Layer 1 — `base.yaml` (single source of truth)
+### Layer 1 — `profiles/base.yaml` (single source of truth)
 
-Every resume bullet, skill, project, and education entry lives in `base.yaml`. Key top-level fields:
+Every resume bullet, skill, project, and education entry lives in `profiles/base.yaml`. Key top-level fields:
 
 | Field | Purpose |
 |---|---|
@@ -534,7 +541,7 @@ python resume.py build --company "X" --role "工程师" --yaml base_zh.yaml --lo
 
 - Langauge toggle switches the rendercv font (`Source Sans 3` → `Noto Sans SC` for CJK support)
 - In the WebUI, toggling language auto-switches to the corresponding YAML file
-- Create `base_zh.yaml` for Chinese content — same schema as `base.yaml`
+- Create `profiles/base_zh.yaml` for Chinese content — same schema as `profiles/base.yaml`
 
 ## LLM Integration (Optional)
 
@@ -578,7 +585,7 @@ open output/test-engineer-202606/William_Jiang_CV.pdf
 
 ```
 # Commit these:
-base.yaml
+profiles/base.yaml
 resume.py
 history_db.py          # Shared history database module
 runs.db                # SQLite history (shared by CLI + WebUI)
@@ -607,6 +614,7 @@ __pycache__/
 
 - **Quality pipeline (analyze, score, compare, tailor, boost):** [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md)
 - **LLM providers (DeepSeek, Kimi, MiniMax):** [`docs/llm-providers.md`](docs/llm-providers.md)
+- **YAML Editor tab design spec:** [`docs/superpowers/specs/2026-06-25-yaml-editor-tab-design.md`](docs/superpowers/specs/2026-06-25-yaml-editor-tab-design.md)
 - Full system design: [`docs/resume-system-implementation.md`](docs/resume-system-implementation.md)
 - RxResume integration: [`docs/rxresume-integration-guide.md`](docs/rxresume-integration-guide.md)
 - Architecture overview: [`docs/overview.md`](docs/overview.md)

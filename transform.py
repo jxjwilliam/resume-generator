@@ -25,7 +25,8 @@ load_dotenv()
 API_BASE = "https://rxresu.me/api/openapi"
 API_KEY = os.environ.get("RXRESU_API_KEY", "")
 
-BASE_FILE = "base.yaml"
+PROFILES_DIR = "profiles"
+BASE_FILE = f"{PROFILES_DIR}/base.yaml"
 DEFAULT_MAX_BULLETS = 4
 PHOTO_CANDIDATES = [
     "assets/william-jiang.jpg",
@@ -495,8 +496,8 @@ def list_resumes() -> list:
 # ── entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="base.yaml → Reactive Resume API")
-    parser.add_argument("--yaml", default=BASE_FILE, help="Path to base.yaml")
+    parser = argparse.ArgumentParser(description=f"{BASE_FILE} → Reactive Resume API")
+    parser.add_argument("--yaml", default=BASE_FILE, help=f"Path to {BASE_FILE}")
     parser.add_argument("--tags", default="fullstack,ai,react,node,python",
                         help="Comma-separated tag filter")
     parser.add_argument("--template", default="kakuna",
@@ -512,7 +513,7 @@ if __name__ == "__main__":
     parser.add_argument("--no-projects", action="store_true",
                         help="Omit projects section (reduces page length)")
     parser.add_argument("--use-cover-letter", action="store_true",
-                        help="Use cover letter template for summary instead of base.yaml summary")
+                        help=f"Use cover letter template for summary instead of {BASE_FILE} summary")
     parser.add_argument("--photo", default=None,
                         help="Profile photo path (default: identity.photo or assets/william-jiang.jpg)")
     parser.add_argument("--no-photo", action="store_true",
@@ -568,14 +569,14 @@ if __name__ == "__main__":
         if headline_override:
             print(f"LLM headline: {headline_override}")
         else:
-            print("LLM headline failed, using base.yaml headline")
+            print(f"LLM headline failed, using {BASE_FILE} headline")
 
         print("Generating LLM summary...")
         summary_override = llm_generate_summary(jd_text, base, role, llm_provider=llm_provider)
         if summary_override:
             print(f"LLM summary: {summary_override[:80]}...")
         else:
-            print("LLM summary failed, using base.yaml summary")
+            print(f"LLM summary failed, using {BASE_FILE} summary")
 
     if not headline_override and role:
         base_headline = base["identity"].get("headline", "")
@@ -621,7 +622,7 @@ if __name__ == "__main__":
         if photo_path:
             print(f"Photo: {photo_path} ({'embedded' if any(o['path']=='/picture' for o in ops) else 'skipped'})")
         elif not args.no_photo:
-            print("Photo: not found (use --photo or add identity.photo in base.yaml)")
+            print(f"Photo: not found (use --photo or add identity.photo in {BASE_FILE})")
     elif args.resume_id:
         result = patch_resume(args.resume_id, ops)
         rid = result.get("id", args.resume_id)

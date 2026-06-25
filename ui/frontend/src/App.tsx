@@ -14,11 +14,13 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import TransformIcon from "@mui/icons-material/AutoFixHigh";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import HistoryIcon from "@mui/icons-material/History";
+import EditIcon from "@mui/icons-material/Edit";
 import Logo from "./components/Logo";
 import ResumePage from "./pages/ResumePage";
 import TransformPage from "./pages/TransformPage";
 import ComparePage from "./pages/ComparePage";
 import HistoryPage from "./pages/HistoryPage";
+import EditorPage from "./pages/EditorPage";
 import { api } from "./api/client";
 import type { ThemeInfo, RunHistoryItem } from "./types";
 
@@ -61,6 +63,7 @@ export default function App() {
             <Tab icon={<TransformIcon />} label="Transform" {...a11yProps(1)} />
             <Tab icon={<CompareArrowsIcon />} label="Compare" {...a11yProps(2)} />
             <Tab icon={<HistoryIcon />} label="History" {...a11yProps(3)} />
+            <Tab icon={<EditIcon />} label="Editor" {...a11yProps(4)} />
           </Tabs>
         </Box>
 
@@ -78,6 +81,9 @@ export default function App() {
             refreshKey={refreshKey}
             onReRun={handleReRun}
           />
+        )}
+        {tab === 4 && (
+          <EditorPage />
         )}
       </Container>
     </ThemeProvider>

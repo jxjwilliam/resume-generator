@@ -1,3 +1,6 @@
+/** Configurable path for the default resume profile YAML */
+export const DEFAULT_YAML_PATH = "profiles/base.yaml";
+
 export interface ThemeInfo {
   id: string;
   name: string;
@@ -164,6 +167,16 @@ export interface JdCompareResult {
 export interface JdCompareItem {
   label: string;
   text: string;
+}
+
+export interface YamlContent {
+  path: string;
+  content: string;
+}
+
+export interface YamlSaveResponse {
+  status: string;
+  path: string;
 }
 
 export type LogLine = {
