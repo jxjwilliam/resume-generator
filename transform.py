@@ -500,7 +500,7 @@ if __name__ == "__main__":
     parser.add_argument("--tags", default="fullstack,ai,react,node,python",
                         help="Comma-separated tag filter")
     parser.add_argument("--template", default="kakuna",
-                        help="rxresume template name (kakuna, bronzor, elegant, etc.)")
+                        help="rxresume template (kakuna, bronzor, elegant, or auto from --jd)")
     parser.add_argument("--skills-mode", choices=["grouped", "flat"], default="grouped",
                         help="grouped: one row per category with keyword tags (default); flat: one row per skill")
     parser.add_argument("--all-skills", action="store_true",
@@ -581,8 +581,18 @@ if __name__ == "__main__":
         base_headline = base["identity"].get("headline", "")
         headline_override = f"{role} | {base_headline}" if base_headline else role
 
+    rx_template = args.template
+    if rx_template == "auto":
+        if jd_text:
+            from resume import select_rx_template_auto
+            rx_template = select_rx_template_auto(jd_text)
+            print(f"Auto-selected RxResume template: {rx_template}")
+        else:
+            rx_template = "kakuna"
+            print("No JD for auto template — using kakuna")
+
     ops = build_operations(
-        base, required_tags, args.template,
+        base, required_tags, rx_template,
         skills_mode=args.skills_mode,
         all_skills=args.all_skills,
         show_skill_levels=args.show_skill_levels,
@@ -594,7 +604,7 @@ if __name__ == "__main__":
         headline_override=headline_override,
         summary_override=summary_override,
     )
-    resume_name = f"william-jiang-{args.template}"
+    resume_name = f"william-jiang-{rx_template}"
 
     if args.dry_run:
         exp_op = next(o for o in ops if o["path"] == "/sections/experience/items")
@@ -624,7 +634,7 @@ if __name__ == "__main__":
             "summary": {"title": "", "icon": "article", "columns": 1, "hidden": False, "content": ""},
             "sections": {},
             "customSections": [],
-            "metadata": {"template": args.template, "layout": {"sidebarWidth": 35, "pages": []}, "page": {}, "design": {}, "typography": {}, "notes": "", "styleRules": []},
+            "metadata": {"template": rx_template, "layout": {"sidebarWidth": 35, "pages": []}, "page": {}, "design": {}, "typography": {}, "notes": "", "styleRules": []},
         }
         created = create_resume(resume_name, resume_name, blank_data)
         rid = created.get("id") if isinstance(created, dict) else created

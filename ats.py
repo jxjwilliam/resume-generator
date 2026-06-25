@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 
-from compose import parse_tag_list, rank_bullets_for_jd, select_experience_jobs
+from compose import bullet_key, parse_tag_list, rank_bullets_for_jd, select_experience_jobs
 
 # Weights sum to 100
 WEIGHT_KEYWORD = 40
@@ -56,6 +56,7 @@ def score_resume(
     summary: str | None = None,
     max_bullets: int = 4,
     max_jobs: int = 0,
+    tailored_bullets: dict[str, str] | None = None,
 ) -> dict:
     """
     Score a composed resume against a JD. Returns breakdown + total /100.
@@ -78,9 +79,15 @@ def score_resume(
 
     # Build combined text for keyword matching (bullets + skills + headline + summary)
     bullet_texts: list[str] = []
-    for _, bullets in jobs:
+    for job, bullets in jobs:
         for b in bullets:
-            bullet_texts.append(b.get("text", ""))
+            key = bullet_key(job["company"], b.get("text", ""))
+            text = (
+                tailored_bullets.get(key, b.get("text", ""))
+                if tailored_bullets
+                else b.get("text", "")
+            )
+            bullet_texts.append(text)
     combined = " ".join(bullet_texts).lower()
     if summary:
         combined += " " + summary.lower()
@@ -158,11 +165,16 @@ def score_resume(
     total_bullets = 0
     quantified_count = 0
     strong_verb_count = 0
-    for _, bullets in jobs:
+    for job, bullets in jobs:
         if len(bullets) > MAX_BULLETS_PER_JOB:
             penalty_points += len(bullets) - MAX_BULLETS_PER_JOB
         for b in bullets:
-            text = b.get("text", "")
+            key = bullet_key(job["company"], b.get("text", ""))
+            text = (
+                tailored_bullets.get(key, b.get("text", ""))
+                if tailored_bullets
+                else b.get("text", "")
+            )
             total_bullets += 1
             if _word_count(text) > MAX_WORDS_PER_BULLET:
                 penalty_points += 1
@@ -264,4 +276,86 @@ def compare_jds(
         "recommended": rankings[0]["label"] if rankings else None,
         "best_score": rankings[0]["total"] if rankings else 0,
         "count": len(rankings),
+    }
+
+
+def score_variant_yaml(
+    variant_path: str,
+    jd_text: str,
+    tags: str | list | None = None,
+) -> dict:
+    """
+    Score a built variants/*.yaml against a JD (reads rendered highlights + sections).
+    """
+    import yaml
+
+    with open(variant_path) as f:
+        variant = yaml.safe_load(f)
+
+    cv = variant.get("cv", variant)
+    sections = cv.get("sections", {})
+
+    headline = cv.get("headline", "")
+    summary_list = sections.get("Summary") or sections.get("summary") or []
+    summary = summary_list[0] if summary_list else ""
+
+    bullet_texts: list[str] = []
+    exp = sections.get("experience") or sections.get("Experience") or []
+    for job in exp:
+        for h in job.get("highlights") or []:
+            bullet_texts.append(h)
+
+    skills_text = ""
+    for row in sections.get("skills") or sections.get("Skills") or []:
+        if isinstance(row, dict):
+            skills_text += " " + row.get("details", "")
+        elif isinstance(row, str):
+            skills_text += " " + row
+
+    combined = " ".join(bullet_texts).lower() + " " + summary.lower() + " " + headline.lower() + skills_text.lower()
+
+    from jd_parser import parse_jd
+
+    parsed = parse_jd(jd_text, None)
+    hard_skills = parsed.get("hard_skills", [])
+    role_title = parsed.get("role_title", "")
+
+    if hard_skills:
+        hard_pct = sum(1 for s in hard_skills if s.lower() in combined) / len(hard_skills)
+        match_report = {
+            "matched_skills": [s for s in hard_skills if s.lower() in combined],
+            "missing_skills": [s for s in hard_skills if s.lower() not in combined],
+        }
+    else:
+        hard_pct = 0.5
+        match_report = {"matched_skills": [], "missing_skills": []}
+
+    keyword_score = round(hard_pct * WEIGHT_KEYWORD, 1)
+    role_tokens = [w for w in re.findall(r"[a-z]+", role_title.lower()) if len(w) > 3]
+    title_search = f"{headline.lower()} {summary.lower()}"
+    title_pct = (
+        sum(1 for t in role_tokens if t in title_search) / len(role_tokens)
+        if role_tokens else 0.5
+    )
+    title_score = round(title_pct * WEIGHT_TITLE, 1)
+    completeness_score = WEIGHT_COMPLETENESS if bullet_texts else WEIGHT_COMPLETENESS * 0.5
+    formatting_score = WEIGHT_FORMATTING
+    conciseness_score = WEIGHT_CONCISENESS * 0.8
+    total = round(keyword_score + title_score + completeness_score + formatting_score + conciseness_score, 1)
+
+    return {
+        "total": total,
+        "grade": _grade(total),
+        "source": "variant_yaml",
+        "variant_path": variant_path,
+        "breakdown": {
+            "keyword_match": {"score": keyword_score, "max": WEIGHT_KEYWORD},
+            "title_alignment": {"score": title_score, "max": WEIGHT_TITLE},
+            "completeness": {"score": completeness_score, "max": WEIGHT_COMPLETENESS},
+            "formatting": {"score": formatting_score, "max": WEIGHT_FORMATTING},
+            "conciseness": {"score": conciseness_score, "max": WEIGHT_CONCISENESS},
+        },
+        "skill_match": match_report,
+        "bullets_included": len(bullet_texts),
+        "role_title": role_title,
     }

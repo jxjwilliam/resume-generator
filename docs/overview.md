@@ -269,10 +269,11 @@ sequenceDiagram
 | `python resume.py cover-letter --company X --role Y` | Generate a cover letter standalone |
 | `python resume.py analyze --jd jds/x.txt` | Structured JD parse + skill match report |
 | `python resume.py score --jd jds/x.txt` | ATS compatibility score (/100) |
+| `python resume.py score --variant variants/foo.yaml --jd jds/x.txt` | Score a built variant YAML |
+| `python resume.py interview --jd jds/x.txt` | Gap analysis + interview prep |
 | `python resume.py compare --jds-dir jds/` | Rank 2–5 JDs by resume fit |
-| `python resume.py build --llm --tailor --boost --template auto` | Full quality pipeline build |
-| `python transform.py --dry-run` | Preview RxResume JSON Patch ops |
-| `python transform.py --resume-id <ID> --all-skills` | Sync `base.yaml` to rxresu.me |
+| `python resume.py build --llm --tailor --boost --template auto --pages 1` | Full quality pipeline build |
+| `python transform.py --resume-id <ID> --template auto --jd jds/x.txt` | RxResume sync with auto template |
 | `./scripts/cleanup.sh` | Reset all generated data (variants, output, DB) |
 
 ### `build` flags
@@ -291,6 +292,8 @@ sequenceDiagram
 | `--llm` | | Enable LLM-based tag extraction + headline + summary from the JD |
 | `--tailor` | | LLM minimally rewrite bullets for JD (requires `--jd` + API key) |
 | `--boost` | | Second LLM pass for verified missing hard skills |
+| `--pages` | | Page budget — trim to N pages (default: 1) |
+| `--target-score` | | Re-run with tailor+boost if ATS below threshold |
 | `--template auto` | | Pick rendercv theme from JD signals |
 | `--all-formats` | | Generate HTML, Markdown, and PNG in addition to PDF |
 | `--cover-letter` | | Also generate a cover letter .txt file |

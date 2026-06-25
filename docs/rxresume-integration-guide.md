@@ -117,7 +117,7 @@ python transform.py [options]
 |---|---|---|
 | `--yaml` | `base.yaml` | Source file |
 | `--tags` | `fullstack,ai,react,node,python` | Comma-separated tag filter |
-| `--template` | `kakuna` | RxResume template name |
+| `--template` | `kakuna` | RxResume template name, or `auto` to pick from JD (`kakuna` / `bronzor` / `chikorita`) |
 | `--resume-id` | — | PATCH existing resume instead of creating new |
 | `--dry-run` | — | Print JSON Patch ops, don't call API |
 | `--skills-mode` | `grouped` | `grouped` (category rows) or `flat` (one row per skill) |

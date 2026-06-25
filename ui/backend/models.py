@@ -14,6 +14,8 @@ class ResumeRunRequest(BaseModel):
     boost: bool = False
     max_bullets: int = 4
     max_jobs: int = 0
+    pages: int = 1
+    no_projects: bool = False
     all_formats: bool = False
     locale: str = "en"
     cover_letter: bool = False
@@ -102,3 +104,11 @@ class RxTemplateInfo(BaseModel):
     name: str
     description: str
     best_for: str
+
+
+class JdPreviewRequest(BaseModel):
+    yaml_file: str = "base.yaml"
+    text: str
+    tags: list[str] = []
+    max_bullets: int = 4
+    max_jobs: int = 0

@@ -4,26 +4,30 @@ A 3-layer system for maintaining a single source-of-truth resume (YAML), composi
 
 ## Repo State
 
-**Implemented.** Core system plus quality pipeline (June 2026):
+**Implemented.** Core system plus full quality pipeline (June 2026):
 
-- `base.yaml` — single source of truth
-- `resume.py` — composition CLI (`build`, `analyze`, `score`, `compare`, `tags`, `log`, `cover-letter`)
+- `base.yaml` — single source of truth (variants, metrics, keywords on bullets)
+- `resume.py` — composition CLI (`build`, `analyze`, `score`, `compare`, `interview`, `tags`, `log`, `cover-letter`)
 - `compose.py` — shared bullet ranking + caps (used by `resume.py` and `transform.py`)
 - `jd_parser.py` — structured JD keyword parsing
-- `ats.py` — deterministic ATS scoring + multi-JD compare
-- `transform.py` — RxResume sync
-- `ui/` — WebUI (Resume, Transform, **Compare**, History tabs)
+- `ats.py` — deterministic ATS scoring + multi-JD compare + `score_variant_yaml()`
+- `llm_pipeline.py` — LLM structured JD parse + hybrid bullet rescoring
+- `tailor_validation.py` — anti-hallucination for tailor rewrites
+- `page_budget.py` — one-page line estimator + trim loop
+- `provenance.py` — `provenance.json` per build
+- `transform.py` — RxResume sync (`--template auto`)
+- `ui/` — WebUI (Resume, Transform, Compare, History tabs)
 
 ## Architecture (3 Layers + Quality Pipeline)
 
 ```
 base.yaml → compose.py (rank + cap) → resume.py → rendercv (PDF+HTML)
-                ↑
-         jd_parser.py + ats.py (optional LLM: --llm --tailor --boost)
+ ↑
+ jd_parser.py + ats.py + llm_pipeline.py (optional LLM: --llm --tailor --boost)
 ```
 
-- **Layer 1** — `base.yaml`: tagged experience, skills, projects, education, cover letters. Optional `variants[]` per bullet.
-- **Layer 2** — `resume.py` + `compose.py`: filter by tags + status, rank bullets, cap length, optional LLM tailor/boost.
+- **Layer 1** — `base.yaml`: tagged experience, skills, projects, education, cover letters. Optional `variants[]`, `metrics[]`, `keywords[]` per bullet.
+- **Layer 2** — `resume.py` + `compose.py`: filter by tags + status, rank bullets, cap length, senior job filter, page budget, optional LLM tailor/boost.
 - **Layer 3** — rendercv / python-docx / rxresu.me: rendering only.
 
 ## Key Files
@@ -35,12 +39,16 @@ base.yaml → compose.py (rank + cap) → resume.py → rendercv (PDF+HTML)
 | `compose.py` | Shared ranking, filtering, skills reorder |
 | `jd_parser.py` | JD → hard skills, title, domain, seniority |
 | `ats.py` | ATS score /100 + `compare_jds()` |
+| `llm_pipeline.py` | LLM JD parse + bullet rescoring |
+| `tailor_validation.py` | Reject bad tailor rewrites |
+| `page_budget.py` | `--pages` trim loop |
+| `provenance.py` | Build provenance JSON |
 | `transform.py` | RxResume sync |
 | `docs/resume-quality-pipeline.md` | **Quality pipeline reference (read this for JD features)** |
 | `docs/resume-system-implementation.md` | Original system design + schema |
 | `docs/rxresume-integration-guide.md` | RxResume sync guide |
 | `variants/*.yaml` | Auto-generated per-job YAML |
-| `output/` | PDFs, DOCX, `ats-report.json`, `bullet-diff.json` (gitignored) |
+| `output/` | PDFs, DOCX, `ats-report.json`, `bullet-diff.json`, `provenance.json` (gitignored) |
 
 ## CLI Commands
 
@@ -52,19 +60,21 @@ python resume.py log
 # Quality pipeline (no LLM required)
 python resume.py analyze --jd jds/target.txt
 python resume.py score --jd jds/target.txt --max-bullets 3
+python resume.py score --jd jds/target.txt --variant variants/foo.yaml
 python resume.py compare --jds-dir jds/
+python resume.py interview --jd jds/target.txt --tags ai,python
 
 # Build — manual tags
 python resume.py build --company "BestIT" --role "Senior SWE" \
-  --tags backend,python,api --template classic --max-bullets 3 --max-jobs 4
+  --tags backend,python,api --template classic --max-bullets 3 --max-jobs 4 --pages 1
 
 # Build — full LLM pipeline
 python resume.py build --company "BestIT" --jd jds/target.txt \
-  --llm --tailor --boost --template auto --docx
+  --llm --tailor --boost --template auto --pages 1 --target-score 75 --docx
 
 # RxResume
 python transform.py --dry-run --all-skills
-python transform.py --resume-id <ID> --all-skills --max-bullets 3
+python transform.py --resume-id <ID> --all-skills --jd jds/target.txt --template auto
 ```
 
 ## Build Flags (quality pipeline)
@@ -73,9 +83,12 @@ python transform.py --resume-id <ID> --all-skills --max-bullets 3
 |---|---|---|
 | `--max-bullets` | 4 | Cap bullets per job |
 | `--max-jobs` | 0 | Cap experience entries (0 = unlimited) |
+| `--pages` | 1 | Page budget trim (0 = disabled) |
+| `--no-projects` | off | Omit projects for shorter resume |
 | `--template auto` | — | Pick theme from JD signals |
-| `--llm` | off | Tags + headline + summary from JD |
-| `--tailor` | off | LLM bullet rewrite (truth-first) |
+| `--target-score` | 0 | Re-run with tailor+boost if below threshold |
+| `--llm` | off | Tags + headline + summary + JD parse + bullet rescoring |
+| `--tailor` | off | LLM bullet rewrite (truth-first + validation) |
 | `--boost` | off | Second pass for verified missing skills |
 
 ## Important Conventions
@@ -84,8 +97,9 @@ python transform.py --resume-id <ID> --all-skills --max-bullets 3
 - **Status flags:** `active` / `deprecated` / `conflicted`
 - **LLM never fabricates** — only rephrases verified `base.yaml` content
 - **ATS scoring is deterministic** — LLM is not used to grade
-- Builds with `--jd` write `output/{slug}/ats-report.json`
+- Builds with `--jd` write `output/{slug}/ats-report.json` + `provenance.json`
 - `--tailor` / `--boost` write `output/{slug}/bullet-diff.json`
+- `--pages` writes `output/{slug}/page-budget.json`
 
 ## LLM Integration
 

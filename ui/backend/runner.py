@@ -59,9 +59,18 @@ async def _run_process(cmd: list[str], job_id: str, log_queue: asyncio.Queue):
 
         if proc.returncode == 0:
             output_files = scan_output_files()
+            ats_kwargs = {}
+            try:
+                from history_db import ats_from_output_files
+                ats = ats_from_output_files(output_files)
+                if ats:
+                    ats_kwargs = ats
+            except Exception:
+                pass
             await update_run(
                 job_id, status="success", run_duration_seconds=duration,
                 output_files=output_files,
+                **ats_kwargs,
             )
             await log_queue.put("[SYSTEM] Job completed successfully")
             if output_files:

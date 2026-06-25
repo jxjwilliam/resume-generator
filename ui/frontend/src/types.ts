@@ -38,6 +38,10 @@ export interface RunHistoryItem {
   output_files?: OutputFile[];
   error_log?: string;
   run_duration_seconds?: number;
+  ats_score?: number;
+  ats_grade?: string;
+  ats_before_score?: number;
+  pages?: number;
   created_at: string;
   finished_at?: string;
 }
@@ -54,6 +58,8 @@ export interface ResumeRunRequest {
   boost?: boolean;
   max_bullets?: number;
   max_jobs?: number;
+  pages?: number;
+  no_projects?: boolean;
   all_formats?: boolean;
   locale?: string;
   cover_letter?: boolean;
@@ -83,10 +89,15 @@ export interface JdAnalysisResult {
   hard_skills: string[];
   title_keywords?: string[];
   domain_keywords?: string[];
+  soft_skills?: string[];
   role_title?: string;
   seniority?: string;
+  domain?: string | null;
   matched_skills: string[];
   missing_skills: string[];
+  matched_soft_skills?: string[];
+  missing_soft_skills?: string[];
+  matched_domain_keywords?: string[];
   top_bullets: { job: string; text: string; score: number }[];
 }
 
@@ -94,9 +105,40 @@ export interface JdUploadResult {
   text: string;
   keywords: string[];
   hard_skills?: string[];
+  title_keywords?: string[];
+  domain_keywords?: string[];
+  soft_skills?: string[];
+  role_title?: string;
+  seniority?: string;
+  domain?: string | null;
   matched_skills?: string[];
   missing_skills?: string[];
+  matched_soft_skills?: string[];
+  missing_soft_skills?: string[];
+  matched_domain_keywords?: string[];
   top_bullets?: { job: string; text: string; score: number }[];
+}
+
+export interface PreviewBullet {
+  text: string;
+  score: number;
+  relevance: string;
+  tags: string[];
+  included: boolean;
+}
+
+export interface PreviewJob {
+  company: string;
+  title: string;
+  job_included: boolean;
+  bullets: PreviewBullet[];
+}
+
+export interface ComposePreviewResult {
+  jobs: PreviewJob[];
+  jobs_included: number;
+  bullets_included: number;
+  bullets_excluded: number;
 }
 
 export interface JdCompareRanking {
@@ -126,3 +168,58 @@ export type LogLine = {
   text: string;
   source: "stdout" | "stderr" | "system";
 };
+
+export interface AtsScoreBreakdownItem {
+  score?: number;
+  max?: number;
+  pct?: number;
+}
+
+export interface AtsReport {
+  total: number;
+  grade: string;
+  breakdown: {
+    keyword_match?: AtsScoreBreakdownItem;
+    title_alignment?: AtsScoreBreakdownItem;
+    completeness?: AtsScoreBreakdownItem;
+    formatting?: AtsScoreBreakdownItem;
+    conciseness?: AtsScoreBreakdownItem;
+  };
+  skill_match?: {
+    matched_skills?: string[];
+    missing_skills?: string[];
+    matched_soft_skills?: string[];
+    missing_soft_skills?: string[];
+  };
+  role_title?: string;
+  seniority?: string;
+  jobs_included?: number;
+  bullets_included?: number;
+}
+
+export interface BulletDiffEntry {
+  key: string;
+  job: string;
+  title?: string;
+  original: string;
+  source_used?: string;
+  rewritten?: string | null;
+  final: string;
+  status: "accepted" | "rejected" | "unchanged" | "boosted";
+  rejection_reason?: string | null;
+  pass?: string;
+  approved?: boolean;
+}
+
+export interface BulletDiffReport {
+  before_ats?: { total: number; grade: string; keyword_pct?: number } | null;
+  after_ats?: { total: number; grade: string; keyword_pct?: number } | null;
+  delta?: number | null;
+  bullets: BulletDiffEntry[];
+  stats?: {
+    accepted?: number;
+    rejected?: number;
+    unchanged?: number;
+    boosted?: number;
+  };
+}

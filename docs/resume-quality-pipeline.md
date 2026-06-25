@@ -60,12 +60,16 @@ flowchart TB
 
 | Module | Purpose |
 |---|---|
-| [`compose.py`](../compose.py) | Shared bullet ranking, tag filtering, job selection, skills reorder |
+| [`compose.py`](../compose.py) | Shared bullet ranking, variant picker, senior job filter, skills reorder |
 | [`jd_parser.py`](../jd_parser.py) | Structured JD parse: hard skills, title keywords, domain, seniority |
-| [`ats.py`](../ats.py) | Deterministic ATS score (/100) + multi-JD compare |
-| [`resume.py`](../resume.py) | CLI: `build`, `analyze`, `score`, `compare` + LLM integration |
-| [`transform.py`](../transform.py) | Uses `compose.py` for consistent bullet ranking with rendercv path |
-| [`ui/backend/main.py`](../ui/backend/main.py) | WebUI API: `/api/jd/analyze`, `/api/jd/compare`, build with new flags |
+| [`ats.py`](../ats.py) | Deterministic ATS score (/100) + multi-JD compare + `score_variant_yaml()` |
+| [`llm_pipeline.py`](../llm_pipeline.py) | Optional LLM structured JD parse + hybrid 0–10 bullet rescoring |
+| [`tailor_validation.py`](../tailor_validation.py) | Reject tailor rewrites with numbers/tools not in source |
+| [`page_budget.py`](../page_budget.py) | Line estimator + trim loop for `--pages` |
+| [`provenance.py`](../provenance.py) | `provenance.json` — atomic units + source refs per build |
+| [`resume.py`](../resume.py) | CLI: `build`, `analyze`, `score`, `compare`, `interview`, `tags`, `log` |
+| [`transform.py`](../transform.py) | RxResume sync; `--template auto` for kakuna/bronzor/chikorita |
+| [`ui/backend/main.py`](../ui/backend/main.py) | WebUI API: JD analyze/preview, build, output download |
 
 ---
 
@@ -77,6 +81,8 @@ Each bullet receives a score:
 
 ```
 score = (tag_overlap × 10) + relevance_tier + (JD_keyword_hits × 5)
+      + (bullet.keywords ∩ JD × 4) + (metrics[] present ? 2 : 0)
+      + (LLM_rescore_0–10 × 5)   # when --llm
 ```
 
 | `relevance` | Tier points |
@@ -92,7 +98,8 @@ score = (tag_overlap × 10) + relevance_tier + (JD_keyword_hits × 5)
 3. Sort bullets by score (descending)
 4. Cap at `--max-bullets` per job (default: 4)
 5. Cap at `--max-jobs` total (default: 0 = unlimited)
-6. Output newest jobs first
+6. For **senior/staff/principal/director** JDs: drop jobs with no `relevance: high` bullets and weak JD overlap
+7. Output newest jobs first
 
 ### Skills section
 
@@ -148,8 +155,12 @@ python resume.py compare --jds-dir jds/
 # 2. Deep-dive on one JD
 python resume.py analyze --jd jds/target.txt
 
-# 3. Check score before/after tuning
+# 3. Check score (composed or built variant)
 python resume.py score --jd jds/target.txt --tags backend,python --max-bullets 3
+python resume.py score --jd jds/target.txt --variant variants/acme-role-202606.yaml
+
+# 3b. Interview prep / gap analysis
+python resume.py interview --jd jds/target.txt --tags ai,python
 
 # 4. Full quality build
 python resume.py build \
@@ -158,12 +169,16 @@ python resume.py build \
   --llm --tailor --boost \
   --max-bullets 3 --max-jobs 4 \
   --template auto \
+  --pages 1 \
+  --target-score 75 \
   --docx
 
 # 5. Review artifacts
 open output/acme-*/William_Jiang_CV.pdf
 cat output/acme-*/ats-report.json
-cat output/acme-*/bullet-diff.json    # when --tailor or --boost ran
+cat output/acme-*/bullet-diff.json    # when --tailor or --boost
+cat output/acme-*/provenance.json
+cat output/acme-*/page-budget.json    # when --pages > 0 ran
 ```
 
 ### `python resume.py analyze`
@@ -187,8 +202,21 @@ ATS compatibility score without building a PDF.
 | `--tags` | Optional tag filter |
 | `--max-bullets` | Bullets per job for composition preview (default: 4) |
 | `--max-jobs` | Max experience entries (default: 0 = unlimited) |
+| `--variant` | Score a built `variants/*.yaml` instead of composing from base |
 | `--output` | Write JSON report to file |
 | `--json` | Print JSON to stdout |
+
+### `python resume.py interview`
+
+Gap analysis + interview prep from a JD.
+
+| Flag | Description |
+|---|---|
+| `--jd` | Path to JD text file (required) |
+| `--yaml` | Source YAML (default: `base.yaml`) |
+| `--tags` | Optional tag filter |
+| `--llm` | Generate LLM interview Q&A outlines (verify facts) |
+| `--json` | Output full JSON |
 
 ### `python resume.py compare`
 
@@ -209,6 +237,9 @@ Rank 2–5 JDs by resume fit.
 | `--max-bullets N` | Max bullets per job (default: 4; 0 = unlimited) |
 | `--max-jobs N` | Max experience entries (default: 0 = unlimited) |
 | `--template auto` | Pick rendercv theme from JD signals |
+| `--pages N` | Trim to fit N pages (default: 1; 0 = no trim) |
+| `--no-projects` | Omit projects section |
+| `--target-score N` | Re-run once with tailor+boost if score below N |
 | `--tailor` | LLM minimally rewrite selected bullets for JD (requires `--jd` + API key) |
 | `--boost` | Second LLM pass: weave verified missing hard skills into bullets + skills (requires `--jd` + API key) |
 
@@ -220,7 +251,14 @@ Existing flags unchanged: `--llm`, `--jd`, `--docx`, `--cover-letter`, `--all-fo
 
 Requires `DEEPSEEK_API_KEY` in `.env` (OpenAI-compatible; Ollama supported via `DEEPSEEK_BASE_URL`).
 
-Set `LLM_PROVIDER=deepseek|kimi|minimax` to switch providers. See [`docs/llm-providers.md`](docs/llm-providers.md).
+Set `LLM_PROVIDER=deepseek|kimi|minimax` to switch providers. See [`docs/llm-providers.md`](llm-providers.md).
+
+### Step 0 — Structured JD parse + bullet rescoring (`--llm`)
+
+When `--llm` is set with `--jd`:
+
+1. `llm_parse_jd()` enriches heuristic parse with `must_have_skills` / `nice_to_have_skills`
+2. `llm_rescore_bullets()` re-scores top 20 deterministic candidates 0–10; combined score feeds bullet ranking
 
 ### Step 1 — Tag extraction (`--llm`)
 
@@ -237,8 +275,9 @@ Rewrites selected bullets (max 22 words):
 
 - Same facts — no invented employers, metrics, or tools
 - Strong action verb, JD keywords woven naturally
+- **`tailor_validation.py`** rejects rewrites that introduce new numbers, years, or tools
 
-Output: `output/{slug}/bullet-diff.json` (key → rewritten text).
+Output: `output/{slug}/bullet-diff.json` with original/rewritten pairs, validation status, and before/after ATS scores.
 
 ### Step 4 — Boost (`--boost`)
 
@@ -265,25 +304,55 @@ Runs after tailor (or standalone):
 | ATS mentioned explicitly | `engineeringresumes` |
 | Default | `sb2nov` |
 
+RxResume visual templates (`transform.py --template auto`):
+
+| Signal | Template |
+|---|---|
+| Creative / design / portfolio | `bronzor` |
+| Startup / product / founder | `chikorita` |
+| Default | `kakuna` |
+
+---
+
+## Page budget (`--pages`)
+
+`page_budget.py` estimates line count and trims in order:
+
+1. Lowest-scored bullets per job
+2. Projects section
+3. Skills collapse (single row)
+4. Lowest-scored jobs
+
+Writes `output/{slug}/page-budget.json` with actions taken.
+
 ---
 
 ## `base.yaml` Extensions
 
-### Optional `variants` per bullet
+### Optional fields per bullet
 
-Pre-written alternates — LLM picks/edits these instead of free-writing:
+| Field | Purpose |
+|---|---|
+| `variants[]` | Pre-written alternates — `pick_bullet_text()` picks best JD fit |
+| `metrics[]` | Quantified impact phrases (ATS + scoring boost) |
+| `keywords[]` | Extra ATS terms for JD matching |
+
+Example:
 
 ```yaml
-- text: "Built REST APIs and backend workflows for GPU performance tracking"
-  tags: [backend, python, api]
+- text: "Shipped production GenAI RAG pipeline for enterprise clients"
+  tags: [ai, llm, rag, python]
   status: active
   relevance: high
+  metrics: ["production GenAI", "enterprise scale"]
+  keywords: [RAG, LangChain, FastAPI]
   variants:
-    - "Built FastAPI REST APIs for real-time GPU/CPU tracking in Kubernetes"
-    - "Optimized REST APIs and backend workflows supporting Kubernetes GPU monitoring"
+    - "Built enterprise RAG system integrating LLMs with document repositories via FastAPI and vector DBs"
 ```
 
 Documented in the header comment of [`base.yaml`](../base.yaml).
+
+Early-career roles (e.g. Best Buy Canada) are **`deprecated`** for senior/staff targeting; the senior job filter also drops weak jobs automatically.
 
 ---
 
@@ -293,18 +362,21 @@ Start: `./ui/start.sh` → http://localhost:5173
 
 | Tab | Features |
 |---|---|
-| **Resume** | JD analysis panel (hard skills, missing, top bullets), max bullets/jobs, LLM, Tailor, Boost ATS, Auto theme |
+| **Resume** | JD panel (title/domain/soft skills), bullet preview, auto theme, tailor/boost, ATS widget, bullet diff viewer, re-run boost |
 | **Compare** | Paste 2–5 JDs, ranked fit table with scores and missing skills |
 | **Transform** | RxResume sync (unchanged) |
-| **History** | Run log (unchanged) |
+| **History** | Run log with ATS score column + before/after delta |
 
 ### API endpoints
 
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/api/jd/analyze` | Structured JD parse + match report |
+| POST | `/api/jd/preview` | Pre-build bullet include/exclude preview |
 | POST | `/api/jd/compare` | Multi-JD fit matrix |
-| POST | `/api/resume/run` | Build with `tailor`, `boost`, `max_bullets`, `max_jobs` |
+| GET | `/api/output/{id}/content` | Inline JSON (ats-report, bullet-diff) |
+| GET | `/api/output/{id}/download` | Download output files |
+| POST | `/api/resume/run` | Build with `tailor`, `boost`, `max_bullets`, `max_jobs`, `pages` |
 
 ---
 
@@ -319,7 +391,28 @@ output/{slug}/
 ├── resume.docx                      # if --docx
 ├── cover-letter-{company}.txt       # if --cover-letter
 ├── ats-report.json                  # always (when --jd set)
-└── bullet-diff.json               # when --tailor or --boost
+├── bullet-diff.json                 # when --tailor or --boost
+├── page-budget.json                 # when --pages > 0
+└── provenance.json                  # always (when --jd set)
+```
+
+`provenance.json` tracks each included bullet: base text, variant chosen, tailor status, deterministic + LLM scores, and ATS before/after.
+
+`bullet-diff.json` includes:
+
+```json
+{
+  "before_ats": 72,
+  "after_ats": 87,
+  "entries": [
+    {
+      "key": "Best IT|Shipped production GenAI...",
+      "original": "...",
+      "rewritten": "...",
+      "status": "accepted"
+    }
+  ]
+}
 ```
 
 `ats-report.json` structure:

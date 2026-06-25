@@ -2,9 +2,10 @@
 # This is the ONLY manually edited file. Everything else is generated.
 # Schema defined in docs/resume-system-implementation.md Section 2
 #
-# Optional per-bullet field:
+# Optional per-bullet fields:
 #   variants: ["alternate phrasing 1", "alternate phrasing 2"]
-# Used by --tailor to pick pre-written alternates instead of free LLM rewrites.
+#   metrics: ["quantified impact phrases for ATS"]
+#   keywords: ["extra ATS terms tied to this bullet"]
 #
 # Version 2.0 — AI/ML/Python/TS forward upgrade
 # Updated: 2026-06-25
@@ -107,17 +108,14 @@ experience:
     location: "Vancouver, Canada"
     start: "2007-03"
     end: "2014-07"
-    status: active
+    status: deprecated
     tags: [frontend, javascript, ecommerce, ui, react, fullstack]
+    note: "Omit for senior/staff AI roles — early-career frontend; senior filter drops automatically"
     bullets:
-      - text: "Led frontend delivery for bestbuy.ca and futureshop.ca: multi-video support, 360-degree product rotation, and responsive UI across Desktop, Tablet, and Mobile"
-        tags: [frontend, javascript, ui, mobile]
-        status: active
-        relevance: medium
-      - text: "Delivered Best Buy Warranties and Shopping Cart Clearance features; improved checkout conversion through performance-optimized JavaScript"
-        tags: [frontend, javascript, ecommerce, performance]
-        status: active
-        relevance: medium
+      - text: "Led bestbuy.ca frontend features (360° product views, multi-video, responsive UI) and checkout optimizations that improved conversion via performance-tuned JavaScript"
+        tags: [frontend, javascript, ui, mobile, ecommerce]
+        status: deprecated
+        relevance: low
 
   - company: "WebMD"
     title: "Senior Frontend Engineer"
@@ -127,18 +125,27 @@ experience:
     status: active
     tags: [frontend, javascript, advertising, node, angular, data]
     bullets:
-      - text: "Led Consumer-UI team delivering high-revenue ad services; integrated Google DFP, Media.net header-bidding, and 3rd-party ad networks (PubMatic, Nativo, Adobe Cloud) using JavaScript, Node.js, and jQuery"
+      - text: "Drove programmatic ad revenue growth across WebMD's high-traffic properties by integrating Google DFP, Media.net header-bidding, and 5+ ad networks (PubMatic, Nativo, Adobe) with JavaScript and Node.js"
         tags: [frontend, javascript, node, advertising]
         status: active
-        relevance: medium
-      - text: "Drove measurable advertising revenue uplift by integrating Google DFP with Adobe Analytics and Media.net header-bidding across WebMD's high-traffic properties"
+        relevance: high
+        metrics: ["high-traffic properties", "5+ ad networks"]
+        keywords: [header-bidding, programmatic, DFP]
+        variants:
+          - "Led Consumer-UI ad stack integration (Google DFP, Media.net, PubMatic, Nativo, Adobe) using JavaScript and Node.js — measurably increased programmatic revenue on WebMD properties"
+      - text: "Increased advertising yield by connecting Google DFP with Adobe Analytics and Media.net header-bidding across WebMD's consumer-facing sites"
         tags: [frontend, javascript, advertising, performance]
         status: active
         relevance: high
-      - text: "Built Big Data pipeline with real-time processing and document store using AngularJS, Node.js, MongoDB, and Amazon S3"
+        metrics: ["advertising yield"]
+        keywords: [Adobe Analytics, header-bidding]
+      - text: "Built real-time Big Data ingestion pipeline processing high-volume event streams using AngularJS, Node.js, MongoDB, and Amazon S3"
         tags: [fullstack, angular, node, mongodb, aws, data]
         status: active
         relevance: medium
+        variants:
+          - "Designed Big Data pipeline with real-time processing and document store (AngularJS, Node.js, MongoDB, S3) for WebMD analytics workloads"
+        keywords: [streaming, data pipeline]
 
   - company: "China Soft International (HSBC)"
     title: "Software Architect / Full-Stack Engineer"
@@ -148,10 +155,14 @@ experience:
     status: active
     tags: [fullstack, react, java, banking, architecture, microservices]
     bullets:
-      - text: "Architected and built Retail Banking Onboarding platform for SME customers: React/Redux frontend, Java Spring Boot microservices, Node.js APIs, MongoDB — serving multi-country enterprise clients"
+      - text: "Architected SME retail banking onboarding platform (React/Redux, Java Spring Boot, Node.js, MongoDB) serving multi-country HSBC enterprise rollout"
         tags: [fullstack, react, java, spring-boot, node, banking, architecture]
         status: active
         relevance: high
+        metrics: ["multi-country rollout"]
+        keywords: [onboarding, microservices, Spring Boot]
+        variants:
+          - "Architected and built Retail Banking Onboarding for SME customers: React/Redux frontend, Java Spring Boot microservices, Node.js APIs, MongoDB — multi-country enterprise delivery"
       - text: "Led architecture design and cross-functional stakeholder coordination across multiple countries for HSBC's SME digital banking rollout"
         tags: [leadership, architecture, banking, stakeholder]
         status: active
@@ -169,10 +180,12 @@ experience:
     status: active
     tags: [fullstack, react, node, python, finance, architecture, websockets]
     bullets:
-      - text: "Architected real-time stock trading integration platform for Credit Suisse: React/Node.js frontend, WebSocket event streams, Python microservices, MongoDB — handling mission-critical uptime requirements"
+      - text: "Architected mission-critical real-time trading integration for Credit Suisse: React/Node.js UI, WebSocket streams, Python microservices, MongoDB — meeting strict uptime SLAs"
         tags: [fullstack, react, node, python, finance, websockets, architecture]
         status: active
         relevance: high
+        metrics: ["mission-critical uptime"]
+        keywords: [WebSocket, event-driven, trading]
         variants:
           - "Built high-availability real-time data integration system for Credit Suisse stock trading operations using React, Node.js, WebSockets, and Python microservices"
       - text: "Mentored development team on event-driven microservice design patterns; established code review practices and scalable architecture standards"
@@ -188,16 +201,21 @@ experience:
     status: active
     tags: [fullstack, ai, ml, python, react, node, devops, mlops, kubeflow]
     bullets:
-      - text: "Led design and implementation of MLDP (Machine Learning Data Pipeline) — production platform managing ML experiments, GPU/CPU workload scheduling, and model lifecycle for hundreds of millions of inference events annually; stack: React.js, Python, Node.js, Java, Kubernetes on AWS & GCP"
+      - text: "Led MLDP production ML platform managing GPU/CPU scheduling and model lifecycle for hundreds of millions of inference events annually (React, Python, Node.js, Kubernetes on AWS & GCP)"
         tags: [fullstack, ai, ml, react, node, python, architecture, mlops]
         status: active
         relevance: high
+        metrics: ["hundreds of millions of inference events annually"]
+        keywords: [MLOps, Kubeflow, GPU scheduling, model lifecycle]
         variants:
           - "Designed and shipped MLDP production ML pipeline managing model training, GPU scheduling, and experiment lifecycle at scale (hundreds of millions of events/year) using Python, Kubeflow, and Kubernetes"
-      - text: "Built and optimized ML training workflows using Kubeflow and distributed GPU clusters; managed experiment tracking and model versioning pipelines"
+      - text: "Optimized ML training workflows on Kubeflow and distributed GPU clusters; owned experiment tracking and model versioning for production model releases"
         tags: [ai, ml, kubeflow, python, mlops, gpu]
         status: active
         relevance: high
+        keywords: [distributed training, experiment tracking]
+        variants:
+          - "Built and optimized ML training workflows using Kubeflow and distributed GPU clusters; managed experiment tracking and model versioning pipelines"
       - text: "Designed REST APIs and backend services for real-time GPU/CPU performance tracking; drove observability improvements with Prometheus and ElasticSearch that measurably improved service reliability"
         tags: [backend, api, devops, kubernetes, performance, observability]
         status: active
@@ -219,16 +237,21 @@ experience:
     status: active
     tags: [fullstack, ai, llm, rag, agentic, consulting, founder, python, node, typescript]
     bullets:
-      - text: "Architected and shipped production-grade GenAI document intelligence and RAG pipeline for Shaanxi Coal & Chemical Industry Group: multi-LLM orchestration (OpenAI, Claude, OSS) over structured/unstructured enterprise data using Python FastAPI, LangChain, LlamaIndex, and React — handling real-time inference at scale"
+      - text: "Shipped production GenAI RAG pipeline for Shaanxi Coal enterprise: multi-LLM orchestration (OpenAI, Claude, OSS) over structured/unstructured data via Python FastAPI, LangChain, LlamaIndex, and React"
         tags: [ai, llm, rag, python, fastapi, langchain, llamaindex, react, enterprise]
         status: active
         relevance: high
+        metrics: ["production GenAI", "enterprise scale"]
+        keywords: [RAG, vector DB, LangChain, FastAPI, LlamaIndex]
         variants:
           - "Built enterprise RAG system for Shaanxi Coal integrating LLMs with corporate document repositories via Python FastAPI, LangChain, and vector DBs — reducing document retrieval time significantly"
-      - text: "Implemented agentic multi-agent workflows using CrewAI for complex enterprise automation; designed prompt engineering and context engineering strategies that reduced hallucination rates and improved retrieval precision"
+      - text: "Implemented CrewAI multi-agent workflows for enterprise automation; applied prompt and context engineering that reduced hallucinations and improved retrieval precision"
         tags: [ai, agentic, crewai, prompt-engineering, llm, python]
         status: active
         relevance: high
+        keywords: [multi-agent, agentic AI, context engineering]
+        variants:
+          - "Implemented agentic multi-agent workflows using CrewAI for complex enterprise automation; designed prompt engineering and context engineering strategies that reduced hallucination rates and improved retrieval precision"
       - text: "Evaluated and selected LLM providers (OpenAI, Anthropic Claude, OSS) based on latency, cost, accuracy, and enterprise security constraints; maintained production monitoring and observability pipelines for AI services"
         tags: [ai, llm, mlops, observability, enterprise]
         status: active

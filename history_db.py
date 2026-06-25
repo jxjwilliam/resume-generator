@@ -118,6 +118,41 @@ def scan_output_files(slug: str | None = None) -> list[dict]:
     return files
 
 
+def read_ats_from_output_dir(slug: str) -> dict | None:
+    """Load ATS totals from output/{slug}/ats-report.json and optional bullet-diff."""
+    report_path = OUTPUT_DIR / slug / "ats-report.json"
+    if not report_path.is_file():
+        return None
+    try:
+        with open(report_path) as f:
+            report = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+    out = {
+        "ats_score": report.get("total"),
+        "ats_grade": report.get("grade"),
+    }
+    diff_path = OUTPUT_DIR / slug / "bullet-diff.json"
+    if diff_path.is_file():
+        try:
+            with open(diff_path) as f:
+                diff = json.load(f)
+            before = diff.get("before_ats") or {}
+            if before.get("total") is not None:
+                out["ats_before_score"] = before["total"]
+        except (json.JSONDecodeError, OSError):
+            pass
+    return out
+
+
+def ats_from_output_files(output_files: list[dict]) -> dict | None:
+    """Resolve ATS scores from a list of output file descriptors."""
+    for f in output_files:
+        if f.get("name") == "ats-report.json" and f.get("slug"):
+            return read_ats_from_output_dir(f["slug"])
+    return None
+
+
 # ── Sync API (for resume.py CLI) ────────────────────────────────────────────
 
 
@@ -146,9 +181,21 @@ def init_db():
         # Column migrations for DBs created before this merge
         cursor = db.execute("PRAGMA table_info(runs)")
         cols = {c[1] for c in cursor.fetchall()}
-        for col in ("output_files", "variant_file", "jd_source", "cover_letter", "docx", "max_bullets", "max_jobs"):
+        for col, col_type in (
+            ("output_files", "TEXT"),
+            ("variant_file", "TEXT"),
+            ("jd_source", "TEXT"),
+            ("cover_letter", "TEXT"),
+            ("docx", "TEXT"),
+            ("max_bullets", "TEXT"),
+            ("max_jobs", "TEXT"),
+            ("ats_score", "REAL"),
+            ("ats_grade", "TEXT"),
+            ("ats_before_score", "REAL"),
+            ("pages", "INTEGER"),
+        ):
             if col not in cols:
-                db.execute(f"ALTER TABLE runs ADD COLUMN {col} TEXT")
+                db.execute(f"ALTER TABLE runs ADD COLUMN {col} {col_type}")
                 db.commit()
         _migrate_from_applications_json(db)
         _migrate_from_old_webui_db(db)
@@ -191,6 +238,10 @@ def update_run(
     output_files: Optional[list[dict]] = None,
     error_log: Optional[str] = None,
     run_duration_seconds: Optional[float] = None,
+    ats_score: Optional[float] = None,
+    ats_grade: Optional[str] = None,
+    ats_before_score: Optional[float] = None,
+    pages: Optional[int] = None,
 ) -> None:
     db = _conn()
     try:
@@ -211,6 +262,18 @@ def update_run(
         if run_duration_seconds is not None:
             fields.append("run_duration_seconds = ?")
             values.append(run_duration_seconds)
+        if ats_score is not None:
+            fields.append("ats_score = ?")
+            values.append(ats_score)
+        if ats_grade is not None:
+            fields.append("ats_grade = ?")
+            values.append(ats_grade)
+        if ats_before_score is not None:
+            fields.append("ats_before_score = ?")
+            values.append(ats_before_score)
+        if pages is not None:
+            fields.append("pages = ?")
+            values.append(pages)
         if status in ("success", "error", "cancelled"):
             fields.append("finished_at = ?")
             values.append(datetime.now(timezone.utc).isoformat())

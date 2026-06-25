@@ -43,8 +43,8 @@ python transform.py --resume-id <YOUR_RESUME_ID> --all-skills
 python resume.py compare --jds-dir jds/
 python resume.py analyze --jd jds/target.txt
 python resume.py build --company Acme --jd jds/target.txt \
-  --llm --tailor --boost --max-bullets 3 --max-jobs 4 --template auto
-# → output/.../CV.pdf + ats-report.json + bullet-diff.json
+  --llm --tailor --boost --max-bullets 3 --max-jobs 4 --template auto --pages 1
+# → output/.../CV.pdf + ats-report.json + bullet-diff.json + provenance.json
 ```
 
 Set `RXRESU_API_KEY` in `.env` for Path B. Set `LLM_PROVIDER` + provider API keys for Path D. See [`docs/llm-providers.md`](docs/llm-providers.md) and [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md).
@@ -110,6 +110,9 @@ Generate a job-specific resume variant and render it to PDF + HTML, with optiona
 | `--llm-provider` | | Override provider: `deepseek`, `kimi`, or `minimax` (default: `LLM_PROVIDER` in `.env`) |
 | `--tailor` | | LLM minimally rewrite selected bullets for JD alignment (requires `--jd` + API key) |
 | `--boost` | | Second LLM pass: add verified missing JD skills to bullets + skills section |
+| `--pages` | | Page budget — trim to fit N pages (default: `1`; `0` = no trim) |
+| `--no-projects` | | Omit projects section (helps one-page budget) |
+| `--target-score` | | Re-run with tailor+boost if ATS score below target (e.g. `75`) |
 | `--all-formats` | | Generate HTML, Markdown, and PNG in addition to PDF |
 | `--cover-letter` | | Also generate a cover letter .txt file |
 | `--docx` | | Also generate a .docx Word document |
@@ -130,9 +133,9 @@ python resume.py build --company "Google" --role "SWE" --tags backend,python --j
 # (--role is optional — extracted from JD first line)
 python resume.py build --company "Anthropic" --jd jds/anthropic.txt --llm
 
-# Full quality pipeline: LLM + bullet tailor + ATS boost + concise caps
+# Full quality pipeline: LLM + bullet tailor + ATS boost + one-page budget
 python resume.py build --company "BestIT" --jd jds/bestit.txt --llm --tailor --boost \
-  --max-bullets 3 --max-jobs 4 --template auto --docx
+  --max-bullets 3 --max-jobs 4 --template auto --pages 1 --target-score 75 --docx
 
 # With DOCX + cover letter
 python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python --docx --cover-letter
@@ -166,6 +169,7 @@ $ python resume.py log
   ID:       google-swe-202606
   Tags:     backend,python
   Template: classic
+  ATS:      87/100 (A) (was 72, +15)
   Status:   success
   Duration: 12.3s
   Files:    William_Jiang_CV.pdf, resume.docx
@@ -188,7 +192,17 @@ Deterministic ATS compatibility score (/100) without building a PDF.
 
 ```bash
 python resume.py score --jd jds/target.txt --tags backend,python --max-bullets 3
+python resume.py score --jd jds/target.txt --variant variants/acme-role-202606.yaml
 python resume.py score --jd jds/target.txt --output score-report.json
+```
+
+### `python resume.py interview`
+
+Gap analysis and interview prep from a JD — strengths, missing skills, STAR story prompts, optional LLM Q&A outlines.
+
+```bash
+python resume.py interview --jd jds/target.txt --tags ai,python
+python resume.py interview --jd jds/target.txt --llm --json
 ```
 
 ### `python resume.py compare`
@@ -247,7 +261,7 @@ Push `base.yaml` to [rxresu.me](https://rxresu.me) for visual editing and PDF ex
 | `--dry-run` | Preview JSON Patch operations without calling the API |
 | `--tags` | Tag filter for experience/projects/skills (default: `fullstack,ai,react,node,python`) |
 | `--all-skills` | Include all skill categories, ignore tag filter for skills |
-| `--template` | RxResume template (default: `kakuna`) |
+| `--template` | RxResume template, or `auto` from JD signals (default: `kakuna`) |
 | `--max-bullets` | Cap bullets per job (default: `4`) |
 | `--no-projects` | Omit projects section for a shorter resume |
 | `--photo` / `--no-photo` | Control profile photo embedding |
@@ -263,6 +277,9 @@ python transform.py --dry-run --all-skills
 
 # Sync to your dashboard resume
 python transform.py --resume-id <ID> --all-skills --max-bullets 3
+
+# Auto-pick RxResume template from JD (kakuna / bronzor / chikorita)
+python transform.py --resume-id <ID> --jd jds/target.txt --template auto --all-skills
 
 # Preview with LLM headline+summary rewrite from JD
 python transform.py --dry-run --jd jds/adam-green.txt --llm
@@ -311,10 +328,10 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 
 | Page | Path | Preview | Description |
 |---|---|---|---|
-| **Resume** | `/` | ![Resume tab](docs/imgs/ui-resume-tab.png) | Build variants: JD analysis panel, max bullets/jobs, LLM, Tailor, Boost ATS, Auto theme, DOCX, cover letter |
+| **Resume** | `/` | ![Resume tab](docs/imgs/ui-resume-tab.png) | Build: JD analysis, bullet preview, ATS widget, bullet diff, tailor/boost re-run, auto theme |
 | **Transform** | `/transform` | ![Transform tab](docs/imgs/ui-transform-tab.png) | Sync to Reactive Resume: pick template, upload JD, set resume ID |
 | **Compare** | `/compare` | ![Compare tab](docs/imgs/ui-compare-tab.png) | Paste 2–5 JDs, ranked ATS fit table with missing skills |
-| **History** | `/history` | ![History tab](docs/imgs/ui-history-tab.png) | View all runs with status, logs, and output links |
+| **History** | `/history` | ![History tab](docs/imgs/ui-history-tab.png) | Run log with ATS scores, status, logs, and output links |
 
 ## Project Structure
 
@@ -326,6 +343,10 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 ├── compose.py               # Shared bullet ranking + caps (resume.py + transform.py)
 ├── jd_parser.py             # Structured JD keyword parsing
 ├── ats.py                   # Deterministic ATS scoring + multi-JD compare
+├── llm_pipeline.py          # LLM JD parse + hybrid bullet rescoring
+├── tailor_validation.py     # Anti-hallucination checks for tailor rewrites
+├── page_budget.py           # One-page line estimator + trim loop
+├── provenance.py            # provenance.json per build (source refs)
 ├── llm_config.py            # Multi-provider LLM config (deepseek / kimi / minimax)
 ├── transform.py             # RxResume sync (visual path)
 ├── applications.json        # Auto-generated application tracking log
@@ -350,7 +371,9 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │       ├── resume.docx
 │       ├── cover-letter-google.txt
 │       ├── ats-report.json
-│       └── bullet-diff.json
+│       ├── bullet-diff.json
+│       ├── page-budget.json
+│       └── provenance.json
 │
 ├── scripts/
 │   └── cleanup.sh           # Reset all generated data
@@ -376,6 +399,9 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │       │   │   └── HistoryPage.tsx
 │       │   └── components/
 │       │       ├── JdAnalysisPanel.tsx
+│       │       ├── BulletPreviewPanel.tsx
+│       │       ├── AtsScoreWidget.tsx
+│       │       ├── BulletDiffView.tsx
 │       │       ├── ThemeCard.tsx       # Rendercv theme picker with SVG preview
 │       │       ├── RxTemplateCard.tsx  # RxResume template picker with SVG preview
 │       │       ├── LogStream.tsx       # SSE log display
@@ -445,7 +471,7 @@ Every resume bullet, skill, project, and education entry lives in `base.yaml`. K
 |---|---|
 | `identity` | Name, headline, email, phone, location, URLs, photo path |
 | `summary` | Short resume summary (used by both `transform.py` and `resume.py build_variant()`) |
-| `experience` | Jobs with tagged bullets and status flags |
+| `experience` | Jobs with tagged bullets, optional `variants[]`, `metrics[]`, `keywords[]`, and status flags |
 | `skills` | Grouped by category (`languages`, `frameworks`, `tools`, `ai_tools`) |
 | `projects`, `education` | Tagged entries with date ranges |
 | `cover_letters` | Templates for job applications (not used as resume summary by default) |
@@ -489,8 +515,9 @@ Both filter by tags. Experience is sorted **newest-first** in output.
 
 | Template | Best for |
 |---|---|
+| `auto` | Pick from JD signals (creative → bronzor, startup → chikorita, default → kakuna) |
 | `kakuna` | Compact, high density (default) |
-| `bronzor` | Tech / engineering, minimal |
+| `bronzor` | Creative / design / portfolio roles |
 | `elegant` | Senior / leadership |
 
 ### Locale / Language

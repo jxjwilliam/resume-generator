@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   Box,
   Button,
@@ -23,8 +23,14 @@ import JdInput from "../components/JdInput";
 import YamlSelector from "../components/YamlSelector";
 import TagChips from "../components/TagChips";
 import JdAnalysisPanel from "../components/JdAnalysisPanel";
+import AtsScoreWidget from "../components/AtsScoreWidget";
+import BulletDiffView from "../components/BulletDiffView";
+import BulletPreviewPanel from "../components/BulletPreviewPanel";
 import { api } from "../api/client";
-import type { ThemeInfo, OutputFile, LogLine, JdAnalysisResult } from "../types";
+import type {
+  ThemeInfo, OutputFile, LogLine, JdAnalysisResult,
+  AtsReport, BulletDiffReport, ComposePreviewResult,
+} from "../types";
 
 interface Props {
   themes: ThemeInfo[];
@@ -53,6 +59,40 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   const [error, setError] = useState("");
   const [outputFiles, setOutputFiles] = useState<OutputFile[]>([]);
   const [lastJobId, setLastJobId] = useState<string | null>(null);
+  const [atsReport, setAtsReport] = useState<AtsReport | null>(null);
+  const [bulletDiff, setBulletDiff] = useState<BulletDiffReport | null>(null);
+  const [composePreview, setComposePreview] = useState<ComposePreviewResult | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const themeManualRef = useRef(false);
+  const runPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Auto-select theme when JD is pasted (until user picks manually)
+  useEffect(() => {
+    if (jdText.trim().length > 50 && !themeManualRef.current) {
+      setSelectedTheme("auto");
+    }
+  }, [jdText]);
+
+  // Debounced composition preview
+  useEffect(() => {
+    if (jdText.trim().length <= 50) {
+      setComposePreview(null);
+      return;
+    }
+    setPreviewLoading(true);
+    const t = setTimeout(() => {
+      api.previewComposition({
+        text: jdText,
+        yaml_file: yamlFile,
+        max_bullets: maxBullets,
+        max_jobs: maxJobs,
+      })
+        .then(setComposePreview)
+        .catch(() => setComposePreview(null))
+        .finally(() => setPreviewLoading(false));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [jdText, yamlFile, maxBullets, maxJobs]);
 
   const handleLocaleChange = (
     _: React.MouseEvent<HTMLElement>,
@@ -78,13 +118,52 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     }
   };
 
-  const handleRun = useCallback(async () => {
+  const pollRunCompletion = useCallback((job_id: string) => {
+    if (runPollRef.current) clearInterval(runPollRef.current);
+    runPollRef.current = setInterval(async () => {
+      const detail = await api.getRunDetail(job_id);
+      if (detail.status !== "running") {
+        if (runPollRef.current) clearInterval(runPollRef.current);
+        runPollRef.current = null;
+        setRunning(false);
+        setLastJobId(job_id);
+        if (detail.status === "success") {
+          try {
+            const resp = await api.getOutputFiles(job_id);
+            setOutputFiles(resp.files);
+            const names = new Set(resp.files.map((f) => f.name));
+            if (names.has("ats-report.json")) {
+              try {
+                const report = await api.getOutputContent<AtsReport>(job_id, "ats-report.json");
+                setAtsReport(report);
+              } catch { /* optional */ }
+            }
+            if (names.has("bullet-diff.json")) {
+              try {
+                const diff = await api.getOutputContent<BulletDiffReport>(job_id, "bullet-diff.json");
+                setBulletDiff(diff);
+              } catch { /* optional */ }
+            }
+          } catch { /* no output files */ }
+        }
+        onRefreshHistory();
+      }
+    }, 1000);
+  }, [onRefreshHistory]);
+
+  const handleRun = useCallback(async (opts?: { tailor?: boolean; boost?: boolean; useLlm?: boolean }) => {
     if (!company.trim()) { setCompany("Unknown"); }
     setError("");
     setRunning(true);
     setLogLines([]);
     setOutputFiles([]);
     setLastJobId(null);
+    setAtsReport(null);
+    setBulletDiff(null);
+
+    const runTailor = opts?.tailor ?? tailor;
+    const runBoost = opts?.boost ?? boost;
+    const runLlm = opts?.useLlm ?? useLlm;
 
     try {
       const { job_id } = await api.runResume({
@@ -93,9 +172,9 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         role: role.trim() || undefined,
         theme: selectedTheme,
         jd_text: jdText || undefined,
-        use_llm: useLlm,
-        tailor: tailor || undefined,
-        boost: boost || undefined,
+        use_llm: runLlm,
+        tailor: runTailor || undefined,
+        boost: runBoost || undefined,
         max_bullets: maxBullets,
         max_jobs: maxJobs,
         all_formats: allFormats,
@@ -108,26 +187,22 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         setLogLines((prev) => [...prev, line]);
       });
 
-      const poll = setInterval(async () => {
-        const detail = await api.getRunDetail(job_id);
-        if (detail.status !== "running") {
-          clearInterval(poll);
-          setRunning(false);
-          setLastJobId(job_id);
-          if (detail.status === "success") {
-            try {
-              const resp = await api.getOutputFiles(job_id);
-              setOutputFiles(resp.files);
-            } catch { /* no output files */ }
-          }
-          onRefreshHistory();
-        }
-      }, 1000);
+      pollRunCompletion(job_id);
     } catch (e: any) {
       setError(e.message);
       setRunning(false);
     }
-  }, [yamlFile, company, role, selectedTheme, jdText, useLlm, tailor, boost, maxBullets, maxJobs, allFormats, locale, coverLetter, docx, onRefreshHistory]);
+  }, [
+    yamlFile, company, role, selectedTheme, jdText, useLlm, tailor, boost,
+    maxBullets, maxJobs, allFormats, locale, coverLetter, docx, pollRunCompletion,
+  ]);
+
+  const handleBoostRerun = useCallback(() => {
+    setTailor(true);
+    setBoost(true);
+    setUseLlm(true);
+    handleRun({ tailor: true, boost: true, useLlm: true });
+  }, [handleRun]);
 
   return (
     <Box>
@@ -161,14 +236,24 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
             key={t.id}
             theme={t}
             selected={selectedTheme === t.id}
-            onClick={() => setSelectedTheme(t.id)}
+            onClick={() => {
+              themeManualRef.current = true;
+              setSelectedTheme(t.id);
+            }}
           />
         ))}
       </Stack>
 
       <Typography variant="subtitle2" gutterBottom>Job Description</Typography>
-      <JdInput value={jdText} onChange={setJdText} onKeywords={setKeywords} onAnalysis={setJdAnalysis} />
+      <JdInput
+        value={jdText}
+        onChange={setJdText}
+        onKeywords={setKeywords}
+        onAnalysis={setJdAnalysis}
+        yamlFile={yamlFile}
+      />
       <JdAnalysisPanel analysis={jdAnalysis} />
+      <BulletPreviewPanel preview={composePreview} loading={previewLoading} />
       {keywords.length > 0 && <TagChips keywords={keywords} />}
 
       <Stack direction="row" spacing={2} sx={{ mt: 2, alignItems: "center", flexWrap: "wrap" }}>
@@ -205,7 +290,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         <Button
           variant="contained"
           startIcon={<PlayArrowIcon />}
-          onClick={handleRun}
+          onClick={() => handleRun()}
           disabled={running}
         >
           {running ? "Running..." : "Run"}
@@ -223,7 +308,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
           <Typography variant="subtitle2" gutterBottom sx={{ color: "success.700" }}>
             Generated Output Files
           </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: atsReport || bulletDiff ? 2 : 0 }}>
             {outputFiles.map((f) => {
               const downloadUrl = `/api/output/${lastJobId}/download?name=${encodeURIComponent(f.name)}`;
               const sizeKb = (f.size / 1024).toFixed(1);
@@ -243,6 +328,26 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
               );
             })}
           </Stack>
+
+          {atsReport && (
+            <Box sx={{ mb: bulletDiff ? 2 : 0 }}>
+              <Typography variant="subtitle2" gutterBottom>ATS Score</Typography>
+              <AtsScoreWidget
+                report={atsReport}
+                before={bulletDiff?.before_ats ?? null}
+                delta={bulletDiff?.delta ?? null}
+                onBoostRerun={jdText.trim() ? handleBoostRerun : undefined}
+                boostRunning={running}
+              />
+            </Box>
+          )}
+
+          {bulletDiff && (
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>Bullet Changes</Typography>
+              <BulletDiffView diff={bulletDiff} />
+            </Box>
+          )}
         </Box>
       )}
     </Box>

@@ -9,9 +9,10 @@ interface Props {
   onChange: (text: string) => void;
   onKeywords: (keywords: string[]) => void;
   onAnalysis?: (analysis: JdAnalysisResult | null) => void;
+  yamlFile?: string;
 }
 
-export default function JdInput({ value, onChange, onKeywords, onAnalysis }: Props) {
+export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlFile = "base.yaml" }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const dragCounter = useRef(0);
@@ -22,12 +23,12 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis }: Pro
         onAnalysis?.(null);
         return;
       }
-      api.analyzeJd(text).then((r) => {
+      api.analyzeJd(text, yamlFile).then((r) => {
         onKeywords(r.keywords);
         onAnalysis?.(r);
       }).catch(() => onAnalysis?.(null));
     },
-    [onKeywords, onAnalysis],
+    [onKeywords, onAnalysis, yamlFile],
   );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -77,8 +78,17 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis }: Pro
         onAnalysis?.({
           keywords: result.keywords,
           hard_skills: result.hard_skills || [],
+          title_keywords: result.title_keywords,
+          domain_keywords: result.domain_keywords,
+          soft_skills: result.soft_skills,
+          role_title: result.role_title,
+          seniority: result.seniority,
+          domain: result.domain,
           matched_skills: result.matched_skills || [],
           missing_skills: result.missing_skills || [],
+          matched_soft_skills: result.matched_soft_skills,
+          missing_soft_skills: result.missing_soft_skills,
+          matched_domain_keywords: result.matched_domain_keywords,
           top_bullets: result.top_bullets || [],
         });
       } catch (err: any) {

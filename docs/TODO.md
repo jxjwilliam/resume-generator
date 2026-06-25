@@ -13,11 +13,16 @@
 - [x] ATS scoring + `ats-report.json` on every build with `--jd`
 - [x] Multi-JD compare (CLI + WebUI Compare tab)
 - [x] Documentation: [`resume-quality-pipeline.md`](resume-quality-pipeline.md)
+- [x] Tailor validation + rich `bullet-diff.json`
+- [x] Page budget (`--pages`) + history ATS audit trail
+- [x] LLM hybrid bullet scoring + structured JD parse (`llm_pipeline.py`)
+- [x] Senior job filter + `--target-score` rebuild helper
+- [x] `score --variant`, `interview` CLI, `provenance.json` per build
+- [x] RxResume `--template auto` (kakuna/bronzor/chikorita)
+- [x] `base.yaml` variants, metrics, keywords + content refactor
 
 ## Optional follow-ups
 
-- [ ] Add `variants[]` content to high-value bullets in `base.yaml`
-- [ ] Interview prep command (from ats-resume-tailor pattern)
 - [ ] Browser extension to send JD from job sites to WebUI
 - [ ] `base_zh.yaml` Chinese variant content
 

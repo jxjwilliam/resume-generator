@@ -66,13 +66,23 @@ function Row({ item, onReRun }: { item: RunHistoryItem; onReRun: (i: RunHistoryI
           <MuiChip label={item.status} color={statusColor(item.status)} size="small" />
         </TableCell>
         <TableCell>
+          {item.ats_score != null ? (
+            <MuiChip
+              label={`${item.ats_score} (${item.ats_grade || "?"})`}
+              size="small"
+              color={item.ats_score >= 75 ? "success" : item.ats_score >= 65 ? "warning" : "default"}
+              variant="outlined"
+            />
+          ) : "-"}
+        </TableCell>
+        <TableCell>
           {item.run_duration_seconds != null
             ? `${item.run_duration_seconds.toFixed(1)}s`
             : "-"}
         </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell colSpan={7} sx={{ py: 0 }}>
+        <TableCell colSpan={8} sx={{ py: 0 }}>
           <Collapse in={open}>
             <Box sx={{ p: 2 }}>
               <Stack direction="row" spacing={2} alignItems="flex-start">
@@ -145,6 +155,7 @@ export default function HistoryTable({ onReRun, refreshKey }: Props) {
             <TableCell>Company</TableCell>
             <TableCell>Role</TableCell>
             <TableCell>Status</TableCell>
+            <TableCell>ATS</TableCell>
             <TableCell>Duration</TableCell>
           </TableRow>
         </TableHead>

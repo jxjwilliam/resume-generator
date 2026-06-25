@@ -12,6 +12,7 @@ import type {
   JdCompareResult,
   JdCompareItem,
   LogLine,
+  ComposePreviewResult,
 } from "../types";
 
 const BASE = "/api";
@@ -43,8 +44,15 @@ export const api = {
   listThemes: () => get<ThemeInfo[]>("/themes"),
   listRxTemplates: () => get<RxTemplateInfo[]>("/rxresume-templates"),
   listTags: () => get<{ tags: string[] }>("/tags"),
-  analyzeJd: (text: string) =>
-    post<JdAnalysisResult>("/jd/analyze", { text }),
+  analyzeJd: (text: string, yamlFile?: string) =>
+    post<JdAnalysisResult>("/jd/analyze", { text, yaml_file: yamlFile || "base.yaml" }),
+  previewComposition: (req: {
+    text: string;
+    yaml_file?: string;
+    tags?: string[];
+    max_bullets?: number;
+    max_jobs?: number;
+  }) => post<ComposePreviewResult>("/jd/preview", req),
   compareJds: (jds: JdCompareItem[], tags?: string[]) =>
     post<JdCompareResult>("/jd/compare", { jds, tags: tags || [] }),
   uploadJd: async (file: File): Promise<JdUploadResult> => {
@@ -83,6 +91,8 @@ export const api = {
     get<RunHistoryItem>(`/history/${jobId}`),
   getOutputFiles: (jobId: string) =>
     get<{ files: OutputFile[] }>(`/output/${jobId}/files`),
+  getOutputContent: <T>(jobId: string, name: string) =>
+    get<T>(`/output/${jobId}/content?name=${encodeURIComponent(name)}`),
   streamLogs: (jobId: string, onLine: (line: LogLine) => void): (() => void) => {
     const es = new EventSource(`${BASE}/log/${jobId}`);
     const abort = () => es.close();

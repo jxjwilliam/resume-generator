@@ -21,10 +21,17 @@ import history_db
 from compose import (
     DEFAULT_MAX_BULLETS,
     DEFAULT_MAX_JOBS,
+    bullet_key,
     filter_skills_by_tags,
     parse_tag_list,
+    pick_bullet_text,
     rank_bullets_for_jd,
     select_experience_jobs,
+)
+from tailor_validation import (
+    build_bullet_diff_report,
+    entries_to_tailored_map,
+    validate_tailor_rewrite,
 )
 from llm_config import (
     LLMNotConfiguredError,
@@ -130,9 +137,11 @@ def build_variant(base, tags, template, company, role, jd_text=None,
                   headline_override=None, summary_override=None, locale="en",
                   max_bullets=DEFAULT_MAX_BULLETS, max_jobs=DEFAULT_MAX_JOBS,
                   jd_keywords=None, tailored_bullets=None, jd_hard_skills=None,
-                  boost_skills=False):
+                  boost_skills=False, pages=1, no_projects=False,
+                  seniority=None, llm_scores=None):
     """Assemble a job-specific variant from the base."""
     tags_list = parse_tag_list(tags)
+    required_tags = set(tags_list) if tags_list else None
 
     sections = {}
 
@@ -140,18 +149,59 @@ def build_variant(base, tags, template, company, role, jd_text=None,
     if summary_text:
         sections["Summary"] = [summary_text]
 
-    exp_section = []
-    for job, filtered_bullets in select_experience_jobs(
+    job_pairs = select_experience_jobs(
         base.get("experience", []),
         tags=tags_list,
         max_bullets=max_bullets,
         max_jobs=max_jobs,
         jd_keywords=jd_keywords,
-    ):
+        seniority=seniority,
+        llm_scores=llm_scores,
+    )
+
+    skill_rows_preview = filter_skills_by_tags(
+        base.get("skills", {}), tags_list,
+        jd_hard_skills=jd_hard_skills,
+        boost_missing=boost_skills,
+    )
+    project_list = [
+        p for p in base.get("projects", [])
+        if p.get("status") == "active"
+        and (not tags_list or any(t in p.get("tags", []) for t in tags_list))
+    ]
+    education_list = [e for e in base.get("education", []) if e.get("status") == "active"]
+
+    page_budget_report = None
+    skills_collapsed = False
+    include_projects = not no_projects and bool(project_list)
+
+    if pages > 0 and job_pairs:
+        from page_budget import trim_jobs_to_page_budget
+
+        job_pairs, page_budget_report = trim_jobs_to_page_budget(
+            job_pairs,
+            pages=pages,
+            required_tags=required_tags,
+            jd_keywords=jd_keywords,
+            has_summary=bool(summary_text),
+            skill_rows=max(len(skill_rows_preview), 1),
+            project_count=len(project_list) if include_projects else 0,
+            education_count=len(education_list),
+        )
+        skills_collapsed = page_budget_report.get("skills_collapsed", False)
+        include_projects = page_budget_report.get("projects_included", include_projects)
+
+    exp_section = []
+    for job, filtered_bullets in job_pairs:
         highlights = []
         for b in filtered_bullets:
-            key = f"{job['company']}::{b['text'][:40]}"
-            text = tailored_bullets.get(key, b["text"]) if tailored_bullets else b["text"]
+            key = bullet_key(job['company'], b['text'])
+            base_text = pick_bullet_text(
+                b,
+                jd_keywords=jd_keywords,
+                required_tags=set(tags_list) if tags_list else None,
+            )
+            text = tailored_bullets.get(key, base_text) if tailored_bullets else base_text
             highlights.append(text)
         exp_section.append({
             "company": job["company"],
@@ -163,22 +213,30 @@ def build_variant(base, tags, template, company, role, jd_text=None,
         })
     sections["experience"] = exp_section
 
-    sections["skills"] = filter_skills_by_tags(
+    skill_rows = filter_skills_by_tags(
         base.get("skills", {}), tags_list,
         jd_hard_skills=jd_hard_skills,
         boost_missing=boost_skills,
     )
+    if skills_collapsed and skill_rows:
+        combined = ", ".join(
+            name for row in skill_rows for name in row.get("details", "").split(", ") if name
+        )
+        sections["skills"] = [{"label": "Skills", "details": combined}]
+    else:
+        sections["skills"] = skill_rows
 
-    sections["projects"] = [
-        {
-            "name": p["name"],
-            "summary": p["description"],
-            "highlights": [b["text"] for b in p.get("bullets", []) if b.get("status") == "active"]
-        }
-        for p in base.get("projects", [])
-        if p.get("status") == "active"
-        and (not tags_list or any(t in p.get("tags", []) for t in tags_list))
-    ]
+    if include_projects:
+        sections["projects"] = [
+            {
+                "name": p["name"],
+                "summary": p["description"],
+                "highlights": [b["text"] for b in p.get("bullets", []) if b.get("status") == "active"]
+            }
+            for p in project_list
+        ]
+    else:
+        sections["projects"] = []
 
     sections["education"] = [
         {
@@ -187,8 +245,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
             "degree": "",
             "date": e["graduation"]
         }
-        for e in base.get("education", [])
-        if e.get("status") == "active"
+        for e in education_list
     ]
 
     variant = {
@@ -242,7 +299,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
         },
     }
 
-    return variant
+    return variant, page_budget_report, job_pairs
 
 def write_variant(variant, slug):
     Path(VARIANTS_DIR).mkdir(exist_ok=True)
@@ -503,7 +560,43 @@ def _write_history_from_build(slug, company, role, tags, template, args, variant
     })
     save_log(log)
 
+
+def _update_history_ats(slug, ats_result, before_ats=None, pages=None):
+    """Persist ATS score to runs.db and patch the latest applications.json entry."""
+    from history_db import update_run, scan_output_files
+
+    try:
+        files = scan_output_files(slug)
+        update_run(
+            slug,
+            ats_score=ats_result.get("total"),
+            ats_grade=ats_result.get("grade"),
+            ats_before_score=before_ats.get("total") if before_ats else None,
+            pages=pages,
+            output_files=files if files else None,
+        )
+    except Exception as e:
+        print(f"Warning: could not update ATS history: {e}", file=sys.stderr)
+
+    log = load_log()
+    for entry in reversed(log.get("applications", [])):
+        if entry.get("id") == slug:
+            entry["ats_score"] = ats_result.get("total")
+            entry["ats_grade"] = ats_result.get("grade")
+            if before_ats:
+                entry["ats_before_score"] = before_ats.get("total")
+            if pages is not None:
+                entry["pages"] = pages
+            break
+    save_log(log)
+
+
 def cmd_build(args):
+    if getattr(args, "_build_attempt", 0) >= 3:
+        print("Max build attempts reached.", file=sys.stderr)
+        return
+    args._build_attempt = getattr(args, "_build_attempt", 0) + 1
+
     base = load_base(getattr(args, "yaml", BASE_FILE))
 
     if args.llm and not args.jd:
@@ -528,11 +621,29 @@ def cmd_build(args):
 
     parsed_jd = parse_jd(jd_text, base) if jd_text else None
     jd_keywords = parsed_jd.get("all_keywords") if parsed_jd else None
+    llm_scores: dict[str, int] = {}
+    llm_provider = getattr(args, "llm_provider", None)
+    rx_template = select_rx_template_auto(jd_text) if jd_text else None
+
+    if args.llm and jd_text:
+        from llm_pipeline import llm_parse_jd, llm_rescore_bullets
+
+        parsed_llm = llm_parse_jd(jd_text, base, llm_provider=llm_provider)
+        if parsed_llm:
+            parsed_jd = parsed_llm
+            jd_keywords = parsed_jd.get("all_keywords")
+        llm_scores = llm_rescore_bullets(
+            base, jd_text, args.tags, jd_keywords, llm_provider=llm_provider,
+        )
+        if llm_scores:
+            print(f"LLM rescored {len(llm_scores)} top bullets (0–10)")
 
     tags = args.tags
     headline_override = None
     summary_override = None
     tailored_bullets = None
+    bullet_diff_entries = None
+    before_ats = None
     template = args.template
 
     if template == "auto":
@@ -545,7 +656,9 @@ def cmd_build(args):
 
     tags_list = parse_tag_list(tags)
     top_bullets = rank_bullets_for_jd(base, tags_list, jd_keywords) if jd_text else None
-    llm_provider = getattr(args, "llm_provider", None)
+
+    if template == "auto" and jd_text and rx_template and args.template == "auto":
+        print(f"RxResume visual template suggestion: {rx_template} (use transform.py --template {rx_template})")
 
     if args.llm and jd_text:
         cfg = resolve_llm_config(llm_provider)
@@ -576,36 +689,62 @@ def cmd_build(args):
     if getattr(args, "tailor", False) and jd_text:
         cfg = resolve_llm_config(llm_provider)
         print(f"Tailor provider: {cfg['label']} ({cfg['model']})")
+        from ats import score_resume
+
+        before_ats = score_resume(
+            base, jd_text, tags=tags,
+            headline=headline_override,
+            summary=summary_override,
+            max_bullets=args.max_bullets,
+            max_jobs=args.max_jobs,
+        )
+        print(f"Pre-tailor ATS score: {before_ats['total']}/100 ({before_ats['grade']})")
         print("Tailoring bullets for JD...")
-        tailored_bullets = llm_tailor_bullets(
+        bullet_diff_entries = llm_tailor_bullets(
             base, jd_text, tags, jd_keywords,
             max_bullets=args.max_bullets,
             max_jobs=args.max_jobs,
             role=role,
             llm_provider=llm_provider,
         )
-        print(f"Tailored {len(tailored_bullets)} bullets")
+        tailored_bullets = entries_to_tailored_map(bullet_diff_entries)
+        accepted = sum(1 for e in bullet_diff_entries if e["status"] == "accepted")
+        rejected = sum(1 for e in bullet_diff_entries if e["status"] == "rejected")
+        print(f"Tailored {accepted} bullets ({rejected} rejected by validation)")
 
     boost_skills = getattr(args, "boost", False)
     if boost_skills and jd_text:
         from ats import score_resume
 
+        if before_ats is None:
+            before_ats = score_resume(
+                base, jd_text, tags=tags,
+                headline=headline_override,
+                summary=summary_override,
+                max_bullets=args.max_bullets,
+                max_jobs=args.max_jobs,
+            )
         pre_score = score_resume(
             base, jd_text, tags=tags,
+            headline=headline_override,
+            summary=summary_override,
             max_bullets=args.max_bullets,
             max_jobs=args.max_jobs,
+            tailored_bullets=tailored_bullets,
         )
         missing = pre_score["skill_match"].get("missing_skills", [])
         print(f"Boost: {len(missing)} missing hard skills detected")
         if missing:
-            tailored_bullets = llm_boost_bullets(
-                base, jd_text, tags, missing, tailored_bullets,
+            bullet_diff_entries = llm_boost_bullets(
+                base, jd_text, tags, missing,
+                bullet_diff_entries,
                 jd_keywords,
                 max_bullets=args.max_bullets,
                 max_jobs=args.max_jobs,
                 role=role,
                 llm_provider=getattr(args, "llm_provider", None),
             )
+            tailored_bullets = entries_to_tailored_map(bullet_diff_entries)
 
     if not headline_override and role:
         base_headline = base["identity"].get("headline", "")
@@ -617,8 +756,11 @@ def cmd_build(args):
     print(f"Template: {template}")
     print(f"Locale: {args.locale}")
     print(f"Max bullets/job: {args.max_bullets}, Max jobs: {args.max_jobs or 'unlimited'}")
+    pages = getattr(args, "pages", 1)
+    if pages > 0:
+        print(f"Page budget: {pages} page(s)")
 
-    variant = build_variant(base, tags, template, args.company, role, jd_text,
+    variant, page_budget_report, job_pairs = build_variant(base, tags, template, args.company, role, jd_text,
                             headline_override=headline_override,
                             summary_override=summary_override,
                             locale=args.locale,
@@ -627,9 +769,25 @@ def cmd_build(args):
                             jd_keywords=jd_keywords,
                             tailored_bullets=tailored_bullets,
                             jd_hard_skills=parsed_jd.get("hard_skills") if parsed_jd else None,
-                            boost_skills=boost_skills)
+                            boost_skills=boost_skills,
+                            pages=pages,
+                            no_projects=getattr(args, "no_projects", False),
+                            seniority=parsed_jd.get("seniority") if parsed_jd else None,
+                            llm_scores=llm_scores or None)
+    if page_budget_report and page_budget_report.get("enabled"):
+        est = page_budget_report.get("estimated_lines")
+        print(f"Estimated length: ~{est} lines (budget {page_budget_report.get('budget_lines')})")
+        actions = page_budget_report.get("actions") or []
+        if actions:
+            print(f"Page trim: {', '.join(actions)}")
     variant_path = write_variant(variant, slug)
     print(f"Variant written: {variant_path}")
+
+    if page_budget_report and page_budget_report.get("enabled"):
+        pb_path = f"{OUTPUT_DIR}/{slug}/page-budget.json"
+        Path(pb_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(pb_path, "w") as f:
+            json.dump(page_budget_report, f, indent=2)
 
     print("Rendering PDF...")
     success = render_variant(variant_path, slug, all_formats=args.all_formats)
@@ -648,6 +806,7 @@ def cmd_build(args):
             summary=summary_override,
             max_bullets=args.max_bullets,
             max_jobs=args.max_jobs,
+            tailored_bullets=tailored_bullets,
         )
         report_path = f"{OUTPUT_DIR}/{slug}/ats-report.json"
         Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
@@ -655,14 +814,59 @@ def cmd_build(args):
         with open(report_path, "w") as f:
             json.dump(ats_result, f, indent=2)
         print(f"ATS score: {ats_result['total']}/100 ({ats_result['grade']}) → {report_path}")
+        if before_ats:
+            delta = round(ats_result["total"] - before_ats["total"], 1)
+            sign = "+" if delta >= 0 else ""
+            print(f"ATS delta (pre-tailor → final): {sign}{delta}")
         if boost_skills and ats_result["total"] < 85:
             print("Tip: score below 85 — review missing skills in ats-report.json")
 
-        if tailored_bullets:
+        if bullet_diff_entries:
             diff_path = f"{OUTPUT_DIR}/{slug}/bullet-diff.json"
+            diff_report = build_bullet_diff_report(
+                bullet_diff_entries, before_ats, ats_result,
+            )
             with open(diff_path, "w") as f:
-                json.dump(tailored_bullets, f, indent=2)
+                json.dump(diff_report, f, indent=2)
             print(f"Bullet diff: {diff_path}")
+
+        _update_history_ats(slug, ats_result, before_ats=before_ats, pages=pages if pages > 0 else None)
+
+        from provenance import build_provenance_report
+
+        prov = build_provenance_report(
+            slug=slug,
+            company=args.company,
+            role=role,
+            tags=tags,
+            template=template,
+            rx_template=rx_template,
+            base=base,
+            job_bullet_pairs=job_pairs,
+            jd_keywords=jd_keywords,
+            tailored_bullets=tailored_bullets,
+            bullet_diff_entries=bullet_diff_entries,
+            ats_result=ats_result,
+            before_ats=before_ats,
+            page_budget_report=page_budget_report,
+            llm_scores=llm_scores or None,
+            parsed_jd=parsed_jd,
+        )
+        prov_path = f"{OUTPUT_DIR}/{slug}/provenance.json"
+        with open(prov_path, "w") as f:
+            json.dump(prov, f, indent=2)
+        print(f"Provenance: {prov_path}")
+
+        target = getattr(args, "target_score", 0)
+        if target and ats_result["total"] < target and args._build_attempt < 3:
+            if not getattr(args, "_retried_target", False):
+                print(f"Score {ats_result['total']} below target {target} — re-running with tailor+boost...")
+                args._retried_target = True
+                args.tailor = True
+                args.boost = True
+                args.llm = True
+                return cmd_build(args)
+            print(f"Target score {target} not reached (final: {ats_result['total']})")
 
     # ── Cover letter (optional) ─────────────────────────────────
     if getattr(args, "cover_letter", False):
@@ -700,6 +904,14 @@ def cmd_log(args):
         tags_str = ", ".join(r.get("tags") or []) or "(none)"
         print(f"  Tags:     {tags_str}")
         print(f"  Template: {r.get('theme') or '-'}")
+        if r.get("ats_score") is not None:
+            grade = r.get("ats_grade") or "?"
+            before = r.get("ats_before_score")
+            delta = ""
+            if before is not None:
+                d = round(r["ats_score"] - before, 1)
+                delta = f" (was {before}, {'+' if d >= 0 else ''}{d})"
+            print(f"  ATS:      {r['ats_score']}/100 ({grade}){delta}")
         print(f"  Status:   {r.get('status', '?')}")
         dur = r.get("run_duration_seconds")
         if dur:
@@ -857,16 +1069,46 @@ Job description:
         return body
 
 
-def _bullet_key(job_company: str, bullet_text: str) -> str:
-    return f"{job_company}::{bullet_text[:40]}"
+def _pick_bullet_text(
+    bullet: dict,
+    jd_keywords: list[str] | None = None,
+    tags: str | list | None = None,
+) -> str:
+    """Delegate to compose.pick_bullet_text for variant selection."""
+    tags_list = parse_tag_list(tags)
+    required = set(tags_list) if tags_list else None
+    return pick_bullet_text(bullet, jd_keywords=jd_keywords, required_tags=required)
 
 
-def _pick_bullet_text(bullet: dict) -> str:
-    """Use first variant if present, else base text."""
-    variants = bullet.get("variants") or []
-    if variants:
-        return variants[0]
-    return bullet["text"]
+def _make_diff_entry(
+    job: dict,
+    bullet: dict,
+    source: str,
+    *,
+    rewritten: str | None = None,
+    status: str = "unchanged",
+    rejection_reason: str | None = None,
+    pass_name: str = "tailor",
+) -> dict:
+    original = bullet["text"]
+    final = original
+    if status == "accepted" and rewritten:
+        final = rewritten
+    elif status == "boosted" and rewritten:
+        final = rewritten
+    return {
+        "key": bullet_key(job["company"], bullet["text"]),
+        "job": job["company"],
+        "title": job.get("title", ""),
+        "original": original,
+        "source_used": source,
+        "rewritten": rewritten,
+        "final": final,
+        "status": status,
+        "rejection_reason": rejection_reason,
+        "pass": pass_name,
+        "approved": status in ("accepted", "boosted"),
+    }
 
 
 def llm_tailor_bullets(
@@ -878,18 +1120,18 @@ def llm_tailor_bullets(
     max_jobs: int = DEFAULT_MAX_JOBS,
     role: str | None = None,
     llm_provider: str | None = None,
-) -> dict[str, str]:
+) -> list[dict]:
     """
     Minimally rewrite selected bullets for JD alignment.
-    Returns {bullet_key: tailored_text}. Skips rewrite if LLM unavailable.
+    Returns structured diff entries; rejected rewrites keep original text.
     """
     try:
         client, model, _cfg = get_llm_client(llm_provider)
     except LLMNotConfiguredError as e:
         print(f"LLM not configured: {e}", file=sys.stderr)
-        return {}
+        return []
 
-    tailored: dict[str, str] = {}
+    entries: list[dict] = []
     jobs = select_experience_jobs(
         base.get("experience", []),
         tags=tags,
@@ -903,8 +1145,8 @@ def llm_tailor_bullets(
 
     for job, bullets in jobs:
         for bullet in bullets:
-            source = _pick_bullet_text(bullet)
-            key = _bullet_key(job["company"], bullet["text"])
+            source = _pick_bullet_text(bullet, jd_keywords, tags)
+            entry = _make_diff_entry(job, bullet, source, pass_name="tailor")
 
             prompt = f"""Rewrite this resume bullet to better match the job description.
 
@@ -931,12 +1173,32 @@ Job description excerpt:
                 )
                 if raw:
                     rewritten = raw.strip().strip('"')
-                    if len(rewritten.split()) <= 30:
-                        tailored[key] = rewritten
+                    if rewritten == source:
+                        entry["status"] = "unchanged"
+                    else:
+                        ok, reason = validate_tailor_rewrite(source, rewritten)
+                        if ok:
+                            entry["status"] = "accepted"
+                            entry["rewritten"] = rewritten
+                            entry["final"] = rewritten
+                            entry["approved"] = True
+                        else:
+                            entry["status"] = "rejected"
+                            entry["rewritten"] = rewritten
+                            entry["rejection_reason"] = reason
+                            print(
+                                f"Tailor rejected ({reason}): {entry['key']}",
+                                file=sys.stderr,
+                            )
             except Exception as e:
-                print(f"Tailor bullet skip ({type(e).__name__}): {key}", file=sys.stderr)
+                print(
+                    f"Tailor bullet skip ({type(e).__name__}): {entry['key']}",
+                    file=sys.stderr,
+                )
 
-    return tailored
+            entries.append(entry)
+
+    return entries
 
 
 def _skill_verified_in_base(base: dict, skill: str) -> bool:
@@ -962,13 +1224,13 @@ def llm_boost_bullets(
     jd_text: str,
     tags: str | list | None,
     missing_skills: list[str],
-    tailored: dict[str, str] | None,
+    entries: list[dict] | None,
     jd_keywords: list | None,
     max_bullets: int = DEFAULT_MAX_BULLETS,
     max_jobs: int = DEFAULT_MAX_JOBS,
     role: str | None = None,
     llm_provider: str | None = None,
-) -> dict[str, str]:
+) -> list[dict]:
     """
     Second-pass LLM optimization: weave verified missing hard skills into bullets.
     Only skills present in base.yaml are eligible — never fabricates experience.
@@ -976,15 +1238,16 @@ def llm_boost_bullets(
     verified = [s for s in missing_skills if _skill_verified_in_base(base, s)]
     if not verified:
         print("Boost: no verified missing skills to add", file=sys.stderr)
-        return tailored or {}
+        return entries or []
+
+    entry_by_key = {e["key"]: e for e in (entries or [])}
 
     try:
         client, model, _cfg = get_llm_client(llm_provider)
     except LLMNotConfiguredError as e:
         print(f"LLM not configured: {e}", file=sys.stderr)
-        return tailored or {}
+        return entries or []
 
-    boosted = dict(tailored or {})
     jobs = select_experience_jobs(
         base.get("experience", []),
         tags=tags,
@@ -998,8 +1261,13 @@ def llm_boost_bullets(
 
     for job, bullets in jobs:
         for bullet in bullets:
-            key = _bullet_key(job["company"], bullet["text"])
-            current = boosted.get(key, _pick_bullet_text(bullet))
+            key = bullet_key(job["company"], bullet["text"])
+            existing = entry_by_key.get(key)
+            current = (
+                existing["final"]
+                if existing
+                else _pick_bullet_text(bullet, jd_keywords, tags)
+            )
             still_missing = [s for s in verified if s.lower() not in current.lower()]
             if not still_missing:
                 continue
@@ -1025,16 +1293,56 @@ Job description excerpt:
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=2048,
                 )
-                if raw:
-                    rewritten = raw.strip().strip('"')
-                    if rewritten != current and len(rewritten.split()) <= 30:
-                        boosted[key] = rewritten
+                if not raw:
+                    continue
+                rewritten = raw.strip().strip('"')
+                if rewritten == current:
+                    continue
+                source_for_validation = (
+                    existing["source_used"] if existing
+                    else _pick_bullet_text(bullet, jd_keywords, tags)
+                )
+                ok, reason = validate_tailor_rewrite(source_for_validation, rewritten)
+                if not ok:
+                    print(f"Boost rejected ({reason}): {key}", file=sys.stderr)
+                    continue
+                if existing:
+                    existing["rewritten"] = rewritten
+                    existing["final"] = rewritten
+                    existing["status"] = "boosted"
+                    existing["pass"] = "boost"
+                    existing["approved"] = True
+                else:
+                    entry_by_key[key] = _make_diff_entry(
+                        job, bullet, source_for_validation,
+                        rewritten=rewritten,
+                        status="boosted",
+                        pass_name="boost",
+                    )
             except Exception as e:
                 print(f"Boost skip ({type(e).__name__}): {key}", file=sys.stderr)
 
-    added = sum(1 for k, v in boosted.items() if (tailored or {}).get(k) != v and k not in (tailored or {}))
-    print(f"Boost: targeted {len(verified)} verified skills, updated bullets")
-    return boosted
+    print(f"Boost: targeted {len(verified)} verified skills")
+    if not entry_by_key:
+        return entries or []
+    if entries:
+        seen = {e["key"] for e in entries}
+        result = [entry_by_key.get(e["key"], e) for e in entries]
+        for key, entry in entry_by_key.items():
+            if key not in seen:
+                result.append(entry)
+        return result
+    return list(entry_by_key.values())
+
+
+def select_rx_template_auto(jd_text: str) -> str:
+    """Pick rxresu.me visual template from JD signals."""
+    text_lower = jd_text.lower()
+    if any(w in text_lower for w in ("creative", "design", "portfolio", "visual", "brand")):
+        return "bronzor"
+    if any(w in text_lower for w in ("startup", "product", "founder", "pitch")):
+        return "chikorita"
+    return "kakuna"
 
 
 def select_template_auto(jd_text: str, base: dict | None = None) -> str:
@@ -1084,17 +1392,20 @@ def cmd_analyze(args):
 
 
 def cmd_score(args):
-    base = load_base(getattr(args, "yaml", BASE_FILE))
     with open(args.jd) as f:
         jd_text = f.read()
 
-    from ats import score_resume
+    from ats import score_resume, score_variant_yaml
 
-    result = score_resume(
-        base, jd_text, tags=args.tags,
-        max_bullets=args.max_bullets,
-        max_jobs=args.max_jobs,
-    )
+    if getattr(args, "variant", None):
+        result = score_variant_yaml(args.variant, jd_text, tags=args.tags or None)
+    else:
+        base = load_base(getattr(args, "yaml", BASE_FILE))
+        result = score_resume(
+            base, jd_text, tags=args.tags,
+            max_bullets=args.max_bullets,
+            max_jobs=args.max_jobs,
+        )
 
     print(f"ATS Score: {result['total']}/100 ({result['grade']})")
     print("\nBreakdown:")
@@ -1128,6 +1439,82 @@ def cmd_score(args):
         print(f"\nReport written: {args.output}")
     elif args.json:
         print(json.dumps(result, indent=2))
+
+
+def cmd_interview(args):
+    """Gap analysis + interview prep talking points from JD vs base.yaml."""
+    base = load_base(getattr(args, "yaml", BASE_FILE))
+    with open(args.jd) as f:
+        jd_text = f.read()
+
+    from jd_parser import parse_jd, keyword_match_report
+    from llm_pipeline import llm_parse_jd
+
+    parsed = parse_jd(jd_text, base)
+    if args.llm:
+        enriched = llm_parse_jd(jd_text, base, llm_provider=getattr(args, "llm_provider", None))
+        if enriched:
+            parsed = enriched
+
+    report = keyword_match_report(parsed, base, args.tags)
+    missing = report.get("missing_skills", [])
+    matched = report.get("matched_skills", [])
+    top = report.get("top_bullets", [])[:6]
+
+    print(f"Interview prep — {parsed.get('role_title', 'Role')}")
+    print(f"Seniority: {parsed.get('seniority', 'unknown')}\n")
+
+    print("Strengths to lead with:")
+    for s in matched[:8]:
+        print(f"  ✓ {s}")
+    for b in top[:4]:
+        print(f"  • [{b['job']}] {b['text'][:90]}…")
+
+    print("\nGaps to address honestly:")
+    for s in missing[:10]:
+        print(f"  ? {s} — prepare adjacent experience or learning narrative")
+
+    if parsed.get("must_have_skills"):
+        print("\nMust-have (from LLM parse):")
+        for s in parsed["must_have_skills"]:
+            mark = "✓" if s in matched else "?"
+            print(f"  {mark} {s}")
+
+    print("\nSuggested STAR stories (from top bullets):")
+    for i, b in enumerate(top[:3], 1):
+        print(f"  {i}. {b['job']}: expand on metrics, scope, and your specific contribution")
+
+    if args.llm:
+        try:
+            client, model, _cfg = get_llm_client(getattr(args, "llm_provider", None))
+            prompt = f"""Given this JD and resume gap report, list 5 likely interview questions and brief answer outlines using ONLY verified resume bullets.
+
+Missing skills: {', '.join(missing[:12])}
+Top bullets:
+{chr(10).join(b['text'] for b in top)}
+
+JD excerpt:
+{jd_text[:2000]}
+"""
+            raw = llm_chat_completion(
+                client, model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=4096,
+            )
+            if raw:
+                print("\n--- LLM interview Q&A (verify facts) ---")
+                print(raw.strip())
+        except LLMNotConfiguredError as e:
+            print(f"\nLLM skipped: {e}", file=sys.stderr)
+
+    if args.json:
+        out = {
+            "parsed_jd": parsed,
+            "matched_skills": matched,
+            "missing_skills": missing,
+            "top_bullets": top,
+        }
+        print(json.dumps(out, indent=2))
 
 
 def cmd_compare(args):
@@ -1304,6 +1691,10 @@ def main():
                               help="Max bullets per job (default: 4, 0=unlimited)")
     build_parser.add_argument("--max-jobs", type=int, default=DEFAULT_MAX_JOBS,
                               help="Max experience entries (default: 0=unlimited)")
+    build_parser.add_argument("--pages", type=int, default=1,
+                              help="Target page count for trim (default: 1, 0=disable)")
+    build_parser.add_argument("--no-projects", action="store_true",
+                              help="Omit projects section (also dropped by page budget when over limit)")
     build_parser.add_argument("--locale", default="en", choices=["en", "zh-CN"],
                               help="Resume language (en or zh-CN)")
     build_parser.add_argument("--llm", action="store_true", help="Use LLM for JD analysis")
@@ -1313,6 +1704,8 @@ def main():
                               help="LLM-rewrite selected bullets for JD (requires --jd + API key)")
     build_parser.add_argument("--boost", action="store_true",
                               help="Second LLM pass: add verified missing JD skills to bullets + skills")
+    build_parser.add_argument("--target-score", type=int, default=0,
+                              help="Re-run with tailor+boost if ATS score below target (e.g. 75)")
     build_parser.add_argument("--all-formats", action="store_true", help="Generate HTML, Markdown, and PNG in addition to PDF")
     build_parser.add_argument("--cover-letter", action="store_true", help="Also generate a cover letter .txt file")
     build_parser.add_argument("--docx", action="store_true", help="Also generate a .docx Word document")
@@ -1331,6 +1724,7 @@ def main():
     score_parser.add_argument("--tags", default="", help="Comma-separated tags filter")
     score_parser.add_argument("--max-bullets", type=int, default=DEFAULT_MAX_BULLETS)
     score_parser.add_argument("--max-jobs", type=int, default=DEFAULT_MAX_JOBS)
+    score_parser.add_argument("--variant", help="Score a built variants/*.yaml instead of composing from base")
     score_parser.add_argument("--output", help="Write JSON report to file")
     score_parser.add_argument("--json", action="store_true", help="Print JSON to stdout")
     score_parser.set_defaults(func=cmd_score)
@@ -1345,6 +1739,16 @@ def main():
     compare_parser.add_argument("--output", help="Write JSON report to file")
     compare_parser.add_argument("--json", action="store_true", help="Print JSON to stdout")
     compare_parser.set_defaults(func=cmd_compare)
+
+    interview_parser = subparsers.add_parser("interview", help="Gap analysis + interview prep from JD")
+    interview_parser.add_argument("--jd", required=True, help="Path to job description text file")
+    interview_parser.add_argument("--yaml", default="base.yaml", help="YAML source file")
+    interview_parser.add_argument("--tags", default="", help="Comma-separated tags filter")
+    interview_parser.add_argument("--llm", action="store_true", help="Generate LLM interview Q&A outlines")
+    interview_parser.add_argument("--llm-provider", choices=["deepseek", "kimi", "minimax"],
+                                  help="LLM provider override")
+    interview_parser.add_argument("--json", action="store_true", help="Print JSON to stdout")
+    interview_parser.set_defaults(func=cmd_interview)
 
     tags_parser = subparsers.add_parser("tags", help="List all available tags in base")
     tags_parser.set_defaults(func=cmd_tags)
