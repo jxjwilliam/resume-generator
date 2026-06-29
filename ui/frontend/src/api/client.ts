@@ -6,6 +6,7 @@ import type {
   YamlSaveResponse,
   RunHistoryItem,
   OutputFile,
+  OutputsResponse,
   ResumeRunRequest,
   TransformRunRequest,
   RunResponse,
@@ -51,7 +52,8 @@ export const api = {
   saveYaml: (path: string, content: string) =>
     post<YamlSaveResponse>("/yaml", { path, content }),
   listThemes: () => get<ThemeInfo[]>("/themes"),
-  listRxTemplates: () => get<RxTemplateInfo[]>("/rxresume-templates"),
+	  listOutputs: () => get<OutputsResponse>("/outputs"),
+	  listRxTemplates: () => get<RxTemplateInfo[]>("/rxresume-templates"),
   listTags: () => get<{ tags: string[] }>("/tags"),
   analyzeJd: (text: string, yamlFile?: string) =>
     post<JdAnalysisResult>("/jd/analyze", { text, yaml_file: yamlFile || DEFAULT_YAML_PATH }),

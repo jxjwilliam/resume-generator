@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from .db import insert_run, update_run, scan_output_files
+from .db import insert_run, update_run, scan_output_files, get_run
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUTPUT_DIR = os.path.join(REPO_ROOT, "output")
@@ -18,6 +18,16 @@ async def stream_logs(job_id: str):
     """Async generator that yields log lines from a job's queue as SSE events."""
     entry = _running_jobs.get(job_id)
     if entry is None:
+        # Client connected after the job finished — emit terminal status from DB.
+        run = await get_run(job_id)
+        if run and run.get("status") != "running":
+            if run["status"] == "success":
+                yield "data: [SYSTEM] Job completed successfully\n\n"
+            elif run["status"] == "cancelled":
+                yield "data: [SYSTEM] Job cancelled\n\n"
+            else:
+                err = run.get("error_log") or run["status"]
+                yield f"data: [SYSTEM] Job failed: {err}\n\n"
         return
     queue: asyncio.Queue = entry["log_queue"]
     while True:

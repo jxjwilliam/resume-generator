@@ -82,7 +82,15 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   const [composePreview, setComposePreview] = useState<ComposePreviewResult | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const themeManualRef = useRef(false);
+  const sseCloseRef = useRef<(() => void) | null>(null);
   const runPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const jobFinishedRef = useRef(false);
+
+  // Cleanup SSE stream and poll timer on unmount
+  useEffect(() => () => {
+    sseCloseRef.current?.();
+    if (runPollRef.current) clearInterval(runPollRef.current);
+  }, []);
 
   // Auto-select theme when JD is pasted (until user picks manually)
   useEffect(() => {
@@ -138,41 +146,42 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     }
   };
 
-  const pollRunCompletion = useCallback((job_id: string) => {
-    if (runPollRef.current) clearInterval(runPollRef.current);
-    runPollRef.current = setInterval(async () => {
-      const detail = await api.getRunDetail(job_id);
-      if (detail.status !== "running") {
-        if (runPollRef.current) clearInterval(runPollRef.current);
-        runPollRef.current = null;
-        setRunning(false);
-        setLastJobId(job_id);
-        if (detail.status === "success") {
+  const handleJobDone = useCallback(async (job_id: string, success: boolean) => {
+    if (jobFinishedRef.current) return;
+    jobFinishedRef.current = true;
+    if (runPollRef.current) {
+      clearInterval(runPollRef.current);
+      runPollRef.current = null;
+    }
+    sseCloseRef.current?.();
+    sseCloseRef.current = null;
+    setRunning(false);
+    setLastJobId(job_id);
+    if (success) {
+      try {
+        const resp = await api.getOutputFiles(job_id);
+        setOutputFiles(resp.files);
+        const names = new Set(resp.files.map((f: OutputFile) => f.name));
+        if (names.has("ats-report.json")) {
           try {
-            const resp = await api.getOutputFiles(job_id);
-            setOutputFiles(resp.files);
-            const names = new Set(resp.files.map((f) => f.name));
-            if (names.has("ats-report.json")) {
-              try {
-                const report = await api.getOutputContent<AtsReport>(job_id, "ats-report.json");
-                setAtsReport(report);
-              } catch { /* optional */ }
-            }
-            if (names.has("bullet-diff.json")) {
-              try {
-                const diff = await api.getOutputContent<BulletDiffReport>(job_id, "bullet-diff.json");
-                setBulletDiff(diff);
-              } catch { /* optional */ }
-            }
-          } catch { /* no output files */ }
+            const report = await api.getOutputContent<AtsReport>(job_id, "ats-report.json");
+            setAtsReport(report);
+          } catch { /* optional */ }
         }
-        onRefreshHistory();
-      }
-    }, 1000);
+        if (names.has("bullet-diff.json")) {
+          try {
+            const diff = await api.getOutputContent<BulletDiffReport>(job_id, "bullet-diff.json");
+            setBulletDiff(diff);
+          } catch { /* optional */ }
+        }
+      } catch { /* no output files */ }
+    }
+    onRefreshHistory();
   }, [onRefreshHistory]);
 
   const handleRun = useCallback(async (opts?: { tailor?: boolean; boost?: boolean; useLlm?: boolean }) => {
-    if (!company.trim()) { setCompany("Unknown"); }
+    const runCompany = company.trim() || "Unknown";
+    if (!company.trim()) setCompany("Unknown");
     setError("");
     setRunning(true);
     setLogLines([]);
@@ -180,6 +189,14 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     setLastJobId(null);
     setAtsReport(null);
     setBulletDiff(null);
+    jobFinishedRef.current = false;
+    // Close any previous SSE stream / poll
+    sseCloseRef.current?.();
+    sseCloseRef.current = null;
+    if (runPollRef.current) {
+      clearInterval(runPollRef.current);
+      runPollRef.current = null;
+    }
 
     const runTailor = opts?.tailor ?? tailor;
     const runBoost = opts?.boost ?? boost;
@@ -188,7 +205,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     try {
       const { job_id } = await api.runResume({
         yaml_file: yamlFile,
-        company: company.trim(),
+        company: runCompany,
         role: role.trim() || undefined,
         theme: selectedTheme,
         jd_text: jdText || undefined,
@@ -205,18 +222,37 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         docx: docx || undefined,
       });
 
-      api.streamLogs(job_id, (line) => {
-        setLogLines((prev) => [...prev, line]);
-      });
+      setLastJobId(job_id);
 
-      pollRunCompletion(job_id);
+      const closeStream = api.streamLogs(job_id, (line) => {
+        setLogLines((prev) => [...prev, line]);
+        // Detect job completion from SSE system messages
+        if (line.source === "system") {
+          if (line.text === "Job completed successfully") {
+            handleJobDone(job_id, true);
+          } else if (line.text.startsWith("Job failed")) {
+            handleJobDone(job_id, false);
+          }
+        }
+      });
+      sseCloseRef.current = closeStream;
+
+      // Poll DB for completion — reliable even if SSE connects late or drops
+      runPollRef.current = setInterval(async () => {
+        try {
+          const detail = await api.getRunDetail(job_id);
+          if (detail.status !== "running") {
+            handleJobDone(job_id, detail.status === "success");
+          }
+        } catch { /* keep polling */ }
+      }, 1000);
     } catch (e: any) {
       setError(e.message);
       setRunning(false);
     }
   }, [
-    yamlFile, company, role, selectedTheme, jdText, useLlm, tailor, boost,
-    maxBullets, maxJobs, allFormats, locale, coverLetter, docx, pollRunCompletion,
+    yamlFile, company, role, selectedTheme, jdText, useLlm, tailor, boost, enhance,
+    maxBullets, maxJobs, allFormats, locale, coverLetter, docx, handleJobDone,
   ]);
 
   const handleBoostRerun = useCallback(() => {

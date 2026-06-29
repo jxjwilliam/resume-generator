@@ -15,10 +15,12 @@ import TransformIcon from "@mui/icons-material/AutoFixHigh";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import HistoryIcon from "@mui/icons-material/History";
 import EditIcon from "@mui/icons-material/Edit";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import Logo from "./components/Logo";
 import ResumePage from "./pages/ResumePage";
 import TransformPage from "./pages/TransformPage";
 import ComparePage from "./pages/ComparePage";
+import OutputPage from "./pages/OutputPage";
 import HistoryPage from "./pages/HistoryPage";
 import EditorPage from "./pages/EditorPage";
 import { api } from "./api/client";
@@ -62,8 +64,9 @@ export default function App() {
             <Tab icon={<DescriptionIcon />} label="Resume" {...a11yProps(0)} />
             <Tab icon={<TransformIcon />} label="Transform" {...a11yProps(1)} />
             <Tab icon={<CompareArrowsIcon />} label="Compare" {...a11yProps(2)} />
-            <Tab icon={<HistoryIcon />} label="History" {...a11yProps(3)} />
-            <Tab icon={<EditIcon />} label="Editor" {...a11yProps(4)} />
+            <Tab icon={<FolderOpenIcon />} label="Outputs" {...a11yProps(3)} />
+            <Tab icon={<HistoryIcon />} label="History" {...a11yProps(4)} />
+            <Tab icon={<EditIcon />} label="Editor" {...a11yProps(5)} />
           </Tabs>
         </Box>
 
@@ -77,12 +80,15 @@ export default function App() {
           <ComparePage />
         )}
         {tab === 3 && (
+          <OutputPage />
+        )}
+        {tab === 4 && (
           <HistoryPage
             refreshKey={refreshKey}
             onReRun={handleReRun}
           />
         )}
-        {tab === 4 && (
+        {tab === 5 && (
           <EditorPage />
         )}
       </Container>

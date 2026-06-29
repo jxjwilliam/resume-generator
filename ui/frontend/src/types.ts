@@ -27,6 +27,15 @@ export interface OutputFile {
   size: number;
 }
 
+export interface OutputDirInfo {
+  slug: string;
+  files: OutputFile[];
+}
+
+export interface OutputsResponse {
+  directories: OutputDirInfo[];
+}
+
 export interface RunHistoryItem {
   id: string;
   type: "resume" | "transform";

@@ -826,8 +826,11 @@ def cmd_build(args):
     if success:
         print(f"Output: {OUTPUT_DIR}/{slug}/")
 
-    _write_history_from_build(slug, args.company, role, tags, template, args, variant_path, jd_text)
-    print(f"Logged to history DB + {LOG_FILE}")
+    if not getattr(args, "no_history", False):
+        _write_history_from_build(slug, args.company, role, tags, template, args, variant_path, jd_text)
+        print(f"Logged to history DB + {LOG_FILE}")
+    else:
+        print("History logging skipped (--no-history)")
 
     if jd_text:
         from ats import score_resume
@@ -862,7 +865,8 @@ def cmd_build(args):
                 json.dump(diff_report, f, indent=2)
             print(f"Bullet diff: {diff_path}")
 
-        _update_history_ats(slug, ats_result, before_ats=before_ats, pages=pages if pages > 0 else None)
+        if not getattr(args, "no_history", False):
+            _update_history_ats(slug, ats_result, before_ats=before_ats, pages=pages if pages > 0 else None)
 
         from provenance import build_provenance_report
 
@@ -1761,6 +1765,7 @@ def _generate_cover_letter(base: dict, company: str, role: str | None,
         Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
         jd_path = f"{OUTPUT_DIR}/{slug}/.cl_jd.txt"
         Path(jd_path).write_text(jd_text)
+    company_slug = re.sub(r"[^a-z0-9-]", "-", company.lower()).strip("-")
     cl_args = Namespace(
         yaml=yaml_file,
         company=company,
@@ -1768,7 +1773,7 @@ def _generate_cover_letter(base: dict, company: str, role: str | None,
         jd=jd_path,
         tags=tags,
         llm=bool(jd_text),
-        output=f"{OUTPUT_DIR}/{slug}/cover-letter-{company.lower().replace(' ','-')}.txt",
+        output=f"{OUTPUT_DIR}/{slug}/cover-letter-{company_slug}.txt",
     )
     try:
         cmd_cover_letter(cl_args)
@@ -1826,9 +1831,11 @@ def cmd_cover_letter(args):
     full = header + body + footer
 
     if args.output:
-        with open(args.output, "w") as f:
+        out_path = Path(args.output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w") as f:
             f.write(full)
-        print(f"Cover letter written to {args.output}")
+        print(f"Cover letter written to {out_path}")
     else:
         print("\n" + "=" * 50)
         print(f"COVER LETTER — {args.company}")
@@ -1893,6 +1900,8 @@ def main():
     build_parser.add_argument("--all-formats", action="store_true", help="Generate HTML, Markdown, and PNG in addition to PDF")
     build_parser.add_argument("--cover-letter", action="store_true", help="Also generate a cover letter .txt file")
     build_parser.add_argument("--docx", action="store_true", help="Also generate a .docx Word document")
+    build_parser.add_argument("--no-history", action="store_true",
+                              help="Skip runs.db + applications.json logging (used by WebUI runner)")
     build_parser.set_defaults(func=cmd_build)
 
     analyze_parser = subparsers.add_parser("analyze", help=f"Analyze a JD against {BASE_FILE}")

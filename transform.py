@@ -474,6 +474,23 @@ def create_resume(name: str, slug: str, data: dict) -> str:
     r = httpx.post(f"{API_BASE}/resumes", headers=headers, json=payload, timeout=30)
     if r.status_code == 200:
         return r.json()
+    try:
+        body = r.json()
+        print(f"❌ RxResume API rejected resume creation (HTTP {r.status_code}):", file=sys.stderr)
+        print(f"   code={body.get('code', 'N/A')} message={body.get('message', 'N/A')}", file=sys.stderr)
+        if body.get("code") == "RESUME_SLUG_ALREADY_EXISTS":
+            import secrets
+            suffix = secrets.token_hex(4)
+            new_slug = f"{slug}-{suffix}"
+            payload["slug"] = new_slug
+            print(f"   Retrying with unique slug: {new_slug}", file=sys.stderr)
+            r2 = httpx.post(f"{API_BASE}/resumes", headers=headers, json=payload, timeout=30)
+            if r2.status_code == 200:
+                return r2.json()
+            print(f"   Retry also failed (HTTP {r2.status_code}):", file=sys.stderr)
+            print(f"   {r2.text[:500]}", file=sys.stderr)
+    except Exception:
+        print(f"❌ RxResume API rejected resume creation (HTTP {r.status_code}): {r.text[:500]}", file=sys.stderr)
     r.raise_for_status()
 
 

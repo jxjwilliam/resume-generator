@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from sse_starlette.sse import EventSourceResponse
 
 from .db import init_db, get_run, list_runs
@@ -335,6 +335,7 @@ def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
         cmd += ["--cover-letter"]
     if args.docx:
         cmd += ["--docx"]
+    cmd += ["--no-history"]
     return cmd
 
 
@@ -422,29 +423,50 @@ async def get_output_files(job_id: str):
     return {"files": files}
 
 
+async def _resolve_output_by_slug(name: str, slug: str) -> Path:
+    output_dir = REPO_ROOT / "output"
+    if not output_dir.exists():
+        raise HTTPException(404, "No output directory")
+
+    candidate = output_dir / slug / name
+    if candidate.exists():
+        return candidate
+
+    for subdir in sorted(output_dir.iterdir(), reverse=True):
+        if subdir.is_dir():
+            candidate = subdir / name
+            if candidate.exists():
+                return candidate
+
+    raise HTTPException(404, f"File '{name}' not found in any output directory")
+
+
 @app.get("/api/output/{job_id}")
 async def get_output(job_id: str, name: str | None = None):
     run = await get_run(job_id)
-    if not run:
-        raise HTTPException(404, "Run not found")
 
     if name:
-        fpath = await _resolve_output_path(job_id, name, run)
+        if run:
+            fpath = await _resolve_output_path(job_id, name, run)
+        else:
+            fpath = await _resolve_output_by_slug(name, job_id)
         media_type = _mime_for_file(name)
         return FileResponse(str(fpath), media_type=media_type, filename=name)
 
-    # Legacy: serve first PDF
-    output_path = run.get("output_path")
-    if not output_path:
-        output_dir = REPO_ROOT / "output"
-        if output_dir.exists():
-            candidates = sorted(output_dir.rglob("*.pdf"))
-            if candidates:
-                output_path = str(candidates[0])
-    if not output_path:
-        raise HTTPException(404, "No output files found")
-    return FileResponse(output_path, media_type="application/pdf",
-                        filename=Path(output_path).name)
+    if run:
+        # Legacy: serve first PDF
+        output_path = run.get("output_path")
+        if not output_path:
+            output_dir = REPO_ROOT / "output"
+            if output_dir.exists():
+                candidates = sorted(output_dir.rglob("*.pdf"))
+                if candidates:
+                    output_path = str(candidates[0])
+        if output_path:
+            return FileResponse(output_path, media_type="application/pdf",
+                                filename=Path(output_path).name)
+
+    raise HTTPException(404, "No output found")
 
 
 @app.get("/api/output/{job_id}/download")
@@ -457,9 +479,10 @@ async def download_output(job_id: str, name: str):
 async def get_output_content(job_id: str, name: str):
     """Return parsed JSON or raw text for an output artifact."""
     run = await get_run(job_id)
-    if not run:
-        raise HTTPException(404, "Run not found")
-    fpath = await _resolve_output_path(job_id, name, run)
+    if run:
+        fpath = await _resolve_output_path(job_id, name, run)
+    else:
+        fpath = await _resolve_output_by_slug(name, job_id)
     text = fpath.read_text(encoding="utf-8", errors="replace")
     if fpath.suffix.lower() == ".json":
         try:
@@ -467,6 +490,32 @@ async def get_output_content(job_id: str, name: str):
         except json.JSONDecodeError:
             raise HTTPException(500, f"Invalid JSON in {name}")
     return {"name": name, "text": text}
+
+
+def _infer_file_type(name: str) -> str:
+    """Infer file type category from filename for the frontend."""
+    lower = name.lower()
+    if lower.endswith(".pdf"):
+        return "pdf"
+    if lower.endswith(".docx"):
+        return "docx"
+    if lower.endswith(".html") or lower.endswith(".htm"):
+        return "html"
+    if "cover-letter" in lower:
+        return "cover-letter"
+    if lower == "ats-report.json":
+        return "ats-report"
+    if lower == "bullet-diff.json":
+        return "bullet-diff"
+    if lower.endswith(".json"):
+        return "json"
+    if lower.endswith(".txt"):
+        return "txt"
+    if lower.endswith((".jpg", ".jpeg")):
+        return "jpg"
+    if lower.endswith(".png"):
+        return "png"
+    return "other"
 
 
 def _mime_for_file(name: str) -> str:
@@ -481,6 +530,81 @@ def _mime_for_file(name: str) -> str:
         ".jpg": "image/jpeg",
         ".typ": "text/plain",
     }.get(ext, "application/octet-stream")
+
+
+@app.get("/api/outputs")
+async def list_outputs():
+    """List output directories from successful builds, newest first."""
+    output_dir = REPO_ROOT / "output"
+    if not output_dir.exists():
+        return {"directories": []}
+
+    success_slugs: set[str] = set()
+    try:
+        runs = await list_runs(status_filter="success", limit=200)
+        for run in runs:
+            for f in (run.get("output_files") or []):
+                slug = f.get("slug")
+                if slug:
+                    success_slugs.add(slug)
+    except Exception:
+        pass  # DB unavailable — fall back to showing everything
+
+    dirs = []
+    for subdir in sorted(output_dir.iterdir(), reverse=True):
+        if not subdir.is_dir() or subdir.name.startswith("."):
+            continue
+        slug = subdir.name
+        if success_slugs and slug not in success_slugs:
+            continue
+        files = []
+        for f in sorted(subdir.iterdir(), key=lambda p: p.name):
+            if f.is_file() and not f.name.startswith("."):
+                files.append({
+                    "name": f.name,
+                    "type": _infer_file_type(f.name),
+                    "slug": slug,
+                    "size": f.stat().st_size,
+                })
+        dirs.append({"slug": slug, "files": files})
+    return {"directories": dirs}
+
+
+@app.get("/api/outputs/view/{slug}")
+async def view_output_file(slug: str, name: str):
+    fpath = await _resolve_output_by_slug(name, slug)
+    media_type = _mime_for_file(name)
+    return FileResponse(str(fpath), media_type=media_type)
+
+
+@app.get("/api/outputs/html-preview/{slug}")
+async def html_preview(slug: str, name: str):
+    """Convert a file to HTML for inline iframe preview. Supports DOCX, TXT, JSON."""
+    fpath = await _resolve_output_by_slug(name, slug)
+    ext = fpath.suffix.lower()
+
+    if ext == ".docx":
+        from docx import Document
+        doc = Document(str(fpath))
+        body = "".join(
+            f"<p>{p.text}</p>" for p in doc.paragraphs if p.text.strip()
+        )
+        if not body:
+            for table in doc.tables:
+                body += "<table>"
+                for row in table.rows:
+                    body += "<tr>" + "".join(f"<td>{c.text}</td>" for c in row.cells) + "</tr>"
+                body += "</table>"
+        html = f"<html><body style='font-family:sans-serif;padding:16px'>{body}</body></html>"
+        return HTMLResponse(html)
+
+    if ext in (".txt", ".json", ".typ"):
+        text = fpath.read_text(encoding="utf-8", errors="replace")
+        html = f"<html><body style='font-family:monospace;white-space:pre-wrap;padding:16px'>{text}</body></html>"
+        return HTMLResponse(html)
+
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"/api/outputs/view/{slug}?name={name}")
 
 
 async def _resolve_output_path(job_id: str, name: str, run: dict) -> Path:
