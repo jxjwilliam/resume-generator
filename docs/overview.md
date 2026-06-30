@@ -73,6 +73,76 @@ The key rule: **`base.yaml` is the only file you touch by hand.** Everything els
 
 ---
 
+## WebUI Architecture
+
+The WebUI (`ui/`) is a React frontend + FastAPI backend that wraps `resume.py` as a **subprocess** — it never imports or calls it directly.
+
+### Request flow
+
+```mermaid
+sequenceDiagram
+    participant User as Browser (React)
+    participant API as FastAPI backend
+    participant Runner as runner.py
+    participant SP as subprocess (resume.py)
+    participant DB as SQLite (runs.db)
+
+    User->>API: POST /api/resume/run { company, tags, jd_text, ... }
+    API->>API: write JD text → .ui_temp_jd.txt
+    API->>API: _build_resume_cmd() → ["python", "resume.py", "build", ...]
+    API->>Runner: start_job(cmd, "resume", metadata)
+    Runner->>DB: insert_run({ id, status: "running", ... })
+    Runner->>SP: asyncio.create_subprocess_exec("python resume.py build ...")
+    SP-->>Runner: stdout + stderr (line by line)
+    Runner-->>API: log_queue → SSE stream
+    API-->>User: GET /api/log/{job_id} (EventSource)
+    User->>User: render log lines + poll DB
+    SP->>SP: write variants/ + output/ files
+    SP->>Runner: process exits (returncode 0)
+    Runner->>DB: update_run({ status: "success", output_files, ats_score })
+    Runner-->>API: [SYSTEM] Job completed successfully
+    API-->>User: SSE: "Job completed successfully"
+    User->>API: GET /api/output/{job_id}/files
+    API-->>User: { files: [{name, type, size}] }
+    User->>User: show download links + ATS score + bullet diff
+```
+
+### Layer breakdown
+
+| Layer | Tech | Role |
+|---|---|---|
+| **Frontend** | React + Vite + MUI, `EventSource` for SSE logs | Form UI, real-time log streaming, result display |
+| **Backend API** | FastAPI (`main.py`) | HTTP endpoints, command construction, job orchestration |
+| **Runner** | `runner.py` | Async subprocess lifecycle (start, monitor, cancel) |
+| **Subprocess** | `resume.py build ...` (separate Python process) | Actual composition + rendercv rendering |
+| **DB** | SQLite (`runs.db`) via `history_db.py` | Shared run history between CLI + WebUI |
+
+### Key design decisions
+
+- **Subprocess, not import.** The API builds a CLI command string and spawns `resume.py` in a child process. This keeps the CLI and WebUI fully independent — no shared global state, no import side effects.
+- **Async log streaming.** `runner.py` reads stdout/stderr from the subprocess line-by-line and pushes each line into an `asyncio.Queue`. The SSE endpoint (`GET /api/log/{job_id}`) consumes the queue and pushes events to the browser.
+- **Dual completion detection.** The frontend listens to both the SSE stream (`[SYSTEM] Job completed successfully`) **and** polls `GET /api/history/{job_id}` every 1s. This ensures reliable detection even if the SSE connection drops.
+- **Cancellation via `asyncio.CancelledError`.** The `cancel_job()` call cancels the asyncio task, which triggers `proc.kill()` on the subprocess.
+- **Shared DB.** Both `resume.py` (CLI) and `runner.py` (WebUI) write to the same `runs.db` via `history_db.py`, so the History tab shows all runs regardless of origin.
+
+### File mapping
+
+| Frontend file | Purpose |
+|---|---|
+| `ui/frontend/src/pages/ResumePage.tsx` | Build form, run button, log + output display |
+| `ui/frontend/src/pages/TransformPage.tsx` | RxResume sync form |
+| `ui/frontend/src/api/client.ts` | `api.runResume()`, `api.streamLogs()`, etc. |
+| `ui/frontend/src/components/LogStream.tsx` | Real-time log viewer (SSE) |
+
+| Backend file | Purpose |
+|---|---|
+| `ui/backend/main.py` | FastAPI routes: `run_resume()`, `_build_resume_cmd()` |
+| `ui/backend/runner.py` | `start_job()`, `_run_process()`, `stream_logs()`, `cancel_job()` |
+| `ui/backend/models.py` | `ResumeRunRequest` Pydantic schema |
+| `ui/backend/db.py` | SQLite operations (shared with CLI via `history_db.py`) |
+
+---
+
 ## `base.yaml` schema highlights
 
 Beyond tagged experience/skills/projects, the source file now includes fields used by both render paths:

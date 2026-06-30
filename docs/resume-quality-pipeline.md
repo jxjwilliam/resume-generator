@@ -56,6 +56,20 @@ flowchart TB
 
 ---
 
+## LLM Features (Enhance / Tailor / Boost)
+
+All three require `--llm` and a JD to work against.
+
+| Option | Flag | What it does |
+|---|---|---|
+| **Enhance** | `--enhance` | LLM rewrites bullet descriptions to be more impactful/compelling — rephrases using stronger action verbs and quantifies results where possible, but sticks strictly to verified `base.yaml` content (no fabrication) |
+| **Tailor** | `--tailor` | LLM minimally rewrites bullets to better match the specific JD — adjusts terminology, emphasis, and framing to align with the job posting's language, while passing through a hallucination validator that rejects fabricated claims |
+| **Boost** | `--boost` | Second LLM pass after build — identifies missing hard skills from the JD that you genuinely have (verified in `base.yaml`) but weren't included. Adds them back in a focused second pass. |
+
+**Relationship:** They form a progression — Enhance polishes wording, Tailor re-frames for the target, Boost backfills omissions. Tailor + Boost together give the best ATS score lift (the `--target-score` flag runs them automatically if the score is below threshold).
+
+---
+
 ## Module Reference
 
 | Module | Purpose |

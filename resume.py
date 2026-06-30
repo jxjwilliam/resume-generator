@@ -276,36 +276,6 @@ def build_variant(base, tags, template, company, role, jd_text=None,
         },
         "design": {
             "theme": template,
-            "page": {
-                "size": "us-letter",
-                "top_margin": "0.7in",
-                "bottom_margin": "0.7in",
-                "left_margin": "0.7in",
-                "right_margin": "0.7in",
-            },
-            "colors": {
-                "name": "rgb(0,79,144)",
-                "headline": "rgb(0,79,144)",
-                "connections": "rgb(0,79,144)",
-                "section_titles": "rgb(0,79,144)",
-                "links": "rgb(0,79,144)",
-            },
-            "typography": {
-                "font_family": _font_for_locale(locale),
-                "font_size": {
-                    "body": "10pt",
-                    "name": "30pt",
-                    "headline": "10pt",
-                    "connections": "10pt",
-                    "section_titles": "1.4em",
-                },
-            },
-            "header": {
-                "alignment": "center",
-            },
-            "links": {
-                "show_external_link_icon": False,
-            },
         },
     }
 
