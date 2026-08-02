@@ -94,7 +94,7 @@ Generate a job-specific resume variant and render it to PDF + HTML, with optiona
 | `--company` | ✅ | Target company name |
 | `--role` | ✅* | Job title (extracted from JD first line if omitted with `--llm`) |
 | `--tags` | | Comma-separated tags to filter bullets (e.g. `backend,python,react`) |
-| `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes`, or `auto` (default: `classic`) |
+| `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes`, `harvard`, `opal`, `ink`, or `auto` (default: `classic`) |
 | `--yaml` | | YAML source file (default: `profiles/base.yaml`) |
 | `--locale` | | Resume language: `en` or `zh-CN` (default: `en`) |
 | `--jd` | ** | Path to a job description text file (required with `--llm`) |
@@ -453,10 +453,14 @@ Both filter by tags. Experience is sorted **newest-first** in output.
 
 | Theme | Best for |
 |---|---|
-| `classic` | FAANG, large tech, senior roles |
+| `auto` | Picks from JD signals (default when JD is pasted) |
+| `classic` | FAANG, large tech, senior roles (default) |
 | `sb2nov` | Standard SWE roles, ATS-friendly |
 | `moderncv` | Startup, product, mid-level |
-| `engineeringresumes` | Maximally ATS-optimised |
+| `engineeringresumes` | Maximally ATS-optimised, ultra-compact |
+| `harvard` | Academic, research, formal applications |
+| `opal` | Tech, consulting, clean modern look |
+| `ink` | Creative, design, standout applications |
 
 **python-docx** (via `resume.py build --docx`):
 - Output: `output/{slug}/resume.docx`

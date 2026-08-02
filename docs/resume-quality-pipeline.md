@@ -314,6 +314,9 @@ Runs after tailor (or standalone):
 | FAANG company names in JD | `engineeringresumes` |
 | Staff / principal / director seniority | `classic` |
 | Startup / early-stage language | `moderncv` |
+| Academic / research roles | `harvard` |
+| Creative / design roles | `ink` |
+| Consulting / tech | `opal` |
 | ATS mentioned explicitly | `engineeringresumes` |
 | Default | `sb2nov` |
 
