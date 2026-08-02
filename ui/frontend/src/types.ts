@@ -8,13 +8,6 @@ export interface ThemeInfo {
   best_for: string;
 }
 
-export interface RxTemplateInfo {
-  id: string;
-  name: string;
-  description: string;
-  best_for: string;
-}
-
 export interface YamlInfo {
   name: string;
   path: string;
@@ -38,7 +31,7 @@ export interface OutputsResponse {
 
 export interface RunHistoryItem {
   id: string;
-  type: "resume" | "transform";
+  type: "resume";
   status: "running" | "success" | "error" | "cancelled";
   company?: string;
   role?: string;
@@ -78,16 +71,6 @@ export interface ResumeRunRequest {
   locale?: string;
   cover_letter?: boolean;
   docx?: boolean;
-}
-
-export interface TransformRunRequest {
-  yaml_file?: string;
-  jd_text: string;
-  tags?: string[];
-  template?: string;
-  resume_id?: string;
-  use_llm?: boolean;
-  generate_pdf?: boolean;
 }
 
 export interface RunResponse {

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 
-from compose import bullet_key, parse_tag_list, rank_bullets_for_jd, select_experience_jobs
+from src.compose import bullet_key, parse_tag_list, rank_bullets_for_jd, select_experience_jobs
 
 # Weights sum to 100
 WEIGHT_KEYWORD = 40
@@ -61,7 +61,7 @@ def score_resume(
     """
     Score a composed resume against a JD. Returns breakdown + total /100.
     """
-    from jd_parser import parse_jd
+    from src.jd_parser import parse_jd
 
     parsed = parse_jd(jd_text, base)
     tags_list = parse_tag_list(tags)
@@ -285,7 +285,7 @@ def score_variant_yaml(
     tags: str | list | None = None,
 ) -> dict:
     """
-    Score a built variants/*.yaml against a JD (reads rendered highlights + sections).
+    Score a built output/variants/*.yaml against a JD (reads rendered highlights + sections).
     """
     import yaml
 
@@ -314,7 +314,7 @@ def score_variant_yaml(
 
     combined = " ".join(bullet_texts).lower() + " " + summary.lower() + " " + headline.lower() + skills_text.lower()
 
-    from jd_parser import parse_jd
+    from src.jd_parser import parse_jd
 
     parsed = parse_jd(jd_text, None)
     hard_skills = parsed.get("hard_skills", [])

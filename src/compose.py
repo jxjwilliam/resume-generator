@@ -1,5 +1,5 @@
 """
-Shared resume composition logic for resume.py and transform.py.
+Shared resume composition logic for resume.py.
 
 Filters, ranks, and caps experience bullets by tag overlap, relevance,
 and optional JD keyword matches.
@@ -92,7 +92,7 @@ def select_experience_jobs(
 
     Jobs must be active. Bullets are tag-filtered, ranked, and capped per job.
     When tags are set but no bullet matches, fall back to all bullets if the
-    job-level tags overlap (transform.py behavior).
+    job-level tags overlap.
 
     For senior/staff/principal roles, omit jobs with no high-relevance bullets
     and weak JD overlap.

@@ -74,15 +74,14 @@ All three require `--llm` and a JD to work against.
 
 | Module | Purpose |
 |---|---|
-| [`compose.py`](../compose.py) | Shared bullet ranking, variant picker, senior job filter, skills reorder |
-| [`jd_parser.py`](../jd_parser.py) | Structured JD parse: hard skills, title keywords, domain, seniority |
-| [`ats.py`](../ats.py) | Deterministic ATS score (/100) + multi-JD compare + `score_variant_yaml()` |
-| [`llm_pipeline.py`](../llm_pipeline.py) | Optional LLM structured JD parse + hybrid 0–10 bullet rescoring |
-| [`tailor_validation.py`](../tailor_validation.py) | Reject tailor rewrites with numbers/tools not in source |
-| [`page_budget.py`](../page_budget.py) | Line estimator + trim loop for `--pages` |
-| [`provenance.py`](../provenance.py) | `provenance.json` — atomic units + source refs per build |
+| [`src/compose.py`](../src/compose.py) | Shared bullet ranking, variant picker, senior job filter, skills reorder |
+| [`src/jd_parser.py`](../src/jd_parser.py) | Structured JD parse: hard skills, title keywords, domain, seniority |
+| [`src/ats.py`](../src/ats.py) | Deterministic ATS score (/100) + multi-JD compare + `score_variant_yaml()` |
+| [`src/llm_pipeline.py`](../src/llm_pipeline.py) | Optional LLM structured JD parse + hybrid 0–10 bullet rescoring |
+| [`src/tailor_validation.py`](../src/tailor_validation.py) | Reject tailor rewrites with numbers/tools not in source |
+| [`src/page_budget.py`](../src/page_budget.py) | Line estimator + trim loop for `--pages` |
+| [`src/provenance.py`](../src/provenance.py) | `provenance.json` — atomic units + source refs per build |
 | [`resume.py`](../resume.py) | CLI: `build`, `analyze`, `score`, `compare`, `interview`, `tags`, `log` |
-| [`transform.py`](../transform.py) | RxResume sync; `--template auto` for kakuna/bronzor/chikorita |
 | [`ui/backend/main.py`](../ui/backend/main.py) | WebUI API: JD analyze/preview, build, output download |
 
 ---
@@ -318,14 +317,6 @@ Runs after tailor (or standalone):
 | ATS mentioned explicitly | `engineeringresumes` |
 | Default | `sb2nov` |
 
-RxResume visual templates (`transform.py --template auto`):
-
-| Signal | Template |
-|---|---|
-| Creative / design / portfolio | `bronzor` |
-| Startup / product / founder | `chikorita` |
-| Default | `kakuna` |
-
 ---
 
 ## Page budget (`--pages`)
@@ -378,7 +369,6 @@ Start: `./ui/start.sh` → http://localhost:5173
 |---|---|
 | **Resume** | JD panel (title/domain/soft skills), bullet preview, auto theme, tailor/boost, ATS widget, bullet diff viewer, re-run boost |
 | **Compare** | Paste 2–5 JDs, ranked fit table with scores and missing skills |
-| **Transform** | RxResume sync (unchanged) |
 | **History** | Run log with ATS score column + before/after delta |
 
 ### API endpoints
@@ -466,5 +456,4 @@ output/{slug}/
 
 - Architecture overview: [`overview.md`](overview.md)
 - Base schema + original design: [`resume-system-implementation.md`](resume-system-implementation.md)
-- RxResume path: [`rxresume-integration-guide.md`](rxresume-integration-guide.md)
 - User identity: [`init.md`](init.md)

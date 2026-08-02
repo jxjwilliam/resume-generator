@@ -13,7 +13,6 @@ from .db import init_db, get_run, list_runs
 from .jd_analyzer import extract_keywords, extract_text_from_pdf
 from .models import (
     ResumeRunRequest,
-    TransformRunRequest,
     RunResponse,
     YamlInfo,
     JdCompareRequest,
@@ -22,7 +21,7 @@ from .models import (
     YamlSaveRequest,
 )
 from .runner import start_job, stream_logs, cancel_job
-from .theme_data import THEMES, RX_TEMPLATES
+from .theme_data import THEMES
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 YAML_GLOBS = ["*.yaml", "*.yml"]
@@ -81,10 +80,7 @@ def _resume_text_blob(base: dict) -> str:
 
 
 def _jd_analysis_payload(text: str, base: dict, tags: str | list | None = None) -> dict:
-    import sys
-    if str(REPO_ROOT) not in sys.path:
-        sys.path.insert(0, str(REPO_ROOT))
-    from jd_parser import parse_jd, keyword_match_report
+    from src.jd_parser import parse_jd, keyword_match_report
 
     parsed = parse_jd(text, base)
     match = keyword_match_report(parsed, base, tags)
@@ -168,11 +164,6 @@ async def list_themes():
     return THEMES
 
 
-@app.get("/api/rxresume-templates")
-async def list_rx_templates():
-    return RX_TEMPLATES
-
-
 @app.get("/api/tags")
 async def list_tags():
     yaml_path = REPO_ROOT / DEFAULT_YAML
@@ -216,11 +207,8 @@ async def preview_jd(data: JdPreviewRequest):
     if len(text) < 20:
         raise HTTPException(400, "JD text too short for preview")
 
-    import sys
-    if str(REPO_ROOT) not in sys.path:
-        sys.path.insert(0, str(REPO_ROOT))
-    from jd_parser import parse_jd
-    from compose import preview_experience_jobs
+    from src.jd_parser import parse_jd
+    from src.compose import preview_experience_jobs
 
     base = _load_yaml(data.yaml_file)
     parsed = parse_jd(text, base)
@@ -248,7 +236,7 @@ async def preview_jd(data: JdPreviewRequest):
 
 @app.post("/api/jd/upload")
 async def upload_jd(file: UploadFile):
-    temp = REPO_ROOT / f".ui_temp_jd{Path(file.filename or 'file.txt').suffix}"
+    temp = REPO_ROOT / "output" / f".ui_temp_jd{Path(file.filename or 'file.txt').suffix}"
     content = await file.read()
     temp.write_bytes(content)
     try:
@@ -276,9 +264,7 @@ async def compare_jds_api(data: JdCompareRequest):
 
     import sys
     import yaml
-    if str(REPO_ROOT) not in sys.path:
-        sys.path.insert(0, str(REPO_ROOT))
-    from ats import compare_jds
+    from src.ats import compare_jds
 
     yaml_path = REPO_ROOT / DEFAULT_YAML
     base = {}
@@ -343,31 +329,11 @@ def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
 async def run_resume(args: ResumeRunRequest):
     jd_file = None
     if args.jd_text:
-        jd_file = str(REPO_ROOT / ".ui_temp_jd.txt")
+        jd_file = str(REPO_ROOT / "output" / ".ui_temp_jd.txt")
         Path(jd_file).write_text(args.jd_text)
 
     cmd = _build_resume_cmd(args, jd_file)
     job_id = await start_job(cmd, "resume", metadata=args.model_dump())
-    return RunResponse(job_id=job_id)
-
-
-@app.post("/api/transform/run", response_model=RunResponse)
-async def run_transform(args: TransformRunRequest):
-    jd_file = str(REPO_ROOT / ".ui_temp_jd.txt")
-    Path(jd_file).write_text(args.jd_text)
-
-    cmd = [sys.executable, "transform.py",
-           "--yaml", args.yaml_file,
-           "--template", args.template]
-    if args.resume_id:
-        cmd += ["--resume-id", args.resume_id]
-    if args.tags:
-        cmd += ["--tags", ",".join(args.tags)]
-    cmd += ["--jd", jd_file]
-    if args.use_llm:
-        cmd += ["--llm"]
-
-    job_id = await start_job(cmd, "transform", metadata=args.model_dump())
     return RunResponse(job_id=job_id)
 
 

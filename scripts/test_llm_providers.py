@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 
 load_dotenv(ROOT / ".env", override=True)
 
-from llm_config import list_providers, resolve_llm_config
+from src.llm_config import list_providers, resolve_llm_config
 from resume import load_base, llm_extract_tags, llm_generate_headline, llm_generate_summary
 
 

@@ -1,5 +1,7 @@
 # Resume Management System — Implementation Guide
 
+> **Note:** The RxResume/`transform.py` path has been removed (July 2026). References to `transform.py` and `rxresume-integration-guide.md` in this document are historical only.
+
 > **See also:** [`resume-quality-pipeline.md`](resume-quality-pipeline.md) for the JD analysis, ATS scoring, bullet ranking, `--tailor`, `--boost`, and `compare` features added in June 2026.
 
 > **The problem you have:** Multiple resume versions scattered across formats, conflicting/deprecated info (URLs, LinkedIn, cover letters), no tracking of what went to which job, and no clear way to pick the right template for a given role.
@@ -422,7 +424,7 @@ Use Reactive Resume for roles where you want to send a live web link (e.g. in yo
 
 Every build from the CLI (`resume.py build`) or WebUI writes to a shared SQLite database (`runs.db` at repo root). This replaces the old split of `applications.json` (CLI-only) and `ui/backend/runs.db` (WebUI-only).
 
-The shared module [`history_db.py`](../history_db.py) provides:
+The shared module [`src/history_db.py`](../src/history_db.py) provides:
 - **Sync API** (`insert_run`, `get_run`, `list_runs`, `update_run`, `scan_output_files`) for `resume.py`
 - **Async wrappers** (`async_insert_run`, etc.) for the WebUI FastAPI backend
 
@@ -723,7 +725,7 @@ __pycache__/
 .ui_temp_id.txt  # VSCode temp file
 ```
 
-**Commit to git:** `base.yaml`, `resume.py`, `history_db.py`, `transform.py`, `applications.json`, `variants/`, `jds/`, `runs.db`, `ui/`
+**Commit to git:** `base.yaml`, `resume.py`, `src/`, `applications.json`, `variants/`, `jds/`, `runs.db`, `ui/`
 
 **Do not commit:** `output/` (PDFs/DOCX — regenerate anytime), `.env` (API keys), `__pycache__/`, `.ui_temp_id.txt`
 

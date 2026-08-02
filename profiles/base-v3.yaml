@@ -7,19 +7,19 @@
 #   metrics: ["quantified impact phrases for ATS"]
 #   keywords: ["extra ATS terms tied to this bullet"]
 #
-# Version 2.1 — Agentic/Multimodal AI + latest PDF sync
-# Updated: 2026-07-27
+# Version 2.0 — AI/ML/Python/TS forward upgrade
+# Updated: 2026-06-25
 
 meta:
-  version: "2.1"
-  last_updated: "2026-07-27"
+  version: "2.0"
+  last_updated: "2026-06-25"
   name: "William Jiang"
 
 # ─── IDENTITY ─────────────────────────────────────────────────
 
 identity:
   name: "William Jiang"
-  headline: "Senior Full-Stack & AI Engineer | Agentic AI • RAG • Multimodal AI | Python • TypeScript"
+  headline: "Principal AI Engineer | LLM Orchestration • RAG • Agentic AI | Python • TypeScript"
   email: "jxjwilliam@gmail.com"
   phone: "(236) 992-3846"
   location: "Vancouver, Canada"
@@ -58,15 +58,11 @@ identity:
 # ─── SUMMARY (resume — not cover letter) ─────────────────────
 
 summary: >
-  Senior full-stack engineer with 20+ years shipping production systems in
-  React/Next.js, Node.js, and Python (FastAPI) for SaaS and cloud-based apps —
-  the last several years focused on integrating LLMs and multimedia AI (vision,
-  audio, multimodal workflows) into real products: agentic AI, RAG pipelines/
-  LLM-Wiki, multi-agent workflows, and AI-assisted automation. Comfortable
-  owning a service end-to-end — API design, data layer, ETL, cloud deployment
-  (AWS, Kubernetes) — and AI integration on top of it. Built and scaled systems
-  processing hundreds of millions of events/year; player-coach leader across
-  North America and Asia; bilingual English/Mandarin.
+  Principal AI Engineer and Full-Stack Architect delivering production LLM systems,
+  RAG pipelines, and agentic AI platforms for enterprise clients — from FastAPI
+  backends and LangChain orchestration to React/TypeScript frontends. Player-coach
+  leader with deep MLOps expertise (Kubeflow, distributed GPU) across AWS, GCP,
+  and Azure; bilingual English/Mandarin.
 
 # ─── EXPERIENCE ───────────────────────────────────────────────
 
@@ -201,7 +197,7 @@ experience:
     status: active
     tags: [fullstack, ai, ml, python, react, node, devops, mlops, kubeflow]
     bullets:
-      - text: "Led MLDP production ML platform managing GPU/CPU scheduling and model lifecycle for hundreds of millions of inference events annually (React, Python, Node.js, Kubernetes on AWS)"
+      - text: "Led MLDP production ML platform managing GPU/CPU scheduling and model lifecycle for hundreds of millions of inference events annually (React, Python, Node.js, Kubernetes on AWS & GCP)"
         tags: [fullstack, ai, ml, react, node, python, architecture, mlops]
         status: active
         relevance: high
@@ -209,7 +205,6 @@ experience:
         keywords: [MLOps, Kubeflow, GPU scheduling, model lifecycle]
         variants:
           - "Designed and shipped MLDP production ML pipeline managing model training, GPU scheduling, and experiment lifecycle at scale (hundreds of millions of events/year) using Python, Kubeflow, and Kubernetes"
-          - "Led MLDP production ML platform managing GPU/CPU scheduling and model lifecycle for hundreds of millions of inference events annually (React, Python, Node.js, Kubernetes on AWS & GCP)"
       - text: "Optimized ML training workflows on Kubeflow and distributed GPU clusters; owned experiment tracking and model versioning for production model releases"
         tags: [ai, ml, kubeflow, python, mlops, gpu]
         status: active
@@ -238,36 +233,35 @@ experience:
     status: active
     tags: [fullstack, ai, llm, rag, agentic, consulting, founder, python, node, typescript]
     bullets:
-      - text: "Architected and shipped full-stack enterprise applications (React/TypeScript + Python FastAPI) with production RAG pipelines integrating open-source LLMs over structured and unstructured enterprise data: Agentic-Invoice, Agentic-Documents, Auto Match & Bidder"
-        tags: [ai, llm, rag, python, fastapi, react, typescript, enterprise]
+      - text: "Shipped production GenAI RAG pipeline for Shaanxi Coal enterprise: multi-LLM orchestration (OpenAI, Claude, OSS) over structured/unstructured data via Python FastAPI, LangChain, LlamaIndex, and React"
+        tags: [ai, llm, rag, python, fastapi, langchain, llamaindex, react, enterprise]
         status: active
         relevance: high
-        metrics: ["production RAG", "enterprise scale"]
-        keywords: [RAG, vector DB, FastAPI, agentic]
+        metrics: ["production GenAI", "enterprise scale"]
+        keywords: [RAG, vector DB, LangChain, FastAPI, LlamaIndex]
         variants:
-          - "Shipped production GenAI RAG pipeline for Shaanxi Coal enterprise: multi-LLM orchestration (OpenAI, Claude, OSS) over structured/unstructured data via Python FastAPI, LangChain, LlamaIndex, and React"
-      - text: "Designed agentic AI systems integrating OpenAI, Claude, LangChain, LlamaIndex, RAG/LLM-Wiki, memory-aware workflows, and document intelligence"
-        tags: [ai, agentic, llm, langchain, llamaindex, rag, memory, python]
+          - "Built enterprise RAG system for Shaanxi Coal integrating LLMs with corporate document repositories via Python FastAPI, LangChain, and vector DBs — reducing document retrieval time significantly"
+      - text: "Implemented CrewAI multi-agent workflows for enterprise automation; applied prompt and context engineering that reduced hallucinations and improved retrieval precision"
+        tags: [ai, agentic, crewai, prompt-engineering, llm, python]
         status: active
         relevance: high
-        keywords: [multi-agent, agentic AI, LLM-Wiki, memory-aware workflows]
+        keywords: [multi-agent, agentic AI, context engineering]
         variants:
-          - "Implemented CrewAI multi-agent workflows for enterprise automation; applied prompt and context engineering that reduced hallucinations and improved retrieval precision"
-      - text: "Delivered cloud-based integration and DevOps/MLOps for multiple-media AI apps using Docker, Kubernetes, and AWS"
-        tags: [devops, docker, kubernetes, aws, mlops, architecture]
+          - "Implemented agentic multi-agent workflows using CrewAI for complex enterprise automation; designed prompt engineering and context engineering strategies that reduced hallucination rates and improved retrieval precision"
+      - text: "Evaluated and selected LLM providers (OpenAI, Anthropic Claude, OSS) based on latency, cost, accuracy, and enterprise security constraints; maintained production monitoring and observability pipelines for AI services"
+        tags: [ai, llm, mlops, observability, enterprise]
         status: active
         relevance: high
-        keywords: [multimedia AI, DevOps, MLOps]
-      - text: "Built scalable backend services supporting conversational AI, document processing, session management, and AI workflow orchestration"
-        tags: [ai, backend, conversational-ai, document-ai, orchestration, python]
-        status: active
-        relevance: high
-      - text: "Evaluated and selected LLM providers on latency, cost, and enterprise security; mentored engineers on scalable AI-driven Node.js and Python patterns"
-        tags: [ai, llm, mlops, leadership, mentorship, enterprise]
+      - text: "Deployed cloud-native AI microservices on GCP and Azure using Kubernetes and Docker; owned full delivery lifecycle from architecture through DevOps to client handoff"
+        tags: [devops, docker, kubernetes, gcp, azure, architecture]
         status: active
         relevance: high
       - text: "Built production React + TypeScript frontends integrated with AI-enhanced FastAPI backends; implemented AutoBidder LLM decision engine and Site-RAG-Chatbot for enterprise clients"
         tags: [fullstack, react, typescript, python, fastapi, ai]
+        status: active
+        relevance: high
+      - text: "Mentored engineers on scalable AI-driven Python and Node.js patterns; introduced Spec-Driven Development and Context Engineering practices to accelerate AI product delivery"
+        tags: [leadership, mentorship, ai, python, methodology]
         status: active
         relevance: medium
 
@@ -352,14 +346,6 @@ skills:
       status: deprecated
       tags: [frontend, legacy]
       note: "Only include for Angular migration roles"
-    - name: In-Memory / Caching / Queue & Streaming Architecture
-      level: advanced
-      status: active
-      tags: [backend, architecture, performance]
-    - name: ETL / ELT Data Pipelines
-      level: advanced
-      status: active
-      tags: [backend, data, pipeline]
 
   ai_ml:
     - name: LLM Orchestration (OpenAI, Claude, OSS)
@@ -414,20 +400,6 @@ skills:
       level: intermediate
       status: active
       tags: [ai, ml, finetuning, python]
-    - name: Multimodal AI (Vision, Audio, Speech)
-      level: advanced
-      status: active
-      tags: [ai, multimodal, vision, audio, speech]
-      note: "Added in latest resume revision — multimedia/multimodal AI workflows"
-    - name: LLM-Wiki / Memory-Aware Agent Systems
-      level: advanced
-      status: active
-      tags: [ai, agentic, memory, rag, llm]
-      note: "Long-term/second-brain memory pipelines combining LLM-Wiki + RAG"
-    - name: Harness / Loop / Context Engineering
-      level: advanced
-      status: active
-      tags: [ai, agentic, methodology, context-engineering]
 
   tools:
     - name: Git / GitHub
@@ -444,19 +416,12 @@ skills:
       tags: [devops, cloud, aws]
     - name: GCP (Vertex AI, GKE, Cloud Run)
       level: advanced
-      status: deprecated
+      status: active
       tags: [devops, cloud, gcp, ai]
-      note: "Latest resume (2026-07) narrows cloud focus to AWS/Cloudflare/Vercel — include only for GCP-specific JDs"
     - name: Azure (AKS, OpenAI Service)
       level: intermediate
-      status: deprecated
-      tags: [devops, cloud, azure, ai]
-      note: "Latest resume (2026-07) narrows cloud focus to AWS/Cloudflare/Vercel — include only for Azure-specific JDs"
-    - name: Cloudflare
-      level: advanced
       status: active
-      tags: [devops, cloud, cdn, edge]
-      note: "Added in latest resume revision"
+      tags: [devops, cloud, azure, ai]
     - name: Jenkins / CI/CD
       level: advanced
       status: active
@@ -601,27 +566,6 @@ projects:
     url: ""
     description: "Production ML platform at Xperi managing GPU/CPU scheduling, experiment tracking, and model lifecycle at 100M+ events/year."
     tags: [ai, ml, fullstack, devops, mlops, kubeflow, python]
-    status: active
-    relevance: high
-
-  - name: "Agentic Proposal Engine"
-    url: ""
-    description: "Enterprise AI agent that summarizes, organizes, and refines proposals by orchestrating and reconciling output across multiple LLMs and source documents."
-    tags: [ai, agentic, llm, multi-llm, python, enterprise]
-    status: active
-    relevance: high
-
-  - name: "Dual-LLM Memory Pipeline (LLM-Wiki + RAG)"
-    url: ""
-    description: "Second-brain style long-term memory pipeline combining a dual-LLM architecture with LLM-Wiki and RAG for persistent, queryable personal/agent knowledge."
-    tags: [ai, agentic, memory, rag, llm, python]
-    status: active
-    relevance: high
-
-  - name: "AgenticOmni"
-    url: ""
-    description: "Multi-agent enterprise document intelligence platform featuring conversational search, memory-aware workflows, and AI document management."
-    tags: [ai, agentic, multi-agent, document-ai, conversational-ai, python]
     status: active
     relevance: high
 

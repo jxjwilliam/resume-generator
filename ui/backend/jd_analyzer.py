@@ -32,13 +32,7 @@ def extract_keywords(text: str, top_n: int = 15) -> list[str]:
 
 def analyze_jd_structured(text: str, base: dict | None = None) -> dict:
     """Structured JD parse with categorized keywords."""
-    import sys
-    from pathlib import Path
-
-    repo_root = Path(__file__).resolve().parent.parent.parent
-    if str(repo_root) not in sys.path:
-        sys.path.insert(0, str(repo_root))
-    from jd_parser import parse_jd
+    from src.jd_parser import parse_jd
 
     if base is None:
         import yaml

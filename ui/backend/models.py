@@ -27,16 +27,6 @@ class ResumeRunRequest(BaseModel):
     docx: bool = False
 
 
-class TransformRunRequest(BaseModel):
-    yaml_file: str = DEFAULT_YAML
-    jd_text: str
-    tags: list[str] = []
-    template: str = "kakuna"
-    resume_id: Optional[str] = None
-    use_llm: bool = True
-    generate_pdf: bool = False
-
-
 class RunResponse(BaseModel):
     job_id: str
 
@@ -102,13 +92,6 @@ class JdCompareResponse(BaseModel):
     recommended: Optional[str] = None
     best_score: float = 0
     count: int = 0
-
-
-class RxTemplateInfo(BaseModel):
-    id: str
-    name: str
-    description: str
-    best_for: str
 
 
 class JdPreviewRequest(BaseModel):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Screenshot the Resume WebUI (all 4 tabs) and the output PDF using Playwright.
+Screenshot the Resume WebUI (all 5 tabs) and the output PDF using Playwright.
 
 Usage:
     python scripts/screenshot_ui.py
@@ -152,30 +152,29 @@ def take_screenshots(page, base_url: str):
     page.screenshot(path=str(DOCS_IMGS / "ui-resume-tab.png"), full_page=True)
     screenshots["resume"] = "ui-resume-tab.png"
 
-    # ── Tab 1: Transform ──
-    log("Capture: Transform tab (tab 1)")
-    transform_tab = page.locator('button[aria-controls="tabpanel-1"]')
-    if transform_tab.is_visible():
-        transform_tab.click()
-    else:
-        # Click by tab index
-        tabs = page.locator('[role="tab"]')
-        tabs.nth(1).click()
-    time.sleep(1.5)
-    page.screenshot(path=str(DOCS_IMGS / "ui-transform-tab.png"), full_page=True)
-    screenshots["transform"] = "ui-transform-tab.png"
-
-    # ── Tab 2: Compare ──
-    log("Capture: Compare tab (tab 2)")
-    compare_tab = page.locator('button[aria-controls="tabpanel-2"]')
+    # ── Tab 1: Compare ──
+    log("Capture: Compare tab (tab 1)")
+    compare_tab = page.locator('button[aria-controls="tabpanel-1"]')
     if compare_tab.is_visible():
         compare_tab.click()
     else:
         tabs = page.locator('[role="tab"]')
-        tabs.nth(2).click()
+        tabs.nth(1).click()
     time.sleep(1.0)
     page.screenshot(path=str(DOCS_IMGS / "ui-compare-tab.png"), full_page=True)
     screenshots["compare"] = "ui-compare-tab.png"
+
+    # ── Tab 2: Outputs ──
+    log("Capture: Outputs tab (tab 2)")
+    outputs_tab = page.locator('button[aria-controls="tabpanel-2"]')
+    if outputs_tab.is_visible():
+        outputs_tab.click()
+    else:
+        tabs = page.locator('[role="tab"]')
+        tabs.nth(2).click()
+    time.sleep(1.0)
+    page.screenshot(path=str(DOCS_IMGS / "ui-outputs-tab.png"), full_page=True)
+    screenshots["outputs"] = "ui-outputs-tab.png"
 
     # ── Tab 3: History ──
     log("Capture: History tab (tab 3)")

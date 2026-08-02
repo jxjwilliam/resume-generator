@@ -18,7 +18,6 @@
 - [x] LLM hybrid bullet scoring + structured JD parse (`llm_pipeline.py`)
 - [x] Senior job filter + `--target-score` rebuild helper
 - [x] `score --variant`, `interview` CLI, `provenance.json` per build
-- [x] RxResume `--template auto` (kakuna/bronzor/chikorita)
 - [x] `base.yaml` variants, metrics, keywords + content refactor
 
 ## Optional follow-ups
@@ -28,5 +27,4 @@
 
 ## Notes
 
-- RxResume credentials: store in `.env` as `RXRESU_API_KEY` — never commit
 - Agent instructions: [`../AGENTS.md`](../AGENTS.md)

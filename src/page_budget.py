@@ -6,7 +6,7 @@ Target: ~1 page (52 lines) for senior ATS resumes; 2 pages with --pages 2.
 
 from __future__ import annotations
 
-from compose import bullet_relevance_score
+from src.compose import bullet_relevance_score
 
 DEFAULT_LINES_PER_PAGE = 52
 HEADER_LINES = 6

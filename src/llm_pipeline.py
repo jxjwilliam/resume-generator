@@ -10,8 +10,8 @@ import json
 import re
 import sys
 
-from compose import bullet_key, bullet_relevance_score, parse_tag_list, rank_bullets_for_jd
-from llm_config import LLMNotConfiguredError, get_llm_client, llm_chat_completion
+from src.compose import bullet_key, bullet_relevance_score, parse_tag_list, rank_bullets_for_jd
+from src.llm_config import LLMNotConfiguredError, get_llm_client, llm_chat_completion
 
 
 def llm_parse_jd(jd_text: str, base: dict | None = None, llm_provider: str | None = None) -> dict | None:
@@ -19,7 +19,7 @@ def llm_parse_jd(jd_text: str, base: dict | None = None, llm_provider: str | Non
     LLM structured JD parse. Returns None if LLM unavailable.
     Merges with heuristic parse_jd() output when successful.
     """
-    from jd_parser import parse_jd
+    from src.jd_parser import parse_jd
 
     heuristic = parse_jd(jd_text, base)
     try:

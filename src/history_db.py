@@ -1,10 +1,7 @@
 """Shared history database — used by both resume.py (sync) and ui/backend/ (async).
 
-Single SQLite DB at <repo_root>/runs.db replaces the old split:
-  - applications.json  (CLI-only, flat JSON)
-  - ui/backend/runs.db (WebUI-only, SQLite)
-
-Now every build from CLI or WebUI writes to the same DB and appears in both History tabs.
+Single SQLite DB at <repo_root>/runs.db — every build from CLI or WebUI writes
+to the same DB and appears in both History tabs.
 """
 
 import json
@@ -17,11 +14,10 @@ from typing import Optional
 
 # ── DB location ──────────────────────────────────────────────────────────────
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = str(REPO_ROOT / "runs.db")
 OUTPUT_DIR = REPO_ROOT / "output"
-VARIANTS_DIR = REPO_ROOT / "variants"
-LOG_FILE = str(REPO_ROOT / "applications.json")
+VARIANTS_DIR = REPO_ROOT / "output/variants"
 
 # ── Schema ───────────────────────────────────────────────────────────────────
 
@@ -197,7 +193,6 @@ def init_db():
             if col not in cols:
                 db.execute(f"ALTER TABLE runs ADD COLUMN {col} {col_type}")
                 db.commit()
-        _migrate_from_applications_json(db)
         _migrate_from_old_webui_db(db)
     finally:
         db.close()
@@ -320,53 +315,6 @@ def list_runs(
         return [_row_to_dict(r) for r in cursor.fetchall()]
     finally:
         db.close()
-
-
-# ── Migration from applications.json ─────────────────────────────────────────
-
-
-def _migrate_from_applications_json(db: sqlite3.Connection):
-    """One-time import of existing applications.json entries into SQLite."""
-    log_path = Path(LOG_FILE)
-    if not log_path.exists():
-        return
-    existing = db.execute("SELECT COUNT(*) FROM runs").fetchone()[0]
-    if existing > 0:
-        return  # already migrated
-    with open(log_path) as f:
-        data = json.load(f)
-    apps = data.get("applications", [])
-    if not apps:
-        return
-    now = datetime.now(timezone.utc).isoformat()
-    for app in apps:
-        slug = app.get("id", "")
-        db.execute(
-            """INSERT OR IGNORE INTO runs
-               (id, type, status, company, role, tags, theme,
-                jd_source, variant_file, created_at, finished_at)
-               VALUES (?, 'build', 'success', ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                slug,
-                app.get("company"),
-                app.get("role"),
-                json.dumps([t.strip() for t in app.get("tags_used", "").split(",") if t.strip()]),
-                app.get("template"),
-                app.get("jd_source"),
-                app.get("variant_file"),
-                app.get("date", now[:10]) + "T00:00:00",
-                now,
-            ),
-        )
-        # Scan existing output files for this slug
-        files = scan_output_files(slug)
-        if files:
-            db.execute(
-                "UPDATE runs SET output_files = ?, output_path = ? WHERE id = ?",
-                (json.dumps(files), str(OUTPUT_DIR / slug), slug),
-            )
-    db.commit()
-    print(f"Migrated {len(apps)} entries from applications.json into runs.db")
 
 
 def _migrate_from_old_webui_db(db: sqlite3.Connection):

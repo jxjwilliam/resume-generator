@@ -1,16 +1,20 @@
 # Resume Management System
 
-Maintain a **single source of truth** for your resume (`profiles/base.yaml`), compose job-specific variants, and render to **PDF** (via rendercv), **DOCX** (via python-docx), or **visual resumes** (via Reactive Resume). Includes a local **WebUI** (FastAPI + React) for visual operation.
+Maintain a **single source of truth** for your resume (`profiles/base.yaml`), compose job-specific variants, and render to **PDF** (via rendercv) or **DOCX** (via python-docx). Includes a local **WebUI** (FastAPI + React) for visual operation.
 
 Stop juggling 7 different resume files. Edit one YAML file — generate any variant you need.
 
 ## Quick Start
 
 ```bash
-# Install dependencies
+# 1. Create a virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate
+
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# See all available tags in your resume data
+# 3. See all available tags in your resume data
 python resume.py tags
 
 # Path A — ATS PDF via rendercv
@@ -19,7 +23,7 @@ python resume.py build \
   --role "Senior SWE" \
   --tags backend,python,api \
   --template classic
-# → variants/bestit-senior-swe-202606.yaml + output/.../William_Jiang_CV.pdf
+# → output/variants/bestit-senior-swe-202606.yaml + output/.../William_Jiang_CV.pdf
 
 # Path A — with DOCX + cover letter
 python resume.py build \
@@ -30,16 +34,11 @@ python resume.py build \
   --docx --cover-letter
 # → output/.../resume.docx + output/.../cover-letter-bestit.txt
 
-# Path B — visual resume via rxresu.me
-python transform.py --dry-run --all-skills
-python transform.py --resume-id <YOUR_RESUME_ID> --all-skills
-# → https://rxresu.me/builder/<YOUR_RESUME_ID>
-
-# Path C — WebUI (local)
+# Path B — WebUI (local)
 ./ui/start.sh
 # → http://localhost:5173
 
-# Path D — JD quality pipeline (analyze → compare → build)
+# Path C — JD quality pipeline (analyze → compare → build)
 python resume.py compare --jds-dir jds/
 python resume.py analyze --jd jds/target.txt
 python resume.py build --company Acme --jd jds/target.txt \
@@ -47,13 +46,13 @@ python resume.py build --company Acme --jd jds/target.txt \
 # → output/.../CV.pdf + ats-report.json + bullet-diff.json + provenance.json
 ```
 
-Set `RXRESU_API_KEY` in `.env` for Path B. Set `LLM_PROVIDER` + provider API keys for Path D. See [`docs/llm-providers.md`](docs/llm-providers.md) and [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md).
+Set `LLM_PROVIDER` + provider API keys for Path C (LLM features). See [`docs/llm-providers.md`](docs/llm-providers.md) and [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md).
 
 ## Screenshots
 
-| Resume Builder | Transform (RxResume Sync) | Compare JDs | History | Editor |
+| Resume Builder | Compare JDs | History | Editor |
 |---|---|---|---|---|
-| ![Resume tab](docs/imgs/ui-resume-tab.png) | ![Transform tab](docs/imgs/ui-transform-tab.png) | ![Compare tab](docs/imgs/ui-compare-tab.png) | ![History tab](docs/imgs/ui-history-tab.png) | — |
+| ![Resume tab](docs/imgs/ui-resume-tab.png) | ![Compare tab](docs/imgs/ui-compare-tab.png) | ![History tab](docs/imgs/ui-history-tab.png) | — |
 
 ### Generated Output Example
 
@@ -66,28 +65,23 @@ A beautifully designed mockup resume — the system produces real PDFs via rende
 ```mermaid
 flowchart LR
     A["✏️ profiles/base.yaml<br/>(manual edit)"] --> B["⚙️ resume.py build"]
-    A --> T["⚙️ transform.py"]
     A --> U["🌐 WebUI"]
     U --> B
-    U --> T
     B --> C["📄 variants/&lt;slug&gt;.yaml"]
     C --> D["🎨 rendercv"]
     C --> W["📝 python-docx"]
     D --> E["📑 output/&lt;slug&gt;/CV.pdf"]
     D --> F["🌐 output/&lt;slug&gt;/CV.html"]
     W --> X["📄 output/&lt;slug&gt;/resume.docx"]
-    T --> R["🎨 rxresu.me"]
-    R --> G["📑 Visual PDF + share link"]
     B -.-> H["📋 runs.db<br/><small>(shared SQLite)</small>"]
     B -.-> L["✉️ cover letter .txt"]
 ```
 
 1. **Edit `profiles/base.yaml`** — single source of truth: experience, skills, projects, education, summary, headline, cover letter templates.
 2. **Choose a render path:**
-   - **`resume.py build`** — tag-filtered variant → rendercv → ATS PDF/HTML, optionally DOCX + cover letter, logged in `runs.db` (shared SQLite) + legacy `applications.json`.
-   - **`transform.py`** — sync to rxresu.me for designer templates and live editing.
-   - **WebUI** ([http://localhost:5173](http://localhost:5173)) — visual interface for both paths, storing history in the same shared `runs.db`.
-3. **Ship** — download PDF from `output/`, DOCX from `output/{slug}/resume.docx`, or export from the rxresu.me builder.
+   - **`resume.py build`** — tag-filtered variant → rendercv → ATS PDF/HTML, optionally DOCX + cover letter, logged in `runs.db` (shared SQLite).
+   - **WebUI** ([http://localhost:5173](http://localhost:5173)) — visual interface for building resumes, storing history in the same shared `runs.db`.
+3. **Ship** — download PDF from `output/`, DOCX from `output/{slug}/resume.docx`.
 
 ## CLI Reference
 
@@ -251,43 +245,9 @@ python resume.py llm-providers
 
 See [`docs/llm-providers.md`](docs/llm-providers.md) for Kimi (Moonshot) and MiniMax China inland endpoints.
 
-### `python transform.py` — RxResume sync
-
-Push `profiles/base.yaml` to [rxresu.me](https://rxresu.me) for visual editing and PDF export.
-
-| Flag | Description |
-|---|---|
-| `--resume-id` | PATCH an existing resume (recommended) |
-| `--dry-run` | Preview JSON Patch operations without calling the API |
-| `--tags` | Tag filter for experience/projects/skills (default: `fullstack,ai,react,node,python`) |
-| `--all-skills` | Include all skill categories, ignore tag filter for skills |
-| `--template` | RxResume template, or `auto` from JD signals (default: `kakuna`) |
-| `--max-bullets` | Cap bullets per job (default: `4`) |
-| `--no-projects` | Omit projects section for a shorter resume |
-| `--photo` / `--no-photo` | Control profile photo embedding |
-| `--jd` | Path to job description text file (required with `--llm`) |
-| `--llm` | Use AI to rewrite headline and summary from the JD (requires `DEEPSEEK_API_KEY` + `--jd`) |
-| `--role` | Target role (extracted from JD first line if omitted with `--llm`) |
-
-Full reference: [`docs/rxresume-integration-guide.md`](docs/rxresume-integration-guide.md)
-
-```bash
-# Preview sync
-python transform.py --dry-run --all-skills
-
-# Sync to your dashboard resume
-python transform.py --resume-id <ID> --all-skills --max-bullets 3
-
-# Auto-pick RxResume template from JD (kakuna / bronzor / chikorita)
-python transform.py --resume-id <ID> --jd jds/target.txt --template auto --all-skills
-
-# Preview with LLM headline+summary rewrite from JD
-python transform.py --dry-run --jd jds/adam-green.txt --llm
-```
-
 ### `scripts/cleanup.sh`
 
-Reset all generated data — variants, output, applications.json, WebUI database — for a fresh test.
+Reset all generated data — output, runs.db — for a fresh test.
 
 ```bash
 ./scripts/cleanup.sh
@@ -329,7 +289,6 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 | Page | Path | Preview | Description |
 |---|---|---|---|
 | **Resume** | `/` | ![Resume tab](docs/imgs/ui-resume-tab.png) | Build: JD analysis, bullet preview, ATS widget, bullet diff, tailor/boost re-run, auto theme |
-| **Transform** | `/transform` | ![Transform tab](docs/imgs/ui-transform-tab.png) | Sync to Reactive Resume: pick template, upload JD, set resume ID |
 | **Compare** | `/compare` | ![Compare tab](docs/imgs/ui-compare-tab.png) | Paste 2–5 JDs, ranked ATS fit table with missing skills |
 | **History** | `/history` | ![History tab](docs/imgs/ui-history-tab.png) | Run log with ATS scores, status, logs, and output links |
 | **Editor** | `/editor` | — | Direct YAML editor with CodeMirror 6: edit any `profiles/*.yaml` file with syntax highlighting, save with backup |
@@ -343,25 +302,24 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │   ├── base-v1.yaml
 │   ├── base-zh.yaml         #   Chinese variant
 │   └── base-2-zh.yaml
-├── resume.py                # CLI composition engine (rendercv path)
-├── history_db.py             # Shared SQLite DB for CLI + WebUI history
+├── resume.py                # CLI entry point (thin wrapper → src/cli.py)
+├── src/                     # ★ Core Python modules
+│   ├── cli.py               #   CLI composition engine (~1900 lines)
+│   ├── compose.py           #   Shared bullet ranking + caps
+│   ├── jd_parser.py         #   Structured JD keyword parsing
+│   ├── ats.py               #   Deterministic ATS scoring + multi-JD compare
+│   ├── llm_pipeline.py      #   LLM JD parse + hybrid bullet rescoring
+│   ├── llm_config.py        #   Multi-provider LLM config (deepseek / kimi / minimax)
+│   ├── tailor_validation.py #   Anti-hallucination checks for tailor rewrites
+│   ├── page_budget.py       #   One-page line estimator + trim loop
+│   ├── provenance.py        #   provenance.json per build (source refs)
+│   └── history_db.py        #   Shared SQLite DB for CLI + WebUI history
 ├── runs.db                   # SQLite database (shared by CLI + WebUI)
-├── compose.py               # Shared bullet ranking + caps (resume.py + transform.py)
-├── jd_parser.py             # Structured JD keyword parsing
-├── ats.py                   # Deterministic ATS scoring + multi-JD compare
-├── llm_pipeline.py          # LLM JD parse + hybrid bullet rescoring
-├── tailor_validation.py     # Anti-hallucination checks for tailor rewrites
-├── page_budget.py           # One-page line estimator + trim loop
-├── provenance.py            # provenance.json per build (source refs)
-├── llm_config.py            # Multi-provider LLM config (deepseek / kimi / minimax)
-├── transform.py             # RxResume sync (visual path)
-├── applications.json        # Auto-generated application tracking log
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
 │
 ├── assets/                  # Source resumes + profile photo
-│   ├── william-jiang.jpg    # Default headshot for rxresu.me
 │   └── *.docx               # Legacy resume versions
 │
 ├── jds/                     # Job descriptions (paste JD text here)
@@ -390,9 +348,9 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │   │   ├── main.py          # FastAPI app (API routes)
 │   │   ├── models.py        # Pydantic request/response schemas
 │   │   ├── runner.py        # Async subprocess job runner
-│   │   ├── db.py            # Thin async wrapper around repo-root history_db.py
+│   │   ├── db.py            # Thin async wrapper around src/history_db.py
 │   │   ├── jd_analyzer.py   # JD keyword extraction
-│   │   ├── theme_data.py    # Rendercv themes + RxResume templates
+│   │   ├── theme_data.py    # Rendercv themes
 │   └── frontend/
 │       ├── src/
 │       │   ├── App.tsx          # Tab navigation (Resume / Transform / Compare / History / Editor)
@@ -410,7 +368,6 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │       │       ├── AtsScoreWidget.tsx
 │       │       ├── BulletDiffView.tsx
 │       │       ├── ThemeCard.tsx       # Rendercv theme picker with SVG preview
-│       │       ├── RxTemplateCard.tsx  # RxResume template picker with SVG preview
 │       │       ├── LogStream.tsx       # SSE log display
 │       │       ├── JdInput.tsx         # JD text + file upload
 │       │       ├── YamlSelector.tsx    # YAML file dropdown
@@ -423,7 +380,6 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
     ├── resume-quality-pipeline.md   # JD pipeline, ATS scoring, tailor/boost (NEW)
     ├── overview.md                  # Architecture overview
     ├── resume-system-implementation.md
-    ├── rxresume-integration-guide.md
     └── superpowers/
         ├── specs/            # Design specs
         └── plans/            # Implementation plans
@@ -440,34 +396,25 @@ flowchart TB
 
     subgraph L2["Layer 2 — Composition"]
         RP["resume.py CLI<br/>filter · assemble · log"]
-        TP["transform.py<br/>JSON Patch sync"]
         VY["variants/&lt;slug&gt;.yaml<br/>job-specific subset"]
-        AJ["applications.json<br/>tracking log"]
     end
 
     subgraph L3["Layer 3 · Rendering"]
         RC["rendercv<br/>YAML → PDF/HTML"]
         DX["python-docx<br/>YAML → DOCX"]
-        RX["rxresu.me<br/>visual templates"]
         PDF["📑 ATS PDF"]
         HTML["🌐 HTML"]
         DOCX["📄 Word DOCX"]
-        VIS["🎨 Visual PDF + link"]
     end
 
     BY --> RP
     AG --> RP
-    BY --> TP
-    AG --> TP
     RP --> VY
-    RP --> AJ
     VY --> RC
     VY --> DX
-    TP --> RX
     RC --> PDF
     RC --> HTML
     DX --> DOCX
-    RX --> VIS
 ```
 
 ### Layer 1 — `profiles/base.yaml` (single source of truth)
@@ -477,7 +424,7 @@ Every resume bullet, skill, project, and education entry lives in `profiles/base
 | Field | Purpose |
 |---|---|
 | `identity` | Name, headline, email, phone, location, URLs, photo path |
-| `summary` | Short resume summary (used by both `transform.py` and `resume.py build_variant()`) |
+| `summary` | Short resume summary (used by `resume.py build_variant()`) |
 | `experience` | Jobs with tagged bullets, optional `variants[]`, `metrics[]`, `keywords[]`, and status flags |
 | `skills` | Grouped by category (`languages`, `frameworks`, `tools`, `ai_tools`) |
 | `projects`, `education` | Tagged entries with date ranges |
@@ -497,9 +444,7 @@ Nothing is deleted. Deprecated items stay in the file with a note explaining why
 
 | Tool | Output | Use case |
 |---|---|---|
-| `resume.py` | `variants/<slug>.yaml` + `applications.json` + optional `.docx` + optional cover letter `.txt` | Per-job ATS builds via rendercv, DOCX for recruiters, cover letter |
-| `transform.py` | JSON Patch → rxresu.me | Visual resume sync from same data |
-
+| `resume.py` | `output/variants/<slug>.yaml` + optional `.docx` + optional cover letter `.txt` | Per-job ATS builds via rendercv, DOCX for recruiters, cover letter |
 Both filter by tags. Experience is sorted **newest-first** in output.
 
 ### Layer 3 — Rendering
@@ -517,15 +462,6 @@ Both filter by tags. Experience is sorted **newest-first** in output.
 - Output: `output/{slug}/resume.docx`
 - Font: Calibri (universal), dark-blue section headers, bullet lists
 - Ready for Google Docs / Word — no formatting required
-
-**rxresu.me** (via `transform.py`):
-
-| Template | Best for |
-|---|---|
-| `auto` | Pick from JD signals (creative → bronzor, startup → chikorita, default → kakuna) |
-| `kakuna` | Compact, high density (default) |
-| `bronzor` | Creative / design / portfolio roles |
-| `elegant` | Senior / leadership |
 
 ### Locale / Language
 
@@ -558,27 +494,28 @@ The system works perfectly without LLM — `--llm` is purely additive for conven
 
 ## Setup
 
+See [`docs/resources.md`](docs/resources.md) for detailed environment setup.
+
 ```bash
-# 1. Install deps
+# 1. Create virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate
+
+# 2. Install deps
 pip install -r requirements.txt
 
-# 2. Configure .env (optional for LLM, required for rxresu.me)
-# LLM_PROVIDER=deepseek|kimi|minimax
-# DEEPSEEK_API_KEY=...  KIMI_API_KEY=...  MINIMAX_API_KEY=...
-# RXRESU_API_KEY=...
+# 3. Configure .env (optional — only needed for --llm features)
+cp .env.example .env
+# Edit .env: set LLM_PROVIDER and the corresponding API key (DeepSeek / Kimi / MiniMax)
 
-# 3. Review the base data
+# 4. Review the base data
 python resume.py tags
 
-# 4. Build ATS PDF
+# 5. Build ATS PDF
 python resume.py build --company "Test" --role "Engineer" --tags backend,python
 
-# 5. Sync visual resume (optional)
-python transform.py --dry-run --all-skills
-python transform.py --resume-id <ID> --all-skills
-
 # 6. Open outputs
-open output/test-engineer-202606/William_Jiang_CV.pdf
+open output/test-engineer-*/William_Jiang_CV.pdf
 ```
 
 ## Git Strategy
@@ -587,16 +524,14 @@ open output/test-engineer-202606/William_Jiang_CV.pdf
 # Commit these:
 profiles/base.yaml
 resume.py
-history_db.py          # Shared history database module
+src/                   # All core Python modules
 runs.db                # SQLite history (shared by CLI + WebUI)
-transform.py
-applications.json
-variants/
 jds/
 
 # Ignore these (already in .gitignore):
-output/          # PDFs/DOCX — regenerate anytime
-.env             # API keys (RXRESU_API_KEY, DEEPSEEK_API_KEY)
+output/          # Generated PDFs/DOCX/variants — regenerate anytime
+assets/          # Personal files (photos, legacy resumes)
+.env             # API keys
 __pycache__/
 ```
 
@@ -606,15 +541,14 @@ __pycache__/
 - [PyYAML](https://pyyaml.org/) — YAML parsing
 - [rendercv](https://github.com/sinaatalay/rendercv) — PDF + HTML rendering (`resume.py`)
 - [python-docx](https://python-docx.readthedocs.io/) — DOCX generation (`resume.py --docx`)
-- [httpx](https://www.python-httpx.org/) + [Pillow](https://pillow.readthedocs.io/) — RxResume API sync + photo resize (`transform.py`)
 - `openai` + `python-dotenv` (optional) — LLM tag extraction
 - **WebUI**: `fastapi`, `uvicorn[standard]`, `aiosqlite`, `sse-starlette`, `pypdf`, `python-multipart`
 
 ## Reference
 
+- **Dev setup & environment:** [`docs/resources.md`](docs/resources.md)
 - **Quality pipeline (analyze, score, compare, tailor, boost):** [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md)
 - **LLM providers (DeepSeek, Kimi, MiniMax):** [`docs/llm-providers.md`](docs/llm-providers.md)
 - **YAML Editor tab design spec:** [`docs/superpowers/specs/2026-06-25-yaml-editor-tab-design.md`](docs/superpowers/specs/2026-06-25-yaml-editor-tab-design.md)
 - Full system design: [`docs/resume-system-implementation.md`](docs/resume-system-implementation.md)
-- RxResume integration: [`docs/rxresume-integration-guide.md`](docs/rxresume-integration-guide.md)
 - Architecture overview: [`docs/overview.md`](docs/overview.md)

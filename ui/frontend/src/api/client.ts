@@ -1,6 +1,5 @@
 import type {
   ThemeInfo,
-  RxTemplateInfo,
   YamlInfo,
   YamlContent,
   YamlSaveResponse,
@@ -8,7 +7,6 @@ import type {
   OutputFile,
   OutputsResponse,
   ResumeRunRequest,
-  TransformRunRequest,
   RunResponse,
   JdAnalysisResult,
   JdUploadResult,
@@ -52,8 +50,7 @@ export const api = {
   saveYaml: (path: string, content: string) =>
     post<YamlSaveResponse>("/yaml", { path, content }),
   listThemes: () => get<ThemeInfo[]>("/themes"),
-	  listOutputs: () => get<OutputsResponse>("/outputs"),
-	  listRxTemplates: () => get<RxTemplateInfo[]>("/rxresume-templates"),
+  listOutputs: () => get<OutputsResponse>("/outputs"),
   listTags: () => get<{ tags: string[] }>("/tags"),
   analyzeJd: (text: string, yamlFile?: string) =>
     post<JdAnalysisResult>("/jd/analyze", { text, yaml_file: yamlFile || DEFAULT_YAML_PATH }),
@@ -78,8 +75,6 @@ export const api = {
   },
   runResume: (req: ResumeRunRequest) =>
     post<RunResponse>("/resume/run", req),
-  runTransform: (req: TransformRunRequest) =>
-    post<RunResponse>("/transform/run", req),
   cancelRun: (jobId: string) =>
     post<{ status: string }>(`/resume/cancel/${jobId}`, {}),
   getHistory: (params?: {

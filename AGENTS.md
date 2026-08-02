@@ -8,26 +8,25 @@ A 3-layer system for maintaining a single source-of-truth resume (YAML), composi
 
 - `base.yaml` — single source of truth (variants, metrics, keywords on bullets)
 - `resume.py` — composition CLI (`build`, `analyze`, `score`, `compare`, `interview`, `tags`, `log`, `cover-letter`)
-- `compose.py` — shared bullet ranking + caps (used by `resume.py` and `transform.py`)
-- `jd_parser.py` — structured JD keyword parsing
-- `ats.py` — deterministic ATS scoring + multi-JD compare + `score_variant_yaml()`
-- `llm_pipeline.py` — LLM structured JD parse + hybrid bullet rescoring
-- `tailor_validation.py` — anti-hallucination for tailor rewrites
-- `page_budget.py` — one-page line estimator + trim loop
-- `provenance.py` — `provenance.json` per build
-- `transform.py` — RxResume sync (`--template auto`)
+- `src/compose.py` — shared bullet ranking + caps (used by `resume.py`)
+- `src/jd_parser.py` — structured JD keyword parsing
+- `src/ats.py` — deterministic ATS scoring + multi-JD compare + `score_variant_yaml()`
+- `src/llm_pipeline.py` — LLM structured JD parse + hybrid bullet rescoring
+- `src/tailor_validation.py` — anti-hallucination for tailor rewrites
+- `src/page_budget.py` — one-page line estimator + trim loop
+- `src/provenance.py` — `provenance.json` per build
 - `ui/` — WebUI (Resume, Transform, Compare, History tabs)
 
 ## Architecture (3 Layers + Quality Pipeline)
 
 ```
-base.yaml → compose.py (rank + cap) → resume.py → rendercv (PDF+HTML)
+base.yaml → src/compose.py (rank + cap) → src/cli.py → rendercv (PDF+HTML)
  ↑
- jd_parser.py + ats.py + llm_pipeline.py (optional LLM: --llm --tailor --boost)
+ src/jd_parser.py + src/ats.py + src/llm_pipeline.py (optional LLM: --llm --tailor --boost)
 ```
 
 - **Layer 1** — `base.yaml`: tagged experience, skills, projects, education, cover letters. Optional `variants[]`, `metrics[]`, `keywords[]` per bullet.
-- **Layer 2** — `resume.py` + `compose.py`: filter by tags + status, rank bullets, cap length, senior job filter, page budget, optional LLM tailor/boost.
+- **Layer 2** — `src/cli.py` + `src/compose.py`: filter by tags + status, rank bullets, cap length, senior job filter, page budget, optional LLM tailor/boost.
 - **Layer 3** — rendercv / python-docx / rxresu.me: rendering only.
 
 ## Key Files
@@ -36,17 +35,15 @@ base.yaml → compose.py (rank + cap) → resume.py → rendercv (PDF+HTML)
 |---|---|
 | `base.yaml` | **Single source of truth — manually edited.** |
 | `resume.py` | Composition engine CLI |
-| `compose.py` | Shared ranking, filtering, skills reorder |
-| `jd_parser.py` | JD → hard skills, title, domain, seniority |
-| `ats.py` | ATS score /100 + `compare_jds()` |
-| `llm_pipeline.py` | LLM JD parse + bullet rescoring |
-| `tailor_validation.py` | Reject bad tailor rewrites |
-| `page_budget.py` | `--pages` trim loop |
-| `provenance.py` | Build provenance JSON |
-| `transform.py` | RxResume sync |
+| `src/compose.py` | Shared ranking, filtering, skills reorder |
+| `src/jd_parser.py` | JD → hard skills, title, domain, seniority |
+| `src/ats.py` | ATS score /100 + `compare_jds()` |
+| `src/llm_pipeline.py` | LLM JD parse + bullet rescoring |
+| `src/tailor_validation.py` | Reject bad tailor rewrites |
+| `src/page_budget.py` | `--pages` trim loop |
+| `src/provenance.py` | Build provenance JSON |
 | `docs/resume-quality-pipeline.md` | **Quality pipeline reference (read this for JD features)** |
 | `docs/resume-system-implementation.md` | Original system design + schema |
-| `docs/rxresume-integration-guide.md` | RxResume sync guide |
 | `variants/*.yaml` | Auto-generated per-job YAML |
 | `output/` | PDFs, DOCX, `ats-report.json`, `bullet-diff.json`, `provenance.json` (gitignored) |
 
@@ -72,9 +69,6 @@ python resume.py build --company "BestIT" --role "Senior SWE" \
 python resume.py build --company "BestIT" --jd jds/target.txt \
   --llm --tailor --boost --template auto --pages 1 --target-score 75 --docx
 
-# RxResume
-python transform.py --dry-run --all-skills
-python transform.py --resume-id <ID> --all-skills --jd jds/target.txt --template auto
 ```
 
 ## Build Flags (quality pipeline)
@@ -120,7 +114,6 @@ MINIMAX_API_KEY=...
 MINIMAX_BASE_URL=https://api.minimaxi.com/v1  # China inland
 MINIMAX_MODEL=MiniMax-M2.5
 
-RXRESU_API_KEY=...   # transform.py only
 ```
 
 ```bash
@@ -144,7 +137,7 @@ Swap any provider's base URL to Ollama (`http://localhost:11434/v1`) for local i
 
 ## Git Strategy
 
-- **Commit:** `base.yaml`, `resume.py`, `compose.py`, `jd_parser.py`, `ats.py`, `transform.py`, `applications.json`, `variants/`, `jds/`, `ui/`
+- **Commit:** `base.yaml`, `resume.py`, `src/`, `jds/`, `ui/`
 - **Ignore:** `output/`, `.env`, `__pycache__/`
 
 ## User Identity (from `docs/init.md`)

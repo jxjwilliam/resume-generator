@@ -71,7 +71,7 @@ async def _run_process(cmd: list[str], job_id: str, log_queue: asyncio.Queue):
             output_files = scan_output_files()
             ats_kwargs = {}
             try:
-                from history_db import ats_from_output_files
+                from src.history_db import ats_from_output_files
                 ats = ats_from_output_files(output_files)
                 if ats:
                     ats_kwargs = ats

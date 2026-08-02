@@ -110,17 +110,16 @@ MINIMAX_MODEL=MiniMax-M2.5
 
 ## Implementation
 
-Provider resolution lives in [`llm_config.py`](../llm_config.py):
+Provider resolution lives in [`src/llm_config.py`](../src/llm_config.py):
 
 - `resolve_llm_config(provider)` — returns API key, base URL, model
 - `get_llm_client(provider)` — returns `(OpenAI client, model, config)`
 - `list_providers()` — metadata for CLI / docs
 
-Used by `resume.py` (`--llm`, `--tailor`, `--boost`, `cover-letter`) and `transform.py` (`--llm`).
+Used by `resume.py` (`--llm`, `--tailor`, `--boost`, `cover-letter`).
 
 ---
 
 ## Related
 
 - Quality pipeline: [`resume-quality-pipeline.md`](resume-quality-pipeline.md)
-- RxResume (separate API key): [`rxresume-integration-guide.md`](rxresume-integration-guide.md)

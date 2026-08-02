@@ -1,6 +1,8 @@
 # Resume Management System — Overview
 
-> **One YAML to rule them all.** Maintain a single source of truth in `base.yaml`, compose job-specific variants with tag-based filtering, and render to **ATS PDFs** (rendercv) or **visual resumes** (rxresu.me) — all from the CLI.
+> **Note:** The RxResume/`transform.py` path described in this document has been removed (July 2026). References to `transform.py`, `rxresu.me`, `/api/transform/run`, and `TransformPage.tsx` are historical only. The core pipeline (`resume.py` → rendercv / python-docx) and WebUI (Resume, Compare, Outputs, History, Editor tabs) remain active.
+
+> **One YAML to rule them all.** Maintain a single source of truth in `base.yaml`, compose job-specific variants with tag-based filtering, and render to **ATS PDFs** (rendercv) — all from the CLI.
 
 ---
 

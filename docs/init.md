@@ -20,10 +20,9 @@ opencode, cursor, deepseek, vscode-copilot
 
 ### CodeGraph
 
-- configured in opencode.jsonc (project root)
-- .claude/CLAUDE.md, .cursor/rules/codegraph.mdc
-- .codegraph/codegraph.db
-- runs via `.mcp.json` (project root) — `codegraph serve --mcp`
+- configured globally (CodeGraph MCP server)
+- index stored in `.codegraph/codegraph.db` (auto-generated, do not edit)
+- guidance in `.claude/CLAUDE.md`
 
 ### Graphify
 

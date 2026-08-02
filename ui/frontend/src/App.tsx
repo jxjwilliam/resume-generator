@@ -11,14 +11,12 @@ import {
   createTheme,
 } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
-import TransformIcon from "@mui/icons-material/AutoFixHigh";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import HistoryIcon from "@mui/icons-material/History";
 import EditIcon from "@mui/icons-material/Edit";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import Logo from "./components/Logo";
 import ResumePage from "./pages/ResumePage";
-import TransformPage from "./pages/TransformPage";
 import ComparePage from "./pages/ComparePage";
 import OutputPage from "./pages/OutputPage";
 import HistoryPage from "./pages/HistoryPage";
@@ -46,8 +44,8 @@ export default function App() {
     []
   );
 
-  const handleReRun = useCallback((item: RunHistoryItem) => {
-    setTab(item.type === "transform" ? 1 : 0);
+  const handleReRun = useCallback((_item: RunHistoryItem) => {
+    setTab(0);
   }, []);
 
   return (
@@ -62,11 +60,10 @@ export default function App() {
         <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
           <Tabs value={tab} onChange={(_, v) => setTab(v)}>
             <Tab icon={<DescriptionIcon />} label="Resume" {...a11yProps(0)} />
-            <Tab icon={<TransformIcon />} label="Transform" {...a11yProps(1)} />
-            <Tab icon={<CompareArrowsIcon />} label="Compare" {...a11yProps(2)} />
-            <Tab icon={<FolderOpenIcon />} label="Outputs" {...a11yProps(3)} />
-            <Tab icon={<HistoryIcon />} label="History" {...a11yProps(4)} />
-            <Tab icon={<EditIcon />} label="Editor" {...a11yProps(5)} />
+            <Tab icon={<CompareArrowsIcon />} label="Compare" {...a11yProps(1)} />
+            <Tab icon={<FolderOpenIcon />} label="Outputs" {...a11yProps(2)} />
+            <Tab icon={<HistoryIcon />} label="History" {...a11yProps(3)} />
+            <Tab icon={<EditIcon />} label="Editor" {...a11yProps(4)} />
           </Tabs>
         </Box>
 
@@ -74,21 +71,18 @@ export default function App() {
           <ResumePage themes={themes} onRefreshHistory={refreshHistory} />
         )}
         {tab === 1 && (
-          <TransformPage onRefreshHistory={refreshHistory} />
-        )}
-        {tab === 2 && (
           <ComparePage />
         )}
-        {tab === 3 && (
+        {tab === 2 && (
           <OutputPage />
         )}
-        {tab === 4 && (
+        {tab === 3 && (
           <HistoryPage
             refreshKey={refreshKey}
             onReRun={handleReRun}
           />
         )}
-        {tab === 5 && (
+        {tab === 4 && (
           <EditorPage />
         )}
       </Container>

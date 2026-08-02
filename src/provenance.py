@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from compose import bullet_key, pick_bullet_text
+from src.compose import bullet_key, pick_bullet_text
 
 
 def build_provenance_report(

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from jd_parser import COMMON_HARD_SKILLS
+from src.jd_parser import COMMON_HARD_SKILLS
 
 STRONG_VERBS = {
     "architected", "designed", "built", "led", "optimized", "delivered",
