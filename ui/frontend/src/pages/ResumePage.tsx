@@ -321,7 +321,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
 
       {/* Theme selection */}
       <Typography variant="subtitle2" gutterBottom>Theme</Typography>
-      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
+      <Stack direction="row" spacing={1.5} sx={{ mb: 2, flexWrap: "wrap", gap: 1.5 }}>
         {themes.map((t) => (
           <ThemeCard key={t.id} theme={t} selected={selectedTheme === t.id} disabled={running}
             onClick={() => { themeManualRef.current = true; setSelectedTheme(t.id); }} />
