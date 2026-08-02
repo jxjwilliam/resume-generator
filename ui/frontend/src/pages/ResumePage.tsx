@@ -274,7 +274,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   }, [handleRun]);
 
   return (
-    <Box sx={{ maxWidth: 960, mx: "auto" }}>
+    <Box sx={{ maxWidth: 1080, mx: "auto" }}>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* ── Build form ── */}

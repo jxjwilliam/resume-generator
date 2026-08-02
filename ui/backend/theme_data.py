@@ -10,7 +10,7 @@ THEMES: list[ThemeInfo] = [
     ThemeInfo(
         id="classic",
         name="Classic",
-        description="Professional, clean layout with section headers",
+        description="Professional, clean single-column layout",
         best_for="FAANG, large tech, senior roles",
     ),
     ThemeInfo(
@@ -22,14 +22,32 @@ THEMES: list[ThemeInfo] = [
     ThemeInfo(
         id="moderncv",
         name="ModernCV",
-        description="Modern two-column layout with icon accents",
+        description="Two-column layout with icon accents",
         best_for="Startup, product, mid-level",
     ),
     ThemeInfo(
         id="engineeringresumes",
         name="EngineeringResumes",
-        description="Minimal, maximally ATS-optimised plaintext-friendly",
+        description="Ultra-compact, maximally ATS-optimised",
         best_for="Maximally ATS-optimised",
+    ),
+    ThemeInfo(
+        id="harvard",
+        name="Harvard",
+        description="Traditional academic/professional style",
+        best_for="Academic, research, formal roles",
+    ),
+    ThemeInfo(
+        id="opal",
+        name="Opal",
+        description="Clean modern layout with subtle color",
+        best_for="Tech, consulting, modern roles",
+    ),
+    ThemeInfo(
+        id="ink",
+        name="Ink",
+        description="Bold high-contrast dark design",
+        best_for="Creative, design, standout applications",
     ),
 ]
 

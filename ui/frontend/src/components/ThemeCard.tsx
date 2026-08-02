@@ -16,7 +16,7 @@ interface Props {
 
 /** Mini SVG layout preview for each rendercv theme */
 function ThemePreview({ themeId }: { themeId: string }) {
-  const w = 200, h = 110;
+  const w = 172, h = 94;
 
   switch (themeId) {
     case "classic":
@@ -124,7 +124,7 @@ export default function ThemeCard({ theme, selected, onClick, disabled }: Props)
   return (
     <Card
       sx={{
-        width: 220,
+        width: 172,
         opacity: disabled ? 0.5 : 1,
         border: selected ? "2px solid #1976d2" : "2px solid transparent",
         bgcolor: selected ? "action.selected" : "background.paper",
@@ -135,7 +135,7 @@ export default function ThemeCard({ theme, selected, onClick, disabled }: Props)
       <CardActionArea onClick={disabled ? undefined : onClick} disabled={disabled}>
         <Box
           sx={{
-            height: 110,
+            height: 90,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
