@@ -81,10 +81,12 @@ function ThemePreview({ themeId }: { themeId: string }) {
     case "sb2nov":
       return (
         <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-          {/* Centered name — no photo */}
-          <rect x="75" y="8" width="90" height="6" fill="#111" rx="2" />
-          <rect x="40" y="19" width="160" height="2" fill="#1976d2" rx="1" />
-          <rect x="65" y="26" width="110" height="3" fill="#666" rx="1.5" />
+          {/* Photo top-center */}
+          <Photo cx={120} cy={18} r={14} fill="#c8d8e8" />
+          {/* Centered name */}
+          <rect x="75" y="38" width="90" height="6" fill="#111" rx="2" />
+          <rect x="40" y="49" width="160" height="2" fill="#1976d2" rx="1" />
+          <rect x="65" y="56" width="110" height="3" fill="#666" rx="1.5" />
           {/* Section with full-width line */}
           <line x1="8" y1="42" x2="232" y2="42" stroke="#1976d2" strokeWidth="0.8" />
           <rect x="8" y="38" width="70" height="4" fill="#222" rx="2" />
@@ -138,8 +140,9 @@ function ThemePreview({ themeId }: { themeId: string }) {
     case "engineeringresumes":
       return (
         <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-          {/* Ultra-compact, no photo, everything tight */}
-          <rect x="60" y="5" width="120" height="5" fill="#111" rx="1.5" />
+          {/* Ultra-compact, small photo top-center */}
+          <Photo cx={120} cy={11} r={10} fill="#d8d8d8" />
+          <rect x="60" y="26" width="120" height="5" fill="#111" rx="1.5" />
           <rect x="20" y="15" width="200" height="0.8" fill="#ccc" />
           <line x1="6" y1="27" x2="234" y2="27" stroke="#ddd" strokeWidth="0.5" />
           <rect x="6" y="22" width="80" height="4" fill="#222" rx="1" />
@@ -169,8 +172,10 @@ function ThemePreview({ themeId }: { themeId: string }) {
     case "harvard":
       return (
         <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-          {/* Centered name — no photo */}
-          <rect x="75" y="8" width="90" height="6" fill="#111" rx="2" />
+          {/* Small photo top-center */}
+          <Photo cx={120} cy={14} r={12} fill="#d0d0d0" />
+          {/* Centered name */}
+          <rect x="75" y="32" width="90" height="6" fill="#111" rx="2" />
           <rect x="85" y="19" width="70" height="2.5" fill="#666" rx="1.5" />
           {/* Centered section with partial line */}
           <rect x="80" y="33" width="80" height="1" fill="#333" />
@@ -195,8 +200,10 @@ function ThemePreview({ themeId }: { themeId: string }) {
     case "opal":
       return (
         <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-          {/* Centered name — teal, no photo */}
-          <rect x="70" y="10" width="100" height="6" fill="#00645a" rx="2" />
+          {/* Small photo top-center */}
+          <Photo cx={120} cy={14} r={12} fill="#c8ddd8" />
+          {/* Centered name — teal */}
+          <rect x="70" y="32" width="100" height="6" fill="#00645a" rx="2" />
           <rect x="80" y="21" width="80" height="2.5" fill="#668884" rx="1.5" />
           {/* Centered section — no line */}
           <rect x="90" y="35" width="60" height="4" fill="#00645a" rx="2" />
@@ -215,8 +222,10 @@ function ThemePreview({ themeId }: { themeId: string }) {
     case "ink":
       return (
         <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-          {/* Left-aligned name — deep purple, no photo */}
-          <rect x="8" y="10" width="110" height="7" fill="#2a1852" rx="2" />
+          {/* Small photo top-left */}
+          <Photo cx={24} cy={16} r={12} fill="#d5cfe0" />
+          {/* Left-aligned name — deep purple */}
+          <rect x="44" y="12" width="110" height="7" fill="#2a1852" rx="2" />
           <rect x="8" y="22" width="140" height="2.5" fill="#46326e" rx="1.5" />
           {/* Section — no line, small caps look */}
           <rect x="8" y="38" width="80" height="4" fill="#2a1852" rx="2" />
@@ -235,8 +244,10 @@ function ThemePreview({ themeId }: { themeId: string }) {
     case "ember":
       return (
         <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-          {/* Centered name — red, no photo */}
-          <rect x="70" y="10" width="100" height="7" fill="#9b2319" rx="2" />
+          {/* Small photo top-center */}
+          <Photo cx={120} cy={14} r={12} fill="#e8d0c8" />
+          {/* Centered name — red */}
+          <rect x="70" y="32" width="100" height="7" fill="#9b2319" rx="2" />
           <rect x="80" y="22" width="80" height="2.5" fill="#785048" rx="1.5" />
           {/* Centered section — no line, ◆ diamonds */}
           <rect x="90" y="36" width="60" height="4" fill="#9b2319" rx="2" />
