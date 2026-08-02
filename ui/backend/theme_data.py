@@ -44,9 +44,21 @@ THEMES: list[ThemeInfo] = [
         best_for="Tech, consulting, modern roles",
     ),
     ThemeInfo(
+        id="engineeringclassic",
+        name="EngineeringClassic",
+        description="Classic sidebar + engineering compactness",
+        best_for="Balanced professional + ATS",
+    ),
+    ThemeInfo(
+        id="ember",
+        name="Ember",
+        description="Warm red-accented modern layout",
+        best_for="Standout applications, creative tech",
+    ),
+    ThemeInfo(
         id="ink",
         name="Ink",
-        description="Bold high-contrast dark design",
+        description="Deep purple serif, editorial style",
         best_for="Creative, design, standout applications",
     ),
 ]
