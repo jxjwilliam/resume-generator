@@ -17,12 +17,12 @@ flowchart TB
     end
 
     subgraph parse [JD parsing]
-        JP["jd_parser.py"]
+        JP["src/jd_parser.py"]
         JA["Structured keywords<br/>hard skills · title · domain"]
     end
 
     subgraph compose [Composition]
-        CP["compose.py"]
+        CP["src/compose.py"]
         RK["Rank bullets by tags + relevance + JD keywords"]
         CAP["Cap --max-bullets / --max-jobs"]
     end
@@ -35,12 +35,12 @@ flowchart TB
     end
 
     subgraph score [Scoring]
-        ATS["ats.py"]
+        ATS["src/ats.py"]
         RPT["ats-report.json"]
     end
 
     subgraph output [Output]
-        VAR["variants/slug.yaml"]
+        VAR["output/variants/slug.yaml"]
         PDF["rendercv PDF"]
     end
 

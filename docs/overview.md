@@ -13,41 +13,34 @@ The system has three data/composition layers and **two rendering paths**:
 ```mermaid
 flowchart TB
     subgraph L1["Layer 1 · Data (manual)"]
-        BY["base.yaml<br/>summary, headline, experience,<br/>skills, projects, education"]
+        BY["profiles/base.yaml<br/>summary, headline, experience,<br/>skills, projects, education"]
         style BY fill:#e1f5fe,stroke:#0288d1
     end
 
-    subgraph L2["Layer 2 · Composition (CLI)"]
+    subgraph L2["Layer 2 · Composition"]
         RP["resume.py<br/>filter · assemble · log"]
-        TP["transform.py<br/>JSON Patch · rxresu.me sync"]
-        VY["variants/&lt;slug&gt;.yaml"]
-        AJ["runs.db + applications.json"]
+        VY["output/variants/&lt;slug&gt;.yaml"]
         style RP fill:#fff3e0,stroke:#f57c00
-        style TP fill:#fff3e0,stroke:#f57c00
         style VY fill:#fff3e0,stroke:#f57c00
-        style AJ fill:#fff3e0,stroke:#f57c00
     end
 
-    subgraph L3A["Layer 3A · rendercv"]
-        RC["rendercv<br/>YAML → Typst → PDF/HTML"]
+    subgraph L3["Layer 3 · Rendering"]
+        RC["rendercv<br/>YAML → PDF/HTML"]
+        DX["python-docx<br/>YAML → DOCX"]
         PDF["📑 ATS PDF"]
         HTML["🌐 HTML"]
+        DOCX["📄 Word DOCX"]
         style RC fill:#e8f5e9,stroke:#388e3c
+        style DX fill:#e8f5e9,stroke:#388e3c
     end
 
-    subgraph L3B["Layer 3B · rxresu.me"]
-        RX["rxresu.me builder<br/>visual templates"]
-        VIS["🎨 Visual PDF + share link"]
-        style RX fill:#e8eaf6,stroke:#3f51b5
-    end
-
-    L1 -->|"python resume.py build"| L2
-    L1 -->|"python transform.py"| L2
-    RP --> VY --> RC
+    BY --> RP
+    RP --> VY
+    VY --> RC
+    VY --> DX
     RC --> PDF
     RC --> HTML
-    TP --> RX --> VIS
-    RP --> AJ
+    DX --> DOCX
 ```
 
 ### Layer boundaries
@@ -194,39 +187,6 @@ flowchart LR
 
 ---
 
-## Data flow (rxresu.me path)
-
-```mermaid
-flowchart LR
-    subgraph Base["base.yaml"]
-        DATA["identity · summary · experience<br/>skills · projects · education"]
-    end
-
-    subgraph Transform["transform.py"]
-        FILTER["Tag filter + bullet cap"]
-        MAP["Map to RxResume schema"]
-        PATCH["JSON Patch operations"]
-    end
-
-    subgraph RxResume["rxresu.me"]
-        BUILDER["Visual builder"]
-        EXPORT["PDF export / share link"]
-    end
-
-    DATA --> FILTER --> MAP --> PATCH --> BUILDER --> EXPORT
-```
-
-Key transform behaviors:
-
-- **Skills grouped** by category (4 rows, keyword tags) — not 36 individual rated rows
-- **Profiles hidden** — links live in the header
-- **Photo** resized and embedded as JPEG data URL
-- **`--all-skills`** bypasses tag filter for the skills section only
-
-Full CLI reference: [`rxresume-integration-guide.md`](rxresume-integration-guide.md)
-
----
-
 ## The tagging system
 
 Tags are the glue that connects job requirements to your resume content. Every bullet, skill, and project in `base.yaml` carries tags describing its domain.
@@ -296,7 +256,7 @@ sequenceDiagram
     participant CLI as resume.py build
     participant Base as base.yaml
     participant LLM as DeepSeek/Ollama
-    participant FS as variants/ + output/
+    participant FS as output/
 
     User->>CLI: --tags backend,python --jd jds/x.txt [--docx] [--cover-letter]
     CLI->>Base: load_base()
@@ -309,7 +269,7 @@ sequenceDiagram
 
     CLI->>CLI: filter bullets by tags + active status
     CLI->>CLI: build variant dict
-    CLI->>FS: write variants/bestit-swe.yaml
+    CLI->>FS: write output/variants/bestit-swe.yaml
 
     CLI->>FS: rendercv render → output/bestit-swe/
     FS-->>CLI: done
@@ -322,7 +282,7 @@ sequenceDiagram
         CLI->>FS: generate cover letter → output/bestit-swe/cover-letter-bestit.txt
     end
 
-    CLI->>FS: log to runs.db (SQLite) + legacy applications.json
+    CLI->>FS: log to runs.db (SQLite)
     FS-->>CLI: done
 
     CLI-->>User: PDF at output/bestit-swe/CV.pdf
@@ -514,14 +474,12 @@ Swap `DEEPSEEK_BASE_URL` for another OpenAI-compatible provider (e.g. Ollama, Op
 ```mermaid
 flowchart LR
     subgraph Commit["✅ Commit to git"]
-        C1["base.yaml"]
+        C1["profiles/base.yaml"]
         C2["resume.py"]
-        C3["history_db.py"]
+        C3["src/"]
         C4["runs.db"]
-        C5["transform.py"]
-        C6["applications.json"]
-        C7["variants/"]
-        C8["jds/"]
+        C5["jds/"]
+        C6["ui/"]
     end
 
     subgraph Ignore["🚫 Ignore (.gitignore)"]
@@ -552,13 +510,9 @@ python resume.py build \
   --template classic
 
 # 4. Open the PDF
-open output/bestit-senior-swe-202606/William_Jiang_CV.pdf
+open output/bestit-senior-swe-*/William_Jiang_CV.pdf
 
-# 5. Sync to rxresu.me (optional)
-python transform.py --dry-run --all-skills
-python transform.py --resume-id <YOUR_ID> --all-skills --max-bullets 3
-
-# 6. Check the log
+# 5. Check the log
 python resume.py log
 ```
 
