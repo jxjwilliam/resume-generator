@@ -187,7 +187,7 @@ def parse_jd(text: str, base: dict | None = None) -> dict:
 
 def keyword_match_report(parsed: dict, base: dict, tags: list[str] | None = None) -> dict:
     """Compare JD keywords against base.yaml content."""
-    from compose import parse_tag_list, rank_bullets_for_jd
+    from src.compose import parse_tag_list, rank_bullets_for_jd
 
     tags_list = parse_tag_list(tags)
     hard_skills = parsed.get("hard_skills", [])

@@ -11,7 +11,12 @@ import {
   Alert,
   ToggleButtonGroup,
   ToggleButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  LinearProgress,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import DescriptionIcon from "@mui/icons-material/Description";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
@@ -38,7 +43,6 @@ interface Props {
   onRefreshHistory: () => void;
 }
 
-// Sync form state with localStorage so user preferences survive reloads
 function useStoredState<T>(key: string, fallback: T): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => {
     try {
@@ -86,13 +90,19 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   const runPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const jobFinishedRef = useRef(false);
 
-  // Cleanup SSE stream and poll timer on unmount
+  // Accordion states — log auto-expands when running, output auto-expands when done
+  const [jdExpanded, setJdExpanded] = useState(true);
+  const [analysisExpanded, setAnalysisExpanded] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+  const logExpanded = running || logLines.length > 0;
+  const outputExpanded = outputFiles.length > 0;
+
   useEffect(() => () => {
     sseCloseRef.current?.();
     if (runPollRef.current) clearInterval(runPollRef.current);
   }, []);
 
-  // Auto-select theme when JD is pasted (until user picks manually)
+  // Auto-select theme when JD is pasted
   useEffect(() => {
     if (jdText.trim().length > 50 && !themeManualRef.current) {
       setSelectedTheme("auto");
@@ -120,15 +130,19 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     return () => clearTimeout(t);
   }, [jdText, yamlFile, maxBullets, maxJobs]);
 
+  // Auto-expand analysis when data arrives
+  useEffect(() => {
+    if (jdAnalysis) setAnalysisExpanded(true);
+  }, [jdAnalysis]);
+
   const handleLocaleChange = (
     _: React.MouseEvent<HTMLElement>,
     newLocale: string | null,
   ) => {
     if (!newLocale) return;
     setLocale(newLocale);
-    // Auto-switch YAML file when language changes
     const prefix = DEFAULT_YAML_PATH.substring(0, DEFAULT_YAML_PATH.lastIndexOf("/") + 1);
-    const zhPath = prefix + "base_zh.yaml";
+    const zhPath = prefix + "base-zh.yaml";
     if (newLocale === "zh-CN" && yamlFile === DEFAULT_YAML_PATH) {
       setYamlFile(zhPath);
     } else if (newLocale === "en" && yamlFile === zhPath) {
@@ -190,7 +204,6 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     setAtsReport(null);
     setBulletDiff(null);
     jobFinishedRef.current = false;
-    // Close any previous SSE stream / poll
     sseCloseRef.current?.();
     sseCloseRef.current = null;
     if (runPollRef.current) {
@@ -226,7 +239,6 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
 
       const closeStream = api.streamLogs(job_id, (line) => {
         setLogLines((prev) => [...prev, line]);
-        // Detect job completion from SSE system messages
         if (line.source === "system") {
           if (line.text === "Job completed successfully") {
             handleJobDone(job_id, true);
@@ -237,7 +249,6 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
       });
       sseCloseRef.current = closeStream;
 
-      // Poll DB for completion — reliable even if SSE connects late or drops
       runPollRef.current = setInterval(async () => {
         try {
           const detail = await api.getRunDetail(job_id);
@@ -263,161 +274,183 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   }, [handleRun]);
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 960, mx: "auto" }}>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      <Stack direction="row" spacing={1.5} sx={{ mt: 1, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
+      {/* ── Build form ── */}
+      <Stack direction="row" spacing={1.5} sx={{ mt: 1, mb: 1, alignItems: "center", flexWrap: "wrap" }}>
         <Typography variant="subtitle2">YAML:</Typography>
-        <YamlSelector value={yamlFile} onChange={setYamlFile} />
-        <Box sx={{ flexGrow: 0, width: 16 }} />
+        <YamlSelector value={yamlFile} onChange={setYamlFile} disabled={running} />
+        <Box sx={{ flexGrow: 0, width: 12 }} />
         <Typography variant="body2" color="text.secondary">LLM:</Typography>
-        <ToggleButtonGroup
-          value={llmProvider}
-          exclusive
-          onChange={(_, v) => v !== null && setLlmProvider(v)}
-          size="small"
-        >
-          <ToggleButton value="">default</ToggleButton>
-          <ToggleButton value="deepseek">DeepSeek</ToggleButton>
-          <ToggleButton value="kimi">Kimi</ToggleButton>
-          <ToggleButton value="minimax">MiniMax</ToggleButton>
+        <ToggleButtonGroup value={llmProvider} exclusive
+          onChange={(_, v) => v !== null && setLlmProvider(v)} size="small">
+          <ToggleButton value="" disabled={running}>default</ToggleButton>
+          <ToggleButton value="deepseek" disabled={running}>DeepSeek</ToggleButton>
+          <ToggleButton value="kimi" disabled={running}>Kimi</ToggleButton>
+          <ToggleButton value="minimax" disabled={running}>MiniMax</ToggleButton>
         </ToggleButtonGroup>
         <FormControlLabel
-          control={<Checkbox size="small" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} />}
-          label="Enhance"
-        />
+          control={<Checkbox size="small" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} disabled={running} />}
+          label="Enhance" />
         <FormControlLabel
-          control={<Checkbox size="small" checked={tailor} onChange={(e) => setTailor(e.target.checked)} />}
-          label="Tailor"
-        />
+          control={<Checkbox size="small" checked={tailor} onChange={(e) => setTailor(e.target.checked)} disabled={running} />}
+          label="Tailor" />
         <FormControlLabel
-          control={<Checkbox size="small" checked={boost} onChange={(e) => setBoost(e.target.checked)} />}
-          label="Boost"
-        />
+          control={<Checkbox size="small" checked={boost} onChange={(e) => setBoost(e.target.checked)} disabled={running} />}
+          label="Boost" />
         <Box sx={{ flexGrow: 1 }} />
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<PlayArrowIcon />}
-          onClick={() => handleRun()}
-          disabled={running}
-        >
+        <Button variant="contained" size="small" startIcon={<PlayArrowIcon />}
+          onClick={() => handleRun()} disabled={running}>
           {running ? "Running..." : "Build"}
         </Button>
       </Stack>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: "center" }}>
+      <Stack direction="row" spacing={2} sx={{ mb: 1, alignItems: "center" }}>
         <TextField label="Company" size="small" placeholder="Unknown"
-          value={company} onChange={(e) => setCompany(e.target.value)} />
+          value={company} onChange={(e) => setCompany(e.target.value)} disabled={running} />
         <TextField label="Role" size="small"
-          value={role} onChange={(e) => setRole(e.target.value)} />
+          value={role} onChange={(e) => setRole(e.target.value)} disabled={running} />
         <Box sx={{ flexGrow: 1 }} />
         <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>Language:</Typography>
-        <ToggleButtonGroup
-          value={locale}
-          exclusive
-          onChange={handleLocaleChange}
-          size="small"
-        >
-          <ToggleButton value="en">English</ToggleButton>
-          <ToggleButton value="zh-CN">中文 (简体)</ToggleButton>
+        <ToggleButtonGroup value={locale} exclusive onChange={handleLocaleChange} size="small">
+          <ToggleButton value="en" disabled={running}>English</ToggleButton>
+          <ToggleButton value="zh-CN" disabled={running}>中文 (简体)</ToggleButton>
         </ToggleButtonGroup>
       </Stack>
 
+      {/* Theme selection */}
       <Typography variant="subtitle2" gutterBottom>Theme</Typography>
       <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
         {themes.map((t) => (
-          <ThemeCard
-            key={t.id}
-            theme={t}
-            selected={selectedTheme === t.id}
-            onClick={() => {
-              themeManualRef.current = true;
-              setSelectedTheme(t.id);
-            }}
-          />
+          <ThemeCard key={t.id} theme={t} selected={selectedTheme === t.id} disabled={running}
+            onClick={() => { themeManualRef.current = true; setSelectedTheme(t.id); }} />
         ))}
       </Stack>
 
-      <Typography variant="subtitle2" gutterBottom>Job Description</Typography>
-      <JdInput
-        value={jdText}
-        onChange={setJdText}
-        onKeywords={setKeywords}
-        onAnalysis={setJdAnalysis}
-        yamlFile={yamlFile}
-      />
-      <JdAnalysisPanel analysis={jdAnalysis} />
-      <BulletPreviewPanel preview={composePreview} loading={previewLoading} />
-      {keywords.length > 0 && <TagChips keywords={keywords} />}
-
-      <Stack direction="row" spacing={2} sx={{ mt: 2, alignItems: "center", flexWrap: "wrap" }}>
+      {/* Output options */}
+      <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: "center", flexWrap: "wrap" }}>
         <TextField label="Max bullets/job" type="number" size="small" sx={{ width: 130 }}
           value={maxBullets} onChange={(e) => setMaxBullets(Number(e.target.value) || 4)}
-          inputProps={{ min: 1, max: 8 }} />
+          inputProps={{ min: 1, max: 8 }} disabled={running} />
         <TextField label="Max jobs" type="number" size="small" sx={{ width: 110 }}
           value={maxJobs} onChange={(e) => setMaxJobs(Number(e.target.value) || 5)}
-          inputProps={{ min: 1, max: 10 }} />
+          inputProps={{ min: 1, max: 10 }} disabled={running} />
         <FormControlLabel
-          control={<Checkbox size="small" checked={useLlm} onChange={(e) => setUseLlm(e.target.checked)} />}
-          label="Use LLM"
-        />
+          control={<Checkbox size="small" checked={useLlm} onChange={(e) => setUseLlm(e.target.checked)} disabled={running} />}
+          label="Use LLM" />
         <FormControlLabel
-          control={<Checkbox size="small" checked={allFormats} onChange={(e) => setAllFormats(e.target.checked)} />}
-          label="All formats"
-        />
+          control={<Checkbox size="small" checked={coverLetter} onChange={(e) => setCoverLetter(e.target.checked)} disabled={running} />}
+          label="Cover letter" />
         <FormControlLabel
-          control={<Checkbox size="small" checked={coverLetter} onChange={(e) => setCoverLetter(e.target.checked)} />}
-          label="Cover letter"
-        />
+          control={<Checkbox size="small" checked={docx} onChange={(e) => setDocx(e.target.checked)} disabled={running} />}
+          label="Docx" />
         <FormControlLabel
-          control={<Checkbox size="small" checked={docx} onChange={(e) => setDocx(e.target.checked)} />}
-          label="Docx"
-        />
+          control={<Checkbox size="small" checked={allFormats} onChange={(e) => setAllFormats(e.target.checked)} disabled={running} />}
+          label="HTML/MD/PNG" />
       </Stack>
 
-      {logLines.length > 0 && (
-        <Box sx={{ mt: 2 }}>
-          <LogStream lines={logLines} onClear={() => setLogLines([])} />
-        </Box>
-      )}
-
-      {outputFiles.length > 0 && (
-        <Box sx={{ mt: 2, p: 2, bgcolor: "success.50", borderRadius: 1, border: "1px solid", borderColor: "success.200" }}>
-          <Typography variant="subtitle2" gutterBottom sx={{ color: "success.700" }}>
-            Generated Output Files
+      {/* ── Job Description ── */}
+      <Accordion expanded={jdExpanded || jdText.length > 0} onChange={(_, v) => setJdExpanded(v)}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="subtitle2">
+            Job Description
+            {jdText.trim() && <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+              ({jdText.length} chars)
+            </Typography>}
           </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: atsReport || bulletDiff ? 2 : 0 }}>
+        </AccordionSummary>
+        <AccordionDetails>
+          <JdInput value={jdText} onChange={setJdText} onKeywords={setKeywords}
+            onAnalysis={setJdAnalysis} yamlFile={yamlFile} disabled={running} />
+        </AccordionDetails>
+      </Accordion>
+
+      {/* ── JD Analysis (auto-expands when data arrives) ── */}
+      <Accordion expanded={analysisExpanded && !running} onChange={(_, v) => setAnalysisExpanded(v)}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="subtitle2">
+            JD Analysis
+            {jdAnalysis && !analysisExpanded && <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+              — {jdAnalysis.matched_skills?.length || 0} skills matched
+            </Typography>}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <JdAnalysisPanel analysis={jdAnalysis} />
+          {keywords.length > 0 && <TagChips keywords={keywords} />}
+        </AccordionDetails>
+      </Accordion>
+
+      {/* ── Bullet Preview ── */}
+      <Accordion expanded={previewExpanded && !running && composePreview !== null} onChange={(_, v) => setPreviewExpanded(v)}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="subtitle2">
+            Bullet Composition Preview
+            {composePreview && !previewExpanded && <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+              — {composePreview.bullets_included} included / {composePreview.bullets_excluded} excluded
+            </Typography>}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <BulletPreviewPanel preview={composePreview} loading={previewLoading} />
+        </AccordionDetails>
+      </Accordion>
+
+      {/* ── Build Log (auto-expands during build, shows progress bar) ── */}
+      <Accordion expanded={logExpanded} sx={{ mt: running ? 1 : 0 }}>
+        <AccordionSummary expandIcon={running ? null : <ExpandMoreIcon />}
+          sx={{ cursor: running ? "default" : "pointer" }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center", width: "100%", mr: 2 }}>
+            <Typography variant="subtitle2">
+              {running ? "Building..." : "Build Log"}
+            </Typography>
+            {running && <LinearProgress sx={{ flexGrow: 1, minWidth: 100 }} />}
+            {!running && logLines.length > 0 &&
+              <Typography variant="body2" color="text.secondary">
+                ({logLines.length} lines)
+              </Typography>}
+          </Stack>
+        </AccordionSummary>
+        <AccordionDetails>
+          <LogStream lines={logLines} onClear={() => setLogLines([])} />
+        </AccordionDetails>
+      </Accordion>
+
+      {/* ── Output Files (auto-expands on completion) ── */}
+      <Accordion expanded={outputExpanded}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="subtitle2">
+            Output Files
+            {outputFiles.length > 0 &&
+              <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                — {outputFiles.length} file{outputFiles.length !== 1 ? "s" : ""}
+              </Typography>}
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: (atsReport || bulletDiff) ? 2 : 0 }}>
             {outputFiles.map((f) => {
               const downloadUrl = `/api/output/${lastJobId}/download?name=${encodeURIComponent(f.name)}`;
               const sizeKb = (f.size / 1024).toFixed(1);
               return (
-                <Chip
-                  key={f.name}
-                  icon={fileIcon(f.type)}
+                <Chip key={f.name} icon={fileIcon(f.type)}
                   label={`${f.name} (${sizeKb} KB)`}
-                  component="a"
-                  href={downloadUrl}
-                  target="_blank"
-                  clickable
-                  variant="outlined"
+                  component="a" href={downloadUrl} target="_blank"
+                  clickable variant="outlined"
                   color={f.type === "pdf" ? "error" : f.type === "cover-letter" ? "info" : "default"}
-                  sx={{ cursor: "pointer" }}
-                />
+                  sx={{ cursor: "pointer" }} />
               );
             })}
           </Stack>
 
           {atsReport && (
             <Box sx={{ mb: bulletDiff ? 2 : 0 }}>
-              <Typography variant="subtitle2" gutterBottom>ATS Score</Typography>
-              <AtsScoreWidget
-                report={atsReport}
+              <AtsScoreWidget report={atsReport}
                 before={bulletDiff?.before_ats ?? null}
                 delta={bulletDiff?.delta ?? null}
                 onBoostRerun={jdText.trim() ? handleBoostRerun : undefined}
-                boostRunning={running}
-              />
+                boostRunning={running} />
             </Box>
           )}
 
@@ -427,8 +460,8 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
               <BulletDiffView diff={bulletDiff} />
             </Box>
           )}
-        </Box>
-      )}
+        </AccordionDetails>
+      </Accordion>
     </Box>
   );
 }

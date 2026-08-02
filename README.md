@@ -23,7 +23,7 @@ python resume.py build \
   --role "Senior SWE" \
   --tags backend,python,api \
   --template classic
-# → output/variants/bestit-senior-swe-202606.yaml + output/.../William_Jiang_CV.pdf
+# → output/variants/bestit-senior-swe-*.yaml + output/.../William_Jiang-Senior-SWE.pdf
 
 # Path A — with DOCX + cover letter
 python resume.py build \
@@ -166,7 +166,7 @@ $ python resume.py log
   ATS:      87/100 (A) (was 72, +15)
   Status:   success
   Duration: 12.3s
-  Files:    William_Jiang_CV.pdf, resume.docx
+  Files:    William_Jiang-SWE.pdf, resume.docx
 ```
 
 Both CLI builds and WebUI builds appear in the same log.
@@ -330,8 +330,8 @@ Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxie
 │
 ├── output/                  # Auto-generated PDFs + DOCX + HTML (gitignored)
 │   └── google-swe-202606/
-│       ├── William_Jiang_CV.pdf
-│       ├── William_Jiang_CV.html
+│       ├── William_Jiang-Role.pdf
+│       ├── William_Jiang_Role.html
 │       ├── resume.docx
 │       ├── cover-letter-google.txt
 │       ├── ats-report.json
@@ -515,7 +515,7 @@ python resume.py tags
 python resume.py build --company "Test" --role "Engineer" --tags backend,python
 
 # 6. Open outputs
-open output/test-engineer-*/William_Jiang_CV.pdf
+open output/test-engineer-*/William_Jiang-Engineer.pdf
 ```
 
 ## Git Strategy

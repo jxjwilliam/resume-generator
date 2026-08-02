@@ -11,9 +11,10 @@ import type { YamlInfo } from "../types";
 interface Props {
   value: string;
   onChange: (val: string) => void;
+  disabled?: boolean;
 }
 
-export default function YamlSelector({ value, onChange }: Props) {
+export default function YamlSelector({ value, onChange, disabled }: Props) {
   const [yamls, setYamls] = useState<YamlInfo[]>([]);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function YamlSelector({ value, onChange }: Props) {
         value={value}
         label="YAML Source"
         onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
       >
         {yamls.map((y) => (
           <MenuItem key={y.path} value={y.path}>

@@ -11,6 +11,7 @@ interface Props {
   theme: ThemeInfo;
   selected: boolean;
   onClick: () => void;
+  disabled?: boolean;
 }
 
 /** Mini SVG layout preview for each rendercv theme */
@@ -119,18 +120,19 @@ function ThemePreview({ themeId }: { themeId: string }) {
   }
 }
 
-export default function ThemeCard({ theme, selected, onClick }: Props) {
+export default function ThemeCard({ theme, selected, onClick, disabled }: Props) {
   return (
     <Card
       sx={{
         width: 220,
+        opacity: disabled ? 0.5 : 1,
         border: selected ? "2px solid #1976d2" : "2px solid transparent",
         bgcolor: selected ? "action.selected" : "background.paper",
         transition: "border-color 0.2s, box-shadow 0.2s",
         ...(selected ? { boxShadow: "0 0 8px rgba(25,118,210,0.3)" } : {}),
       }}
     >
-      <CardActionArea onClick={onClick}>
+      <CardActionArea onClick={disabled ? undefined : onClick} disabled={disabled}>
         <Box
           sx={{
             height: 110,

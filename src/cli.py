@@ -254,7 +254,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
             "phone": _parse_phone(base["identity"]["phone"]),
             "location": base["identity"]["location"],
             "headline": headline_override or base["identity"].get("headline", ""),
-            "photo": str(Path("..") / base["identity"]["photo"]) if base["identity"].get("photo") else None,
+            "photo": str(Path("../..") / base["identity"]["photo"]) if base["identity"].get("photo") else None,
             "social_networks": [
                 {"network": n, "username": _extract_username(u["url"])}
                 for u in base["identity"]["urls"]
@@ -277,8 +277,12 @@ def write_variant(variant, slug):
         yaml.dump(variant, f, allow_unicode=True, sort_keys=False)
     return str(path)
 
-def render_variant(variant_path, slug, all_formats=False):
-    """Call rendercv to render the variant. PDF-only by default."""
+def _slugify(text: str) -> str:
+    """'Full-Stack Engineer' → 'Full-Stack-Engineer'"""
+    return re.sub(r"[^\w.-]", "-", text).strip("-")
+
+def render_variant(variant_path, slug, all_formats=False, role=None):
+    """Call rendercv to render the variant, then rename PDF with role."""
     output_path = str(Path(OUTPUT_DIR).resolve() / slug)
     Path(OUTPUT_DIR).mkdir(exist_ok=True)
     cmd = ["rendercv", "render", variant_path, "--output-folder", output_path]
@@ -288,6 +292,12 @@ def render_variant(variant_path, slug, all_formats=False):
     if result.returncode != 0:
         print(f"rendercv error:\n{result.stderr}")
         return False
+    # Rename PDF to include role
+    if role:
+        default_pdf = Path(output_path) / "William_Jiang_CV.pdf"
+        custom_pdf = Path(output_path) / f"William_Jiang-{_slugify(role)}.pdf"
+        if default_pdf.exists() and custom_pdf != default_pdf:
+            default_pdf.rename(custom_pdf)
     return True
 
 
@@ -752,7 +762,7 @@ def cmd_build(args):
             json.dump(page_budget_report, f, indent=2)
 
     print("Rendering PDF...")
-    success = render_variant(variant_path, slug, all_formats=args.all_formats)
+    success = render_variant(variant_path, slug, all_formats=args.all_formats, role=role)
     if success:
         print(f"Output: {OUTPUT_DIR}/{slug}/")
 

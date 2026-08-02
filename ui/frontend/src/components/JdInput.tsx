@@ -11,9 +11,10 @@ interface Props {
   onKeywords: (keywords: string[]) => void;
   onAnalysis?: (analysis: JdAnalysisResult | null) => void;
   yamlFile?: string;
+  disabled?: boolean;
 }
 
-export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlFile = DEFAULT_YAML_PATH }: Props) {
+export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlFile = DEFAULT_YAML_PATH, disabled }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const dragCounter = useRef(0);
@@ -146,8 +147,8 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlF
         onChange={handleFileChange}
       />
       <Box
-        {...dropProps}
-        onClick={handleClickUpload}
+        {...(disabled ? {} : dropProps)}
+        onClick={disabled ? undefined : handleClickUpload}
         sx={{
           border: "2px dashed",
           borderColor: dragOver ? "primary.main" : "grey.400",
@@ -156,9 +157,10 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlF
           mb: 1,
           textAlign: "center",
           bgcolor: dragOver ? "action.hover" : "transparent",
+          opacity: disabled ? 0.5 : 1,
           transition: "border-color 0.15s, background-color 0.15s",
-          cursor: "pointer",
-          "&:hover": { borderColor: "primary.light", bgcolor: "action.hover" },
+          cursor: disabled ? "default" : "pointer",
+          "&:hover": disabled ? {} : { borderColor: "primary.light", bgcolor: "action.hover" },
         }}
       >
         <CloudUploadIcon sx={{ color: "grey.500", mr: 1, verticalAlign: "middle" }} />
@@ -172,12 +174,10 @@ export default function JdInput({ value, onChange, onKeywords, onAnalysis, yamlF
         placeholder="Paste job description here..."
         value={value}
         onChange={handlePaste}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
+        disabled={disabled}
         style={{ width: "100%", fontFamily: "inherit", fontSize: "0.9rem",
-                 padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
+                 padding: "8px", border: "1px solid #ccc", borderRadius: "4px",
+                 opacity: disabled ? 0.5 : 1 }}
       />
     </Box>
   );
