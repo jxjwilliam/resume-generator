@@ -483,7 +483,7 @@ Return JSON only:
 {"tags": "backend,python,api", "scores": {"bullet_id": 8, ...}}
 ```
 
-**Recommended model:** DeepSeek V4 (`deepseek-v4-pro`) via OpenAI-compatible API. ~$0.001 per JD analysis. Add `DEEPSEEK_API_KEY` to `.env` file (loaded automatically by `python-dotenv`).
+**Recommended model:** DeepSeek V4 Flash (`deepseek-v4-flash`) via OpenAI-compatible API. ~$0.001 per JD analysis. Add `DEEPSEEK_API_KEY` to `.env` file (loaded automatically by `python-dotenv`).
 
 **Alternative free option:** Gemini 2.0 Flash — free tier is generous enough for personal use.
 
@@ -582,7 +582,7 @@ Do you want to send a web link in a cold email?
 
 | Provider | Model | Cost per resume | Privacy |
 |---|---|---|---|
-| DeepSeek | deepseek-v4-pro | ~$0.001 | Cloud |
+| DeepSeek | deepseek-v4-flash | ~$0.001 | Cloud |
 | Google | Gemini 2.0 Flash | Free tier | Cloud |
 | Ollama | Llama 3.1 8B | Free (local) | Local |
 | OpenAI | GPT-4o mini | ~$0.01 | Cloud |

@@ -104,7 +104,7 @@ LLM_PROVIDER=kimi   # or deepseek | minimax
 
 DEEPSEEK_API_KEY=...
 DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-v4-pro
+DEEPSEEK_MODEL=deepseek-v4-flash
 
 KIMI_API_KEY=...
 KIMI_BASE_URL=https://api.moonshot.cn/v1      # China inland

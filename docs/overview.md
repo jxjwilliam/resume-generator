@@ -448,7 +448,7 @@ flowchart LR
 
 | Provider | Model | Cost | Privacy |
 |---|---|---|---|
-| DeepSeek | `deepseek-v4-pro` | ~$0.001/resume | Cloud |
+| DeepSeek | `deepseek-v4-flash` | ~$0.001/resume | Cloud |
 | Google | Gemini 2.0 Flash | Free tier | Cloud |
 | Ollama (local) | Llama 3.1 8B | Free | ✅ Local |
 | OpenAI | GPT-4o mini | ~$0.01 | Cloud |
@@ -459,7 +459,7 @@ Add these to `.env` (auto-loaded by `python-dotenv`):
 # Optional — LLM tag extraction (resume.py --llm)
 DEEPSEEK_API_KEY=sk-...
 DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-v4-pro
+DEEPSEEK_MODEL=deepseek-v4-flash
 
 # Required for transform.py → rxresu.me
 RXRESU_API_KEY=your_key_here

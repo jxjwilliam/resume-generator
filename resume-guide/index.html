@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>Resume Generator — User Guide</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      body { margin: 0; background: #0b0f14; color: white; font-family: Inter, system-ui, sans-serif; }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+      .clip { position: absolute; inset: 0; display: grid; place-items: center; }
+
+      .title-bg { background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 50%, #0b0f14 100%); }
+      .title-icon { width: 120px; height: 120px; border-radius: 28px; background: linear-gradient(135deg, #1976d2, #1565c0); display: grid; place-items: center; font-size: 56px; }
+      h1 { margin: 0; font-size: 80px; font-weight: 700; letter-spacing: -1px; }
+      h2 { margin: 0; font-size: 44px; font-weight: 600; color: #90caf9; }
+      .desc { margin: 0; font-size: 28px; color: #b0bec5; line-height: 1.6; max-width: 900px; text-align: center; }
+
+      .cards { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; }
+      .card { width: 280px; padding: 40px 32px; border-radius: 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); text-align: center; }
+      .card-icon { font-size: 48px; margin-bottom: 16px; }
+      .card h3 { margin: 0 0 8px; font-size: 24px; font-weight: 600; }
+      .card .card-desc { margin: 0; font-size: 16px; color: #90a4ae; }
+
+      .tag { display: inline-block; padding: 6px 18px; border-radius: 20px; font-size: 18px; font-weight: 500; margin: 4px; }
+      .tag-blue { background: rgba(25,118,210,0.2); color: #90caf9; border: 1px solid rgba(25,118,210,0.3); }
+      .tag-green { background: rgba(76,175,80,0.2); color: #a5d6a7; border: 1px solid rgba(76,175,80,0.3); }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-ihoy" id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="48">
+
+      <!-- 1. Title Card (0-6s) -->
+      <section data-hf-id="hf-mk53" class="clip title-bg" data-start="0" data-duration="6" data-track-index="1">
+        <div data-hf-id="hf-81i5" style="text-align:center">
+          <div data-hf-id="hf-yqbh" id="t-icon" class="title-icon" style="margin:0 auto 32px">📄</div>
+          <h1 data-hf-id="hf-iwvi" id="t-title">Resume Generator</h1>
+          <h2 data-hf-id="hf-g1wp" id="t-sub" style="margin-top:12px">User Guide</h2>
+          <p data-hf-id="hf-58k3" id="t-desc" class="desc" style="margin-top:24px">Build job-specific ATS resumes from a single YAML source of truth</p>
+        </div>
+      </section>
+
+      <!-- 2. What it does (6-13s) -->
+      <section data-hf-id="hf-cvum" class="clip" data-start="6" data-duration="7" data-track-index="1">
+        <div data-hf-id="hf-567l" style="text-align:center">
+          <h2 data-hf-id="hf-px7p" id="s2-title" style="color:#90caf9;margin-bottom:48px">One YAML → Any Resume</h2>
+          <div data-hf-id="hf-5cwd" class="cards">
+            <div data-hf-id="hf-a2l0" class="card" id="s2-c1"><div data-hf-id="hf-l3ya" class="card-icon">✏️</div><h3 data-hf-id="hf-w74x">Edit Once</h3><p data-hf-id="hf-0npe" class="card-desc">Single profiles/base.yaml with all experience, skills, and projects</p></div>
+            <div data-hf-id="hf-ky2n" class="card" id="s2-c2"><div data-hf-id="hf-zwf2" class="card-icon">🏷️</div><h3 data-hf-id="hf-vl8s">Tag &amp; Filter</h3><p data-hf-id="hf-7bnu" class="card-desc">Tag bullets by skill — filter per job application</p></div>
+            <div data-hf-id="hf-gzym" class="card" id="s2-c3"><div data-hf-id="hf-633q" class="card-icon">📑</div><h3 data-hf-id="hf-oh6p">Render PDF/DOCX</h3><p data-hf-id="hf-uje0" class="card-desc">ATS-optimized PDF via rendercv or Word via python-docx</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. WebUI tabs (13-20s) -->
+      <section data-hf-id="hf-a2ny" class="clip" data-start="13" data-duration="7" data-track-index="1">
+        <div data-hf-id="hf-6d4o" style="text-align:center">
+          <h2 data-hf-id="hf-mcpr" id="s3-title" style="color:#90caf9;margin-bottom:40px">WebUI — 5 Tabs</h2>
+          <div data-hf-id="hf-cr7l" class="cards">
+            <div data-hf-id="hf-zoev" class="card" id="s3-c1"><div data-hf-id="hf-1bfe" class="card-icon">📝</div><h3 data-hf-id="hf-i0rb">Resume</h3><p data-hf-id="hf-8qzv" class="card-desc">JD analysis, bullets, theme, build</p></div>
+            <div data-hf-id="hf-r0j0" class="card" id="s3-c2"><div data-hf-id="hf-d0fn" class="card-icon">⚖️</div><h3 data-hf-id="hf-f0lf">Compare</h3><p data-hf-id="hf-dfva" class="card-desc">Rank 2–5 JDs by ATS fit</p></div>
+            <div data-hf-id="hf-rs6t" class="card" id="s3-c3"><div data-hf-id="hf-cub7" class="card-icon">📂</div><h3 data-hf-id="hf-33ke">Outputs</h3><p data-hf-id="hf-zcqv" class="card-desc">Browse PDFs, DOCX, reports</p></div>
+            <div data-hf-id="hf-ajwi" class="card" id="s3-c4"><div data-hf-id="hf-a260" class="card-icon">📋</div><h3 data-hf-id="hf-nmec">History</h3><p data-hf-id="hf-sb2h" class="card-desc">Every build with ATS scores</p></div>
+            <div data-hf-id="hf-ei0j" class="card" id="s3-c5"><div data-hf-id="hf-0bl2" class="card-icon">✏️</div><h3 data-hf-id="hf-et8d">Editor</h3><p data-hf-id="hf-c75n" class="card-desc">YAML editor with highlighting</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Paste JD (20-26s) -->
+      <section data-hf-id="hf-y1rb" class="clip" data-start="20" data-duration="6" data-track-index="1">
+        <div data-hf-id="hf-5ytn" style="text-align:center">
+          <h2 data-hf-id="hf-3878" id="s4-title" style="color:#90caf9;margin-bottom:36px">Step 1 — Paste a Job Description</h2>
+          <div data-hf-id="hf-y2lp" style="background:rgba(255,255,255,0.06);border-radius:16px;padding:44px;max-width:800px;border:2px dashed rgba(255,255,255,0.15)" id="s4-dropzone">
+            <div data-hf-id="hf-8h80" style="font-size:48px;margin-bottom:12px">📋</div>
+            <p data-hf-id="hf-t90v" class="desc" style="font-size:24px">Drop .txt / .pdf, click to browse, or paste text</p>
+            <p data-hf-id="hf-cmxj" class="desc" style="font-size:18px;color:#78909c;margin-top:8px">JD analysis runs automatically — keywords, skills, domain</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Theme selection (26-32s) -->
+      <section data-hf-id="hf-w7nh" class="clip" data-start="26" data-duration="6" data-track-index="1">
+        <div data-hf-id="hf-3zai" style="text-align:center">
+          <h2 data-hf-id="hf-pmwu" id="s5-title" style="color:#90caf9;margin-bottom:36px">Step 2 — Pick a Theme</h2>
+          <div data-hf-id="hf-92gc" class="cards" style="max-width:1100px">
+            <div data-hf-id="hf-ta6q" class="card" id="s5-c1" style="border-color:rgba(25,118,210,0.4)"><h3 data-hf-id="hf-fi8k">Classic</h3><p data-hf-id="hf-l0ap" class="card-desc">FAANG, large tech, senior</p></div>
+            <div data-hf-id="hf-t1te" class="card" id="s5-c2"><h3 data-hf-id="hf-ylj8">Sb2nov</h3><p data-hf-id="hf-p4rb" class="card-desc">Standard SWE, ATS-friendly</p></div>
+            <div data-hf-id="hf-z7j7" class="card" id="s5-c3"><h3 data-hf-id="hf-ye1e">ModernCV</h3><p data-hf-id="hf-421u" class="card-desc">Startup, product, mid-level</p></div>
+            <div data-hf-id="hf-bq1o" class="card" id="s5-c4"><h3 data-hf-id="hf-9k68">EngResumes</h3><p data-hf-id="hf-hwa3" class="card-desc">Ultra-compact, max ATS</p></div>
+          </div>
+          <p data-hf-id="hf-41r4" class="desc" style="margin-top:28px;font-size:20px;color:#78909c">10 themes — or <span data-hf-id="hf-mrma" style="color:#90caf9;font-weight:600">Auto</span> to pick from JD signals</p>
+        </div>
+      </section>
+
+      <!-- 6. Configure options (32-37s) -->
+      <section data-hf-id="hf-6t1x" class="clip" data-start="32" data-duration="5" data-track-index="1">
+        <div data-hf-id="hf-3kzh" style="text-align:center">
+          <h2 data-hf-id="hf-s69n" id="s6-title" style="color:#90caf9;margin-bottom:36px">Step 3 — Configure Options</h2>
+          <div data-hf-id="hf-dy4o" class="cards">
+            <div data-hf-id="hf-97e0" class="card" id="s6-c1"><div data-hf-id="hf-iso0" class="card-icon">🤖</div><h3 data-hf-id="hf-km8g">Use LLM</h3><p data-hf-id="hf-vttz" class="card-desc">Auto-extract tags, rewrite headline</p></div>
+            <div data-hf-id="hf-hv9v" class="card" id="s6-c2"><div data-hf-id="hf-ira7" class="card-icon">✂️</div><h3 data-hf-id="hf-525l">Tailor + Boost</h3><p data-hf-id="hf-aa4a" class="card-desc">LLM rewrites bullets for JD match</p></div>
+            <div data-hf-id="hf-dx5u" class="card" id="s6-c3"><div data-hf-id="hf-agh1" class="card-icon">📄</div><h3 data-hf-id="hf-wh5o">DOCX + Cover</h3><p data-hf-id="hf-euf9" class="card-desc">Word doc and cover letter too</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Build (37-42s) -->
+      <section data-hf-id="hf-cou6" class="clip" data-start="37" data-duration="5" data-track-index="1">
+        <div data-hf-id="hf-4rwk" style="text-align:center">
+          <h2 data-hf-id="hf-mv6r" id="s7-title" style="color:#90caf9;margin-bottom:36px">Step 4 — Click Build</h2>
+          <div data-hf-id="hf-e76v" style="background:rgba(25,118,210,0.15);border-radius:20px;padding:48px 80px;border:2px solid rgba(25,118,210,0.3)" id="s7-btn">
+            <div data-hf-id="hf-mwuz" style="font-size:64px">▶️</div>
+            <p data-hf-id="hf-yaqs" class="desc" style="font-size:32px;font-weight:600;color:#fff;margin-top:12px">Build</p>
+          </div>
+          <p data-hf-id="hf-2lot" class="desc" style="margin-top:24px;font-size:20px;color:#78909c">Real-time build log — variant assembly, LLM, PDF rendering</p>
+        </div>
+      </section>
+
+      <!-- 8. Output (42-48s) -->
+      <section data-hf-id="hf-iu33" class="clip" data-start="42" data-duration="6" data-track-index="1">
+        <div data-hf-id="hf-4dlj" style="text-align:center">
+          <h2 data-hf-id="hf-od3i" id="s8-title" style="color:#90caf9;margin-bottom:36px">Download Your Resume</h2>
+          <div data-hf-id="hf-djtn" class="cards">
+            <div data-hf-id="hf-6xji" class="card" id="s8-c1" style="border-color:rgba(211,47,47,0.3)"><div data-hf-id="hf-yd22" class="card-icon">📑</div><h3 data-hf-id="hf-s834">William_Jiang-Role.pdf</h3><p data-hf-id="hf-fgkh" class="card-desc">ATS-optimized, named by role</p></div>
+            <div data-hf-id="hf-xdex" class="card" id="s8-c2"><div data-hf-id="hf-8855" class="card-icon">📄</div><h3 data-hf-id="hf-kisl">resume.docx</h3><p data-hf-id="hf-uvvl" class="card-desc">Word document for recruiters</p></div>
+            <div data-hf-id="hf-wlr4" class="card" id="s8-c3"><div data-hf-id="hf-kai8" class="card-icon">✉️</div><h3 data-hf-id="hf-h90c">cover-letter.txt</h3><p data-hf-id="hf-78nr" class="card-desc">Auto-generated cover letter</p></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      // 1. Title card
+      tl.from("#t-icon", { scale: 0.5, opacity: 0, duration: 0.6, ease: "back.out(1.7)" }, 0);
+      tl.from("#t-title", { y: 48, opacity: 0, duration: 0.6, ease: "power3.out" }, 0.3);
+      tl.from("#t-sub", { y: 32, opacity: 0, duration: 0.6, ease: "power3.out" }, 0.5);
+      tl.from("#t-desc", { opacity: 0, duration: 0.8 }, 0.8);
+
+      // 2. What it does
+      tl.from("#s2-title", { y: -32, opacity: 0, duration: 0.5, ease: "power3.out" }, 6.2);
+      tl.from("#s2-c1", { y: 40, opacity: 0, duration: 0.4, ease: "power3.out" }, 6.5);
+      tl.from("#s2-c2", { y: 40, opacity: 0, duration: 0.4, ease: "power3.out" }, 6.8);
+      tl.from("#s2-c3", { y: 40, opacity: 0, duration: 0.4, ease: "power3.out" }, 7.1);
+
+      // 3. WebUI tabs
+      tl.from("#s3-title", { y: -32, opacity: 0, duration: 0.5 }, 13.2);
+      tl.from("#s3-c1", { scale: 0.85, opacity: 0, duration: 0.3 }, 13.5);
+      tl.from("#s3-c2", { scale: 0.85, opacity: 0, duration: 0.3 }, 13.7);
+      tl.from("#s3-c3", { scale: 0.85, opacity: 0, duration: 0.3 }, 13.9);
+      tl.from("#s3-c4", { scale: 0.85, opacity: 0, duration: 0.3 }, 14.1);
+      tl.from("#s3-c5", { scale: 0.85, opacity: 0, duration: 0.3 }, 14.3);
+
+      // 4. Paste JD
+      tl.from("#s4-title", { y: -32, opacity: 0, duration: 0.5 }, 20.2);
+      tl.from("#s4-dropzone", { scale: 0.92, opacity: 0, duration: 0.5, ease: "power3.out" }, 20.5);
+
+      // 5. Theme
+      tl.from("#s5-title", { y: -32, opacity: 0, duration: 0.5 }, 26.2);
+      tl.from("#s5-c1", { y: 30, opacity: 0, duration: 0.3 }, 26.4);
+      tl.from("#s5-c2", { y: 30, opacity: 0, duration: 0.3 }, 26.6);
+      tl.from("#s5-c3", { y: 30, opacity: 0, duration: 0.3 }, 26.8);
+      tl.from("#s5-c4", { y: 30, opacity: 0, duration: 0.3 }, 27.0);
+
+      // 6. Options
+      tl.from("#s6-title", { y: -32, opacity: 0, duration: 0.5 }, 32.2);
+      tl.from("#s6-c1", { y: 30, opacity: 0, duration: 0.3 }, 32.4);
+      tl.from("#s6-c2", { y: 30, opacity: 0, duration: 0.3 }, 32.6);
+      tl.from("#s6-c3", { y: 30, opacity: 0, duration: 0.3 }, 32.8);
+
+      // 7. Build
+      tl.from("#s7-title", { y: -32, opacity: 0, duration: 0.5 }, 37.2);
+      tl.from("#s7-btn", { scale: 0.8, opacity: 0, duration: 0.5, ease: "back.out(1.5)" }, 37.5);
+
+      // 8. Output
+      tl.from("#s8-title", { y: -32, opacity: 0, duration: 0.5 }, 42.2);
+      tl.from("#s8-c1", { y: 30, opacity: 0, duration: 0.3 }, 42.4);
+      tl.from("#s8-c2", { y: 30, opacity: 0, duration: 0.3 }, 42.6);
+      tl.from("#s8-c3", { y: 30, opacity: 0, duration: 0.3 }, 42.8);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

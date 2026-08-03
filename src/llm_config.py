@@ -35,8 +35,8 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "base_url_var": "DEEPSEEK_BASE_URL",
         "model_var": "DEEPSEEK_MODEL",
         "default_base_url": "https://api.deepseek.com",
-        "default_model": "deepseek-v4-pro",
-        "models": ["deepseek-v4-pro", "deepseek-chat", "deepseek-reasoner"],
+        "default_model": "deepseek-v4-flash",
+        "models": ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-chat", "deepseek-reasoner"],
     },
     "kimi": {
         "label": "Kimi (Moonshot)",

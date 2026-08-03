@@ -32,9 +32,9 @@ python resume.py build --company Acme --jd jds/target.txt --llm --llm-provider m
 |---|---|
 | `DEEPSEEK_API_KEY` | — |
 | `DEEPSEEK_BASE_URL` | `https://api.deepseek.com` |
-| `DEEPSEEK_MODEL` | `deepseek-v4-pro` |
+| `DEEPSEEK_MODEL` | `deepseek-v4-flash` |
 
-Recommended for resume/JD work: `deepseek-v4-pro`. Alternatives: `deepseek-reasoner` (heavier reasoning), `deepseek-chat` (general).
+Recommended for resume/JD work: `deepseek-v4-flash`. Alternatives: `deepseek-v4-pro` (heavier reasoning), `deepseek-reasoner` (deep thinking), `deepseek-chat` (general).
 
 Platform: https://platform.deepseek.com
 
@@ -95,7 +95,7 @@ LLM_PROVIDER=deepseek
 
 DEEPSEEK_API_KEY=sk-...
 DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-v4-pro
+DEEPSEEK_MODEL=deepseek-v4-flash
 
 KIMI_API_KEY=sk-...
 KIMI_BASE_URL=https://api.moonshot.cn/v1
