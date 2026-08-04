@@ -10,7 +10,7 @@ THEMES: list[ThemeInfo] = [
     ThemeInfo(
         id="classic",
         name="Classic",
-        description="Professional, clean single-column layout",
+        description="Two-column layout: dark profile sidebar on the left, details on the right",
         best_for="FAANG, large tech, senior roles",
     ),
     ThemeInfo(

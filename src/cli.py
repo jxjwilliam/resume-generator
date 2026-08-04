@@ -10,6 +10,7 @@ import argparse
 import subprocess
 import os
 import re
+import shutil
 import sys
 import traceback
 from datetime import datetime, timezone
@@ -39,6 +40,11 @@ from src.llm_config import (
     list_providers,
     llm_chat_completion,
     resolve_llm_config,
+)
+from src.sidebar_layout import (
+    compile_sidebar_outputs,
+    is_sidebar_theme,
+    patch_typst_for_sidebar,
 )
 
 PROFILES_DIR = "profiles"
@@ -281,10 +287,19 @@ def _slugify(text: str) -> str:
     """'Full-Stack Engineer' → 'Full-Stack-Engineer'"""
     return re.sub(r"[^\w.-]", "-", text).strip("-")
 
-def render_variant(variant_path, slug, all_formats=False, role=None):
+def render_variant(variant_path, slug, all_formats=False, role=None, template=None):
     """Call rendercv to render the variant, then rename PDF with role."""
     output_path = str(Path(OUTPUT_DIR).resolve() / slug)
     Path(OUTPUT_DIR).mkdir(exist_ok=True)
+
+    if is_sidebar_theme(template):
+        return _render_variant_sidebar(
+            variant_path,
+            output_path,
+            all_formats=all_formats,
+            role=role,
+        )
+
     cmd = ["rendercv", "render", variant_path, "--output-folder", output_path]
     if not all_formats:
         cmd += ["--dont-generate-markdown", "--dont-generate-html", "--dont-generate-png"]
@@ -292,6 +307,59 @@ def render_variant(variant_path, slug, all_formats=False, role=None):
     if result.returncode != 0:
         print(f"rendercv error:\n{result.stderr}")
         return False
+    # Rename PDF to include role
+    if role:
+        default_pdf = Path(output_path) / "William_Jiang_CV.pdf"
+        custom_pdf = Path(output_path) / f"William_Jiang-{_slugify(role)}.pdf"
+        if default_pdf.exists() and custom_pdf != default_pdf:
+            default_pdf.rename(custom_pdf)
+    return True
+
+
+def _render_variant_sidebar(variant_path, output_path, all_formats=False, role=None):
+    """Render a sidebar-theme variant: stock rendercv .typ, then our layout."""
+    output_dir = Path(output_path)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        "rendercv", "render", variant_path,
+        "--output-folder", output_path,
+        "--dont-generate-pdf",
+    ]
+    if not all_formats:
+        cmd += ["--dont-generate-markdown", "--dont-generate-html", "--dont-generate-png"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"rendercv error:\n{result.stderr}")
+        return False
+
+    # rendercv only copies the photo next to the .typ when it compiles PDF/PNG;
+    # with those disabled it must be copied explicitly for our own compile.
+    try:
+        variant = yaml.safe_load(Path(variant_path).read_text())
+        photo_rel = (variant or {}).get("cv", {}).get("photo")
+        if photo_rel:
+            photo_src = Path(variant_path).parent / photo_rel
+            shutil.copy2(photo_src, output_dir / photo_src.name)
+    except (OSError, yaml.YAMLError) as e:
+        print(f"sidebar render error: could not copy photo: {e}", file=sys.stderr)
+        return False
+
+    typ_path = Path(output_path) / "William_Jiang_CV.typ"
+    if not typ_path.exists():
+        print(f"rendercv error: expected {typ_path} was not generated", file=sys.stderr)
+        return False
+
+    try:
+        patch_typst_for_sidebar(typ_path)
+        compile_sidebar_outputs(
+            typ_path,
+            Path(output_path),
+            all_formats=all_formats,
+        )
+    except Exception as e:
+        print(f"sidebar render error: {e}", file=sys.stderr)
+        return False
+
     # Rename PDF to include role
     if role:
         default_pdf = Path(output_path) / "William_Jiang_CV.pdf"
@@ -762,7 +830,13 @@ def cmd_build(args):
             json.dump(page_budget_report, f, indent=2)
 
     print("Rendering PDF...")
-    success = render_variant(variant_path, slug, all_formats=args.all_formats, role=role)
+    success = render_variant(
+        variant_path,
+        slug,
+        all_formats=args.all_formats,
+        role=role,
+        template=template,
+    )
     if success:
         print(f"Output: {OUTPUT_DIR}/{slug}/")
 

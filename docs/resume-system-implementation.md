@@ -309,7 +309,7 @@ The composition engine is implemented in `resume.py` at the repo root. The spec 
 | `filter_by_tags()` | Filter items by tag list + status flags |
 | `build_variant()` | Assemble a rendercv-compatible variant dict from filtered base data |
 | `write_variant()` | Serialize variant dict to `variants/<slug>.yaml` |
-| `render_variant()` | Shell out to `rendercv render` to produce PDF (and optionally HTML/Markdown/PNG) |
+| `render_variant()` | Shell out to `rendercv render` to produce PDF (and optionally HTML/Markdown/PNG); sidebar themes (`classic`) are patched by `src/sidebar_layout.py` and compiled with `typst` |
 | `generate_docx()` | Build a .docx Word document from the variant YAML using `python-docx` |
 | `_write_history_from_build()` | Write build metadata to shared `runs.db` (SQLite) + legacy `applications.json` |
 | `llm_extract_tags()` | Optional — call DeepSeek/OpenAI API to suggest tags from a JD |
@@ -360,10 +360,24 @@ rendercv has several built-in themes. Match theme to role type:
 
 | Theme | Best for |
 |---|---|
-| `classic` | FAANG, large tech, senior roles |
+| `classic` | FAANG, large tech, senior roles — two-column sidebar layout (profile left, details right) |
 | `sb2nov` | Standard SWE roles, ATS-friendly |
 | `moderncv` | Startup, product, mid-level |
 | `engineeringresumes` | Maximally ATS-optimised |
+
+> **Classic layout (two-column sidebar).** Since Aug 2026, `classic` renders
+> as a two-column layout: a dark navy sidebar (photo, name, headline,
+> contact links) on the left and the sections (Summary, Experience, Skills,
+> Projects, Education) on the right. This is implemented in
+> `src/sidebar_layout.py`, which rewrites the rendercv-generated `.typ`
+> file at build time (widens the left margin, moves the header into
+> `page(background:)` as a repeating sidebar, switches header colors to
+> light-on-dark) and compiles it with `typst` using the same bundled
+> rendercv package and fonts. The sidebar repeats on every page; CVs
+> without a photo get the sidebar without the photo. Which themes use the
+> layout is controlled by `SIDEBAR_THEMES` in `src/sidebar_layout.py`
+> (currently `classic` only). Requires `typst`, which ships with
+> `pip install "rendercv[full]"`.
 
 Set the theme in your variant YAML:
 
@@ -792,4 +806,4 @@ rendercv render variants/bestit-senior-swe-202606.yaml
 
 ---
 
-*Generated: 2026-06-10 | Updated: 2026-06-12 | System designed for Python 3.11+, rendercv 2.x, python-docx 1.x, optional DeepSeek/Gemini/Ollama LLM integration*
+*Generated: 2026-06-10 | Updated: 2026-08-03 | System designed for Python 3.11+, rendercv 2.x, python-docx 1.x, optional DeepSeek/Gemini/Ollama LLM integration*

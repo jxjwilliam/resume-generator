@@ -27,7 +27,7 @@ base.yaml → src/compose.py (rank + cap) → src/cli.py → rendercv (PDF+HTML)
 
 - **Layer 1** — `base.yaml`: tagged experience, skills, projects, education, cover letters. Optional `variants[]`, `metrics[]`, `keywords[]` per bullet.
 - **Layer 2** — `src/cli.py` + `src/compose.py`: filter by tags + status, rank bullets, cap length, senior job filter, page budget, optional LLM tailor/boost.
-- **Layer 3** — rendercv / python-docx / rxresu.me: rendering only.
+- **Layer 3** — rendercv / python-docx / rxresu.me: rendering only. Sidebar themes (`classic`) are post-processed by `src/sidebar_layout.py` before the PDF is compiled.
 
 ## Key Files
 
@@ -41,6 +41,7 @@ base.yaml → src/compose.py (rank + cap) → src/cli.py → rendercv (PDF+HTML)
 | `src/llm_pipeline.py` | LLM JD parse + bullet rescoring |
 | `src/tailor_validation.py` | Reject bad tailor rewrites |
 | `src/page_budget.py` | `--pages` trim loop |
+| `src/sidebar_layout.py` | Two-column sidebar layout for `classic` (rewrites the .typ + compiles with typst) |
 | `src/provenance.py` | Build provenance JSON |
 | `docs/resume-quality-pipeline.md` | **Quality pipeline reference (read this for JD features)** |
 | `docs/resume-system-implementation.md` | Original system design + schema |
@@ -130,7 +131,7 @@ Swap any provider's base URL to Ollama (`http://localhost:11434/v1`) for local i
 | Theme | Best for |
 |---|---|
 | `auto` | Pick from JD (WebUI + CLI) |
-| `classic` | FAANG, large tech, senior |
+| `classic` | FAANG, large tech, senior — two-column sidebar (profile left, details right) |
 | `sb2nov` | Standard SWE, ATS-friendly |
 | `moderncv` | Startup, product |
 | `engineeringresumes` | Maximally ATS-optimised |

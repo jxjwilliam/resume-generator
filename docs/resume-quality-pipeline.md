@@ -320,6 +320,11 @@ Runs after tailor (or standalone):
 | ATS mentioned explicitly | `engineeringresumes` |
 | Default | `sb2nov` |
 
+> **Classic renders as a two-column sidebar layout** (dark profile sidebar
+> on the left, details on the right) — see `docs/resume-system-implementation.md`
+> § 4.1. The sidebar text stays in the PDF text layer, so ATS extraction is
+> unaffected.
+
 ---
 
 ## Page budget (`--pages`)
