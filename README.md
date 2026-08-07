@@ -36,7 +36,7 @@ python resume.py build \
 
 # Path B — WebUI (local)
 ./ui/start.sh
-# → http://localhost:5173
+# → http://localhost:5300
 
 # Path C — JD quality pipeline (analyze → compare → build)
 python resume.py compare --jds-dir jds/
@@ -80,7 +80,7 @@ flowchart LR
 1. **Edit `profiles/base.yaml`** — single source of truth: experience, skills, projects, education, summary, headline, cover letter templates.
 2. **Choose a render path:**
    - **`resume.py build`** — tag-filtered variant → rendercv → ATS PDF/HTML, optionally DOCX + cover letter, logged in `runs.db` (shared SQLite).
-   - **WebUI** ([http://localhost:5173](http://localhost:5173)) — visual interface for building resumes, storing history in the same shared `runs.db`.
+   - **WebUI** ([http://localhost:5300](http://localhost:5300)) — visual interface for building resumes, storing history in the same shared `runs.db`.
 3. **Ship** — download PDF from `output/`, DOCX from `output/{slug}/resume.docx`.
 
 ## CLI Reference
@@ -282,7 +282,7 @@ cd ui/frontend && npm install && cd ../..
 ./ui/start.sh
 ```
 
-Opens [http://localhost:5173](http://localhost:5173). The Vite dev server proxies `/api` requests to the FastAPI backend on port 8000.
+Opens [http://localhost:5300](http://localhost:5300). The Vite dev server proxies `/api` requests to the FastAPI backend on port 5301.
 
 ### Pages
 

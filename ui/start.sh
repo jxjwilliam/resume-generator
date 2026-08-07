@@ -17,13 +17,13 @@ if [ ! -d "node_modules" ]; then
 fi
 
 # Start backend
-echo "Starting backend on http://127.0.0.1:8000"
+echo "Starting backend on http://127.0.0.1:5301"
 cd "$REPO_ROOT"
-python -m uvicorn ui.backend.main:app --host 127.0.0.1 --port 8000 --reload &
+python -m uvicorn ui.backend.main:app --host 127.0.0.1 --port 5301 --reload &
 BACKEND_PID=$!
 
 # Start frontend
-echo "Starting frontend on http://localhost:5173"
+echo "Starting frontend on http://localhost:5300"
 cd "$REPO_ROOT/ui/frontend"
 npx vite --host &
 FRONTEND_PID=$!
@@ -38,6 +38,6 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo ""
-echo "Open http://localhost:5173 in your browser"
+echo "Open http://localhost:5300 in your browser"
 echo "Press Ctrl+C to stop"
 wait
