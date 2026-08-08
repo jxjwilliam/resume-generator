@@ -1,0 +1,53 @@
+# Render Blueprint — deploys resume-generator as a single Docker web service.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# To deploy:
+#   1. Push this Dockerfile + render.yaml + assets/ to GitHub. NOTE: assets/
+#      (profile photo used by rendercv themes) is currently gitignored — the
+#      classic-theme build fails without it, so commit assets/william-jiang.jpg:
+#        git add -f assets/william-jiang.jpg && git commit && git push
+#   2. "New +" → "Blueprint" → select jxjwilliam/resume-generator → Render
+#      creates the service.
+#   3. Fill in the blank secret env vars (sync: false) in the dashboard —
+#      all OPTIONAL: the app works fully without LLM keys (non-LLM path).
+services:
+  - type: web
+    name: resume-generator
+    runtime: docker
+    repo: https://github.com/jxjwilliam/resume-generator
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+    envVars:
+      # --- LLM provider + keys (secrets — set values in the dashboard) ---
+      # sync: false means Render leaves these blank for you to fill in,
+      # rather than committing real keys to this file.
+      - key: LLM_PROVIDER          # deepseek | kimi | minimax
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_BASE_URL     # default https://api.deepseek.com
+        sync: false
+      - key: DEEPSEEK_MODEL        # default deepseek-v4-flash
+        sync: false
+      - key: KIMI_API_KEY
+        sync: false
+      - key: KIMI_BASE_URL         # default https://api.moonshot.cn/v1
+        sync: false
+      - key: KIMI_MODEL            # default kimi-k2.5
+        sync: false
+      - key: MINIMAX_API_KEY
+        sync: false
+      - key: MINIMAX_BASE_URL      # default https://api.minimaxi.com/v1
+        sync: false
+      - key: MINIMAX_MODEL         # default MiniMax-M2.5
+        sync: false
+
+      # --- Storage note ---
+      # runs.db (build history) + output/ (generated PDFs) live on the
+      # container disk. Render's free tier uses an EPHEMERAL disk — wiped on
+      # every redeploy. Treat deployed runs as scratch: download deliverables
+      # (History tab → output files) before redeploying. A paid persistent
+      # disk can be added later if history must survive redeploys.

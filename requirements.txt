@@ -1,6 +1,7 @@
 # Core
 pyyaml>=6.0
-rendercv>=2.0
+# [full] = typst + rendercv_fonts, required by the classic sidebar layout (src/sidebar_layout.py)
+rendercv[full]>=2.0
 
 # Env file loading
 python-dotenv>=1.0

@@ -1,0 +1,30 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+ui/frontend/dist/
+
+# Generated
+output/
+variants/
+runs.db
+
+# Secrets / personal
+.env
+.env.*
+assets/docs/
+docs/imgs/
+
+# VCS / IDE / OS
+.git
+.gitignore
+.codegraph/
+.claude/
+.cursor/
+.vscode/
+.obsidian/
+.DS_Store
