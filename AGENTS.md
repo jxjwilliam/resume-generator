@@ -47,6 +47,9 @@ base.yaml → src/compose.py (rank + cap) → src/cli.py → rendercv (PDF+HTML)
 | `docs/resume-system-implementation.md` | Original system design + schema |
 | `variants/*.yaml` | Auto-generated per-job YAML |
 | `output/` | PDFs, DOCX, `ats-report.json`, `bullet-diff.json`, `provenance.json` (gitignored) |
+| `Dockerfile` | Docker image (2-stage: node builds SPA, python runs uvicorn `ui.backend.main:app`) |
+| `render.yaml` | Render.com Blueprint — `runtime: docker`, `/api/health`, optional LLM env vars |
+| `ui/backend/main.py` | FastAPI app — API + SPA serving (`/api/health`, `/assets`, SPA fallback) |
 
 ## CLI Commands
 
@@ -138,8 +141,9 @@ Swap any provider's base URL to Ollama (`http://localhost:11434/v1`) for local i
 
 ## Git Strategy
 
-- **Commit:** `base.yaml`, `resume.py`, `src/`, `jds/`, `ui/`
+- **Commit:** `base.yaml`, `resume.py`, `src/`, `jds/`, `ui/`, `Dockerfile`, `render.yaml`
 - **Ignore:** `output/`, `.env`, `__pycache__/`
+- **Deploy caveat:** `assets/william-jiang.jpg` (photo, used by rendercv themes) is gitignored but must be in the Docker image → `git add -f` it before deploying.
 
 ## User Identity (from `docs/init.md`)
 

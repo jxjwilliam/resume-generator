@@ -293,6 +293,27 @@ Opens [http://localhost:5300](http://localhost:5300). The Vite dev server proxie
 | **History** | `/history` | ![History tab](docs/imgs/ui-history-tab.png) | Run log with ATS scores, status, logs, and output links |
 | **Editor** | `/editor` | — | Direct YAML editor with CodeMirror 6: edit any `profiles/*.yaml` file with syntax highlighting, save with backup |
 
+## Deploy (Render.com)
+
+Ship as a single Docker image — one uvicorn process serves both the JSON API
+and the built React SPA (`ui/backend/main.py` mounts the SPA + falls back to
+`index.html` for deep links; `/api/health` drives Render's health check).
+
+```bash
+# 0. The photo asset is gitignored but REQUIRED by rendercv themes:
+git add -f assets/william-jiang.jpg && git commit -m "chore: track photo asset for Render"
+# 1. On Render.com: "New +" → "Blueprint" → jxjwilliam/resume-generator
+# 2. Fill the optional LLM env vars (LLM_PROVIDER, DEEPSEEK_*, KIMI_*, MINIMAX_*) in the Dashboard
+```
+
+Notes:
+
+- `render.yaml` declares the web service (`runtime: docker`, `healthCheckPath: /api/health`,
+  `autoDeploy: true`) — same pattern as interview-lab.
+- **Free tier = ephemeral disk**: `runs.db` (history) and `output/` (generated PDFs) are
+  wiped on every redeploy. Download deliverables from the History tab before redeploying.
+- Local Docker smoke test: `docker build -t resume-generator . && docker run -p 8000:8000 resume-generator`
+
 ## Project Structure
 
 ```
@@ -318,6 +339,9 @@ Opens [http://localhost:5300](http://localhost:5300). The Vite dev server proxie
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
+├── Dockerfile               # Single-image Docker build (serves API + SPA)
+├── render.yaml              # Render.com Blueprint — one-click deploy
+├── .dockerignore
 │
 ├── assets/                  # Source resumes + profile photo
 │   └── *.docx               # Legacy resume versions
@@ -531,10 +555,13 @@ resume.py
 src/                   # All core Python modules
 runs.db                # SQLite history (shared by CLI + WebUI)
 jds/
+Dockerfile             # Deployment (Render.com)
+render.yaml
+assets/william-jiang.jpg   # Photo used by rendercv themes — gitignored, add with -f
 
 # Ignore these (already in .gitignore):
 output/          # Generated PDFs/DOCX/variants — regenerate anytime
-assets/          # Personal files (photos, legacy resumes)
+assets/          # Everything except the photo above (personal legacy files)
 .env             # API keys
 __pycache__/
 ```
@@ -543,10 +570,11 @@ __pycache__/
 
 - Python 3.11+
 - [PyYAML](https://pyyaml.org/) — YAML parsing
-- [rendercv](https://github.com/sinaatalay/rendercv) — PDF + HTML rendering (`resume.py`)
+- [rendercv](https://github.com/sinaatalay/rendercv) — PDF + HTML rendering (`resume.py`), installed as `rendercv[full]` (adds `typst` + `rendercv_fonts`, required by the `classic` sidebar layout)
 - [python-docx](https://python-docx.readthedocs.io/) — DOCX generation (`resume.py --docx`)
 - `openai` + `python-dotenv` (optional) — LLM tag extraction
 - **WebUI**: `fastapi`, `uvicorn[standard]`, `aiosqlite`, `sse-starlette`, `pypdf`, `python-multipart`
+- **Deploy**: `Dockerfile` + `render.yaml` (Render.com Docker blueprint; requires Docker locally for smoke tests)
 
 ## Reference
 
