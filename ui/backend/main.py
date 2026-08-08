@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 
 from .db import init_db, get_run, list_runs
@@ -27,6 +28,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 YAML_GLOBS = ["*.yaml", "*.yml"]
 PROFILES_DIR = "profiles"
 DEFAULT_YAML = f"{PROFILES_DIR}/base.yaml"
+FRONTEND_DIST = REPO_ROOT / "ui" / "frontend" / "dist"
 
 
 @asynccontextmanager
@@ -42,6 +44,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
 
 
 def _list_yaml_files() -> list[YamlInfo]:
@@ -592,6 +599,33 @@ async def _resolve_output_path(job_id: str, name: str, run: dict) -> Path:
                 return candidate
 
     raise HTTPException(404, f"File '{name}' not found")
+
+
+if FRONTEND_DIST.exists():
+    assets_dir = FRONTEND_DIST / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="webui-assets")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    for name in ("favicon.svg", "favicon.ico"):
+        candidate = FRONTEND_DIST / name
+        if candidate.is_file():
+            return FileResponse(candidate)
+    raise HTTPException(404, "No favicon found")
+
+
+if FRONTEND_DIST.exists():
+
+    @app.get("/{full_path:path}")
+    async def spa_fallback(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        candidate = FRONTEND_DIST / full_path
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(FRONTEND_DIST / "index.html")
 
 
 if __name__ == "__main__":
