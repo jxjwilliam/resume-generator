@@ -424,6 +424,7 @@ Notes:
 └── docs/
     ├── resume-quality-pipeline.md   # JD pipeline, ATS scoring, tailor/boost (NEW)
     ├── overview.md                  # Architecture overview
+    ├── fonts.md                     # Font options for PDF + DOCX
     ├── resume-system-implementation.md
     └── superpowers/
         ├── specs/            # Design specs

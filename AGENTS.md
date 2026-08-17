@@ -183,6 +183,7 @@ Swap any provider's base URL to Ollama (`http://localhost:11434/v1`) for local i
 - **Deploy caveat:** `assets/william-jiang.jpg` (photo, used by rendercv themes) is gitignored but must be in the Docker image → `git add -f` it before deploying.
 
 Full layering reference: [`docs/profile-layering.md`](docs/profile-layering.md)
+Font options reference: [`docs/fonts.md`](docs/fonts.md)
 
 ## User Identity (from `docs/init.md`)
 
