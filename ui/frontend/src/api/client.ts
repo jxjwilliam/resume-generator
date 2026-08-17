@@ -50,6 +50,7 @@ export const api = {
   saveYaml: (path: string, content: string) =>
     post<YamlSaveResponse>("/yaml", { path, content }),
   listThemes: () => get<ThemeInfo[]>("/themes"),
+  listFonts: () => get<{ id: string; label: string }[]>("/fonts"),
   listOutputs: () => get<OutputsResponse>("/outputs"),
   listTags: () => get<{ tags: string[] }>("/tags"),
   analyzeJd: (text: string, yamlFile?: string) =>

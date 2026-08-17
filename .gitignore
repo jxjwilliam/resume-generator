@@ -46,3 +46,4 @@ runs.db
 
 # WebUI
 ui/frontend/node_modules/
+.thumbnails/

@@ -23,6 +23,7 @@ class ResumeRunRequest(BaseModel):
     no_projects: bool = False
     all_formats: bool = False
     locale: str = "en"
+    font: Optional[str] = None
     cover_letter: bool = True
     docx: bool = True
 

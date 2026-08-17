@@ -14,6 +14,7 @@ import {
   FormControlLabel,
   IconButton,
   LinearProgress,
+  MenuItem,
   Stack,
   TextField,
   ToggleButton,
@@ -101,6 +102,8 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   const [boost, setBoost] = useStoredState<boolean>("boost", false);
   const [maxBullets, setMaxBullets] = useStoredState<number>("maxBullets", 4);
   const [maxJobs, setMaxJobs] = useStoredState<number>("maxJobs", 5);
+  const [font, setFont] = useStoredState<string>("font", "calibri");
+  const [fonts, setFonts] = useState<{ id: string; label: string }[]>([]);
   const [locale, setLocale] = useStoredState<string>("locale", "en");
   const [running, setRunning] = useState(false);
   const [logLines, setLogLines] = useState<LogLine[]>([]);
@@ -120,6 +123,10 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
   useEffect(() => () => {
     sseCloseRef.current?.();
     if (runPollRef.current) clearInterval(runPollRef.current);
+  }, []);
+
+  useEffect(() => {
+    api.listFonts().then(setFonts).catch(() => {});
   }, []);
 
   // Auto-select theme when a JD is pasted (until the user picks one manually).
@@ -160,8 +167,10 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     const zhPath = prefix + "base-zh-cto.yaml";
     if (newLocale === "zh-CN" && yamlFile === DEFAULT_YAML_PATH) {
       setYamlFile(zhPath);
+      if (font === "calibri") setFont("noto-sans");
     } else if (newLocale === "en" && (yamlFile === zhPath || yamlFile === prefix + "base-zh-partner.yaml")) {
       setYamlFile(DEFAULT_YAML_PATH);
+      if (font === "noto-sans") setFont("calibri");
     }
   };
 
@@ -236,6 +245,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
         max_bullets: maxBullets,
         max_jobs: maxJobs,
         locale: locale !== "en" ? locale : undefined,
+        font,
         cover_letter: true,
         docx: true,
       });
@@ -267,7 +277,7 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
     }
   }, [
     yamlFile, company, role, selectedTheme, jdText, useLlm, tailor, boost, enhance,
-    maxBullets, maxJobs, locale, handleJobDone,
+    maxBullets, maxJobs, locale, font, handleJobDone,
   ]);
 
   const handleBoostRerun = useCallback(() => {
@@ -396,6 +406,23 @@ export default function ResumePage({ themes, onRefreshHistory }: Props) {
                   inputProps={{ min: 1, max: 10 }}
                   disabled={running}
                 />
+              </Stack>
+
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+                <TextField
+                  select
+                  label="Font"
+                  size="small"
+                  sx={{ minWidth: 230 }}
+                  value={font}
+                  onChange={(e) => setFont(e.target.value)}
+                  disabled={running}
+                  helperText="Applied to PDF + DOCX"
+                >
+                  {fonts.map((f) => (
+                    <MenuItem key={f.id} value={f.id}>{f.label}</MenuItem>
+                  ))}
+                </TextField>
               </Stack>
 
               <Divider sx={{ my: 1.5 }} />

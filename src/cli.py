@@ -18,6 +18,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 import src.history_db as history_db
+from src.fonts import FONT_OPTIONS, resolve_font
 import src.profiles as profiles
 
 from src.compose import (
@@ -142,7 +143,8 @@ def build_variant(base, tags, template, company, role, jd_text=None,
                   max_bullets=DEFAULT_MAX_BULLETS, max_jobs=DEFAULT_MAX_JOBS,
                   jd_keywords=None, tailored_bullets=None, jd_hard_skills=None,
                   boost_skills=False, pages=1, no_projects=False,
-                  seniority=None, llm_scores=None, max_projects=4):
+                  seniority=None, llm_scores=None, max_projects=4,
+                  font_family=None):
     """Assemble a job-specific variant from the base."""
     tags_list = parse_tag_list(tags)
     required_tags = set(tags_list) if tags_list else None
@@ -262,6 +264,17 @@ def build_variant(base, tags, template, company, role, jd_text=None,
         for e in education_list
     ]
 
+    design = {"theme": template}
+    if font_family:
+        design["typography"] = {
+            "font_family": {
+                "body": font_family,
+                "name": font_family,
+                "headline": font_family,
+                "connections": font_family,
+                "section_titles": font_family,
+            }
+        }
     variant = {
         "cv": {
             "name": base["identity"]["name"],
@@ -278,9 +291,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
             ],
             "sections": sections,
         },
-        "design": {
-            "theme": template,
-        },
+        "design": design,
     }
 
     return variant, page_budget_report, job_pairs
@@ -556,7 +567,7 @@ def _docx_bullet(doc, text, bold_prefix=None):
     return p
 
 
-def generate_docx(variant_path: str, slug: str) -> str | None:
+def generate_docx(variant_path: str, slug: str, font_family_docx: str | None = None) -> str | None:
     """Generate a Claude-style .docx resume from a variant YAML."""
     if not _HAS_DOCX:
         print("python-docx not installed. Run: pip install python-docx", file=sys.stderr)
@@ -567,6 +578,9 @@ def generate_docx(variant_path: str, slug: str) -> str | None:
     except ImportError:
         print("python-docx not installed. Run: pip install python-docx", file=sys.stderr)
         return None
+    global _DOCX_FONT
+    if font_family_docx:
+        _DOCX_FONT = font_family_docx
 
     with open(variant_path) as f:
         variant = yaml.safe_load(f)
@@ -925,6 +939,8 @@ def cmd_build(args):
     print(f"Tags: {tags}")
     print(f"Template: {template}")
     print(f"Locale: {args.locale}")
+    font_cfg = resolve_font(getattr(args, "font", ""), args.locale)
+    print(f"Font: {font_cfg['rendercv']} (PDF) / {font_cfg['docx']} (DOCX)")
     print(f"Max bullets/job: {args.max_bullets}, Max jobs: {args.max_jobs or 'unlimited'}")
     pages = getattr(args, "pages", 1)
     if pages > 0:
@@ -944,7 +960,8 @@ def cmd_build(args):
                             no_projects=getattr(args, "no_projects", False),
                             seniority=parsed_jd.get("seniority") if parsed_jd else None,
                             llm_scores=llm_scores or None,
-                            max_projects=getattr(args, "max_projects", 4))
+                            max_projects=getattr(args, "max_projects", 4),
+                            font_family=font_cfg["rendercv"])
     if page_budget_report and page_budget_report.get("enabled"):
         est = page_budget_report.get("estimated_lines")
         print(f"Estimated length: ~{est} lines (budget {page_budget_report.get('budget_lines')})")
@@ -1055,12 +1072,13 @@ def cmd_build(args):
         cl_tags = tags or ""
         _generate_cover_letter(base, args.company, role, jd_text, cl_tags, slug,
                                 yaml_file=getattr(args, "yaml", BASE_FILE),
-                                use_llm=getattr(args, "llm", False))
+                                use_llm=getattr(args, "llm", False),
+                                font_family_docx=font_cfg["docx"])
 
     # ── DOCX (optional) ─────────────────────────────────────────
     if getattr(args, "docx", False):
         print("Generating DOCX...")
-        generate_docx(variant_path, slug)
+        generate_docx(variant_path, slug, font_family_docx=font_cfg["docx"])
 
 def cmd_tags(args):
     base = load_base()
@@ -1963,11 +1981,9 @@ def _compose_cover_letter(base: dict, company: str, role: str | None,
 
 def _generate_cover_letter(base: dict, company: str, role: str | None,
                            jd_text: str | None, tags: str, slug: str,
-                           yaml_file: str = BASE_FILE, use_llm: bool = False) -> str | None:
+                           yaml_file: str = BASE_FILE, use_llm: bool = False,
+                           font_family_docx: str | None = None) -> str | None:
     """Generate a styled .docx cover letter in the output directory."""
-    from docx import Document
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
-
     full = _compose_cover_letter(
         base, company, role, jd_text, tags, yaml_file, use_llm=use_llm,
     )
@@ -1985,6 +2001,13 @@ def _generate_cover_letter(base: dict, company: str, role: str | None,
         txt_path.write_text(full, encoding="utf-8")
         print(f"Cover letter written: {txt_path}")
         return str(txt_path)
+
+    global _DOCX_FONT
+    if font_family_docx:
+        _DOCX_FONT = font_family_docx
+
+    from docx import Document
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     doc = Document()
     _docx_setup(doc)
@@ -2077,6 +2100,8 @@ def main():
     build_parser.add_argument("--tags", default="", help="Comma-separated tags to filter by")
     build_parser.add_argument("--template", default="classic",
                               help="rendercv theme or 'auto' to pick from JD")
+    build_parser.add_argument("--font", default="", choices=list(FONT_OPTIONS.keys()),
+                              help="Font family for PDF + DOCX (default: calibri; noto-sans for zh-CN)")
     build_parser.add_argument("--company", required=True, help="Company name")
     build_parser.add_argument("--role", help="Role title (extracted from JD first line if omitted with --llm)")
     build_parser.add_argument("--max-bullets", type=int, default=DEFAULT_MAX_BULLETS,

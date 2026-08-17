@@ -180,6 +180,13 @@ async def list_themes():
     return THEMES
 
 
+@app.get("/api/fonts")
+async def list_fonts():
+    from src.fonts import font_choices
+
+    return font_choices()
+
+
 @app.get("/api/tags")
 async def list_tags():
     base = _load_yaml(DEFAULT_YAML)
@@ -321,6 +328,8 @@ def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
         cmd += ["--all-formats"]
     if args.locale and args.locale != "en":
         cmd += ["--locale", args.locale]
+    if args.font:
+        cmd += ["--font", args.font]
     if not args.cover_letter:
         cmd += ["--no-cover-letter"]
     if not args.docx:

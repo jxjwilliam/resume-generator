@@ -74,6 +74,7 @@ export interface ResumeRunRequest {
   no_projects?: boolean;
   all_formats?: boolean;
   locale?: string;
+  font?: string;
   cover_letter?: boolean;
   docx?: boolean;
 }

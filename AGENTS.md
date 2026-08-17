@@ -87,6 +87,10 @@ python resume.py build --company "BestIT" --role "Senior SWE" \
 python resume.py build --yaml profiles/na-ai-engineer.yaml --company "BestIT" \
   --role "Senior AI Engineer" --tags ai --template classic --max-bullets 3
 
+# Build — pick a font (PDF + DOCX)
+python resume.py build --yaml profiles/na-ai-engineer.yaml --company "BestIT" \
+  --role "Senior AI Engineer" --font garamond
+
 # Build — Chinese source
 python resume.py build --yaml profiles/base-zh-cto.yaml --company "某公司" \
   --role "CTO" --locale zh-CN --template classic
@@ -118,6 +122,7 @@ python resume.py build --company "BestIT" --jd jds/target.txt \
 | `--boost` | off | Second pass for verified missing skills |
 | `--docx` / `--no-docx` | on | Generate `resume.docx` (styled like the PDF/Claude reference) |
 | `--cover-letter` / `--no-cover-letter` | on | Generate `cover-letter-{company}.docx` |
+| `--font` | calibri | Font for PDF + DOCX (choices: `calibri`, `source-sans`, `lato`, `open-sans`, `roboto`, `poppins`, `raleway`, `ubuntu`, `mukta`, `open-sauce-sans`, `noto-sans`, `charter`, `libertinus`, `garamond`, `gentium`, `fontin`). `noto-sans` is the default for `zh-CN` so CJK glyphs embed. |
 
 ## Important Conventions
 

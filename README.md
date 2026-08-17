@@ -55,9 +55,19 @@ Set `LLM_PROVIDER` + provider API keys for Path C (LLM features). See [`docs/llm
 
 ## Screenshots
 
-| Resume Builder | Compare JDs | History | Editor |
+| Resume Builder | Compare JDs | Outputs | History | Editor |
 |---|---|---|---|---|
-| ![Resume tab](docs/imgs/ui-resume-tab.png) | ![Compare tab](docs/imgs/ui-compare-tab.png) | ![History tab](docs/imgs/ui-history-tab.png) | — |
+| ![Resume tab](docs/imgs/build.png) | ![Compare tab](docs/imgs/compare.png) | ![Outputs tab](docs/imgs/outputs.png) | ![History tab](docs/imgs/history.png) | ![Editor tab](docs/imgs/editor.png) |
+
+### User Guide Video
+
+A 48-second walkthrough of the full workflow — paste a JD, pick a theme, configure options, build, and download.
+
+<video src="docs/imgs/resume-guide.mp4" controls width="100%" style="max-width:960px">
+  Your browser does not support the video tag.
+</video>
+
+> Source: [`resume-guide/`](resume-guide/) — HyperFrames composition (edit `resume-guide/index.html` to update, then `npm run render` in that directory)
 
 ### Generated Output Example
 
@@ -101,6 +111,7 @@ Generate a job-specific resume variant and render it to PDF (plus HTML/Markdown/
 | `--role` | ✅* | Job title (extracted from JD first line if omitted with `--llm`) |
 | `--tags` | | Comma-separated tags to filter bullets (e.g. `backend,python,react`) |
 | `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes`, `harvard`, `opal`, `ink`, or `auto` (default: `classic`) |
+| `--font` | | Font for PDF + DOCX (default: `calibri` = Source Sans 3 in PDF / Calibri in Word; `noto-sans` auto for Chinese) |
 | `--yaml` | | YAML source file — full source or positioning profile (default: `profiles/career-en.yaml`) |
 | `--locale` | | Resume language: `en` or `zh-CN` (default: `en`) |
 | `--jd` | ** | Path to a job description text file (required with `--llm`) |
@@ -294,10 +305,11 @@ Opens [http://localhost:5300](http://localhost:5300). The Vite dev server proxie
 
 | Page | Path | Preview | Description |
 |---|---|---|---|
-| **Resume** | `/` | ![Resume tab](docs/imgs/ui-resume-tab.png) | Build: JD analysis, bullet preview, ATS widget, bullet diff, tailor/boost re-run, auto theme |
-| **Compare** | `/compare` | ![Compare tab](docs/imgs/ui-compare-tab.png) | Paste 2–5 JDs, ranked ATS fit table with missing skills |
-| **History** | `/history` | ![History tab](docs/imgs/ui-history-tab.png) | Run log with ATS scores, status, logs, and output links |
-| **Editor** | `/editor` | — | Direct YAML editor with CodeMirror 6: edit any `profiles/*.yaml` file with syntax highlighting, save with backup |
+| **Resume** | `/` | ![Resume tab](docs/imgs/build.png) | Build: JD analysis, bullet preview, ATS widget, bullet diff, tailor/boost re-run, auto theme |
+| **Compare** | `/compare` | ![Compare tab](docs/imgs/compare.png) | Paste 2–5 JDs, ranked ATS fit table with missing skills |
+| **Outputs** | `/outputs` | ![Outputs tab](docs/imgs/outputs.png) | Generated PDFs, DOCX, and cover letters |
+| **History** | `/history` | ![History tab](docs/imgs/history.png) | Run log with ATS scores, status, logs, and output links |
+| **Editor** | `/editor` | ![Editor tab](docs/imgs/editor.png) | Direct YAML editor with CodeMirror 6: edit any `profiles/*.yaml` file with syntax highlighting, save with backup |
 
 ## Deploy (Render.com)
 
