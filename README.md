@@ -63,11 +63,9 @@ Set `LLM_PROVIDER` + provider API keys for Path C (LLM features). See [`docs/llm
 
 A 48-second walkthrough of the full workflow — paste a JD, pick a theme, configure options, build, and download.
 
-<video src="docs/imgs/resume-guide.mp4" controls width="100%" style="max-width:960px">
-  Your browser does not support the video tag.
-</video>
+[![User Guide Video](docs/imgs/resume-guide-thumb.png)](docs/imgs/resume-guide.mp4)
 
-> Source: [`resume-guide/`](resume-guide/) — HyperFrames composition (edit `resume-guide/index.html` to update, then `npm run render` in that directory)
+> Click the thumbnail above to play. Source: [`resume-guide/`](resume-guide/) — HyperFrames composition
 
 ### Generated Output Example
 
