@@ -33,6 +33,7 @@ export default function YamlSelector({ value, onChange, disabled }: Props) {
         {yamls.map((y) => (
           <MenuItem key={y.path} value={y.path}>
             {y.name}
+            {y.kind === "profile" ? " (profile)" : y.kind === "source" ? " (source)" : ""}
           </MenuItem>
         ))}
       </Select>

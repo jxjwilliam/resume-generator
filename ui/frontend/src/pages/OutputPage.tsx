@@ -109,8 +109,9 @@ function OutputCard({ dir }: OutputCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [preview, setPreview] = useState<{ name: string; url: string } | null>(null);
 
-  const recruiterFiles = dir.files.filter((f) => RECRUITER_FILE_TYPES.has(f.type));
-  const configCount = dir.files.length - recruiterFiles.length;
+  const recruiterFiles = dir.files.filter((f) =>
+    RECRUITER_FILE_TYPES.has(f.type) || f.type === "ats-report" || f.type === "bullet-diff",
+  );
 
   const downloadUrl = (name: string) =>
     `/api/output/${encodeURIComponent(dir.slug)}/download?name=${encodeURIComponent(name)}`;
@@ -127,7 +128,6 @@ function OutputCard({ dir }: OutputCardProps) {
           subheader={
             <Typography variant="caption" color="text.secondary">
               {recruiterFiles.length} file{recruiterFiles.length !== 1 ? "s" : ""}
-              {configCount > 0 ? ` (+${configCount} config)` : ""}
             </Typography>
           }
           action={

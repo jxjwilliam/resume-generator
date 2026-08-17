@@ -27,7 +27,7 @@ from .theme_data import THEMES
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 YAML_GLOBS = ["*.yaml", "*.yml"]
 PROFILES_DIR = "profiles"
-DEFAULT_YAML = f"{PROFILES_DIR}/base.yaml"
+DEFAULT_YAML = f"{PROFILES_DIR}/career-en.yaml"
 FRONTEND_DIST = REPO_ROOT / "ui" / "frontend" / "dist"
 
 
@@ -52,25 +52,34 @@ async def health():
 
 
 def _list_yaml_files() -> list[YamlInfo]:
-    files = []
-    profiles_dir = REPO_ROOT / PROFILES_DIR
-    if profiles_dir.exists():
-        for glob in YAML_GLOBS:
-            for p in profiles_dir.glob(glob):
-                if p.is_file():
-                    rel = p.relative_to(REPO_ROOT)
-                    files.append(YamlInfo(name=p.name, path=str(rel)))
-    return sorted(files, key=lambda f: f.name)
+    from src.profiles import list_profiles
+
+    rows = []
+    for r in list_profiles(str(REPO_ROOT / PROFILES_DIR)):
+        try:
+            rel_path = str(Path(r["path"]).relative_to(REPO_ROOT))
+        except ValueError:
+            rel_path = r["path"]
+        rows.append(YamlInfo(
+            name=r["name"],
+            path=rel_path,
+            kind=r["kind"],
+            market=r.get("market"),
+            focus=r.get("focus"),
+            source=r.get("source"),
+            target_roles=r.get("target_roles"),
+        ))
+    return rows
 
 
 def _load_yaml(yaml_file: str) -> dict:
-    import yaml
+    """Load a YAML as an effective resume dict (resolves positioning profiles)."""
+    from src.profiles import load_effective
 
-    yaml_path = REPO_ROOT / yaml_file
-    if not yaml_path.exists():
+    try:
+        return load_effective(str(REPO_ROOT / yaml_file))[0]
+    except (FileNotFoundError, OSError):
         return {}
-    with open(yaml_path) as f:
-        return yaml.safe_load(f) or {}
 
 
 def _resume_text_blob(base: dict) -> str:
@@ -173,15 +182,8 @@ async def list_themes():
 
 @app.get("/api/tags")
 async def list_tags():
-    yaml_path = REPO_ROOT / DEFAULT_YAML
-    if not yaml_path.exists():
-        return {"tags": []}
-    try:
-        import yaml
-
-        with open(yaml_path) as f:
-            base = yaml.safe_load(f)
-    except Exception:
+    base = _load_yaml(DEFAULT_YAML)
+    if not base:
         return {"tags": []}
 
     all_tags = set()
@@ -226,6 +228,7 @@ async def preview_jd(data: JdPreviewRequest):
         max_bullets=data.max_bullets,
         max_jobs=data.max_jobs,
         jd_keywords=parsed.get("all_keywords"),
+        priority=base.get("experience_priority"),
     )
     included_bullets = sum(
         1 for j in jobs for b in j["bullets"] if b.get("included")
@@ -269,15 +272,9 @@ async def compare_jds_api(data: JdCompareRequest):
     if len(data.jds) > 5:
         raise HTTPException(400, "Maximum 5 JDs")
 
-    import sys
-    import yaml
     from src.ats import compare_jds
 
-    yaml_path = REPO_ROOT / DEFAULT_YAML
-    base = {}
-    if yaml_path.exists():
-        with open(yaml_path) as f:
-            base = yaml.safe_load(f)
+    base = _load_yaml(DEFAULT_YAML)
 
     entries = [(item.label, item.text) for item in data.jds]
     tags = ",".join(data.tags) if data.tags else None
@@ -324,10 +321,10 @@ def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
         cmd += ["--all-formats"]
     if args.locale and args.locale != "en":
         cmd += ["--locale", args.locale]
-    if args.cover_letter:
-        cmd += ["--cover-letter"]
-    if args.docx:
-        cmd += ["--docx"]
+    if not args.cover_letter:
+        cmd += ["--no-cover-letter"]
+    if not args.docx:
+        cmd += ["--no-docx"]
     cmd += ["--no-history"]
     return cmd
 

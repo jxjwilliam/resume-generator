@@ -9,6 +9,12 @@
 
 The quality pipeline sits between **Layer 1** (`base.yaml`) and **Layer 3** (rendercv / DOCX). It makes resumes more **accurate** (verified facts only), **concise** (ranked + capped bullets), and **powerful** (JD-aligned headline, summary, and bullets).
 
+> **Note (2026-08):** "base.yaml" in this doc means *the effective source*.
+> The default is now `profiles/career-en.yaml`, and `--yaml` may also point at
+> a positioning profile (`profiles/na-ai-engineer.yaml`, ...), which is
+> resolved to its `source.career` and layered on top. See
+> [`profile-layering.md`](profile-layering.md).
+
 ```mermaid
 flowchart TB
     subgraph input [Inputs]
@@ -170,7 +176,7 @@ python resume.py analyze --jd jds/target.txt
 
 # 3. Check score (composed or built variant)
 python resume.py score --jd jds/target.txt --tags backend,python --max-bullets 3
-python resume.py score --jd jds/target.txt --variant variants/acme-role-202606.yaml
+python resume.py score --jd jds/target.txt --variant variants/acme-role.yaml
 
 # 3b. Interview prep / gap analysis
 python resume.py interview --jd jds/target.txt --tags ai,python
@@ -187,7 +193,7 @@ python resume.py build \
   --docx
 
 # 5. Review artifacts
-open output/acme-*/William_Jiang_CV.pdf
+open output/acme-*/William_Jiang-*.pdf
 cat output/acme-*/ats-report.json
 cat output/acme-*/bullet-diff.json    # when --tailor or --boost
 cat output/acme-*/provenance.json
@@ -201,7 +207,7 @@ Structured JD analysis against `base.yaml`.
 | Flag | Description |
 |---|---|
 | `--jd` | Path to JD text file (required) |
-| `--yaml` | Source YAML (default: `base.yaml`) |
+| `--yaml` | Source YAML (default: `profiles/career-en.yaml`) |
 | `--tags` | Optional tag filter for bullet ranking |
 | `--json` | Output full JSON |
 
@@ -226,7 +232,7 @@ Gap analysis + interview prep from a JD.
 | Flag | Description |
 |---|---|
 | `--jd` | Path to JD text file (required) |
-| `--yaml` | Source YAML (default: `base.yaml`) |
+| `--yaml` | Source YAML (default: `profiles/career-en.yaml`) |
 | `--tags` | Optional tag filter |
 | `--llm` | Generate LLM interview Q&A outlines (verify facts) |
 | `--json` | Output full JSON |
@@ -250,7 +256,7 @@ Rank 2–5 JDs by resume fit.
 | `--max-bullets N` | Max bullets per job (default: 4; 0 = unlimited) |
 | `--max-jobs N` | Max experience entries (default: 0 = unlimited) |
 | `--template auto` | Pick rendercv theme from JD signals |
-| `--pages N` | Trim to fit N pages (default: 1; 0 = no trim) |
+| `--pages N` | Trim to fit N pages (default: 2; 0 = no trim) |
 | `--no-projects` | Omit projects section |
 | `--target-score N` | Re-run once with tailor+boost if score below N |
 | `--tailor` | LLM minimally rewrite selected bullets for JD (requires `--jd` + API key) |
@@ -314,9 +320,6 @@ Runs after tailor (or standalone):
 | FAANG company names in JD | `engineeringresumes` |
 | Staff / principal / director seniority | `classic` |
 | Startup / early-stage language | `moderncv` |
-| Academic / research roles | `harvard` |
-| Creative / design roles | `ink` |
-| Consulting / tech | `opal` |
 | ATS mentioned explicitly | `engineeringresumes` |
 | Default | `sb2nov` |
 
@@ -363,7 +366,7 @@ Example:
     - "Built enterprise RAG system integrating LLMs with document repositories via FastAPI and vector DBs"
 ```
 
-Documented in the header comment of [`base.yaml`](../base.yaml).
+Documented in the header comment of [`profiles/base.yaml`](../profiles/base.yaml).
 
 Early-career roles (e.g. Best Buy Canada) are **`deprecated`** for senior/staff targeting; the senior job filter also drops weak jobs automatically.
 
@@ -371,7 +374,7 @@ Early-career roles (e.g. Best Buy Canada) are **`deprecated`** for senior/staff 
 
 ## WebUI
 
-Start: `./ui/start.sh` → http://localhost:5173
+Start: `./ui/start.sh` → http://localhost:5300
 
 | Tab | Features |
 |---|---|
@@ -394,14 +397,14 @@ Start: `./ui/start.sh` → http://localhost:5173
 
 ## Output Artifacts
 
-For each build with `--jd`:
+For each build (extra reports appear when `--jd` is set):
 
 ```
 output/{slug}/
-├── William_Jiang_CV.pdf
-├── William_Jiang_CV.html          # if --all-formats
+├── William_Jiang-{role}.pdf        # role from --role or the JD
+├── William_Jiang-{role}.html       # if --all-formats
 ├── resume.docx                      # if --docx
-├── cover-letter-{company}.txt       # if --cover-letter
+├── cover-letter-{company}.docx      # if --cover-letter
 ├── ats-report.json                  # always (when --jd set)
 ├── bullet-diff.json                 # when --tailor or --boost
 ├── page-budget.json                 # when --pages > 0

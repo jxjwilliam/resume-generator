@@ -1,0 +1,54 @@
+# Lightweight positioning profile. Content is selected from career-en.yaml.
+meta:
+  version: '1.0'
+  market: Canada / North America
+  profile: Senior Software Engineer — Traditional / Hands-on
+source:
+  career: "./career-en.yaml"
+headline: Senior Software Engineer | Full-Stack | React · TypeScript · Python · Node.js · PostgreSQL · Cloud
+target_roles:
+- Senior Software Engineer
+- Senior Full-Stack Engineer
+- Senior Backend Engineer
+- Senior Frontend Engineer
+- Staff Software Engineer
+- Software Architect
+summary: Senior hands-on software engineer and architect with extensive experience designing, building, and operating production
+  web, backend, full-stack, and enterprise systems. Strong in Python, TypeScript, React, Node.js, Java, APIs, microservices,
+  databases, cloud, and distributed systems; modern AI experience available as an additional capability.
+experience_priority:
+- Best IT Consulting Inc.
+- Xperi Inc.
+- EPAM Systems (Credit Suisse)
+- China Soft Int'l (HSBC)
+- WebMD
+- Best Buy Canada
+- FedEx
+- ZTE
+emphasis:
+- software-engineering
+- fullstack
+- backend
+- frontend
+- architecture
+- cloud
+skills_priority:
+- Python/FastAPI
+- TypeScript/React/Next.js
+- Node.js
+- Java/Spring Boot
+- PostgreSQL/MongoDB
+- Cloud/Kubernetes/CI/CD
+secondary_skills:
+- Generative AI
+- LLM
+- RAG
+- Agentic AI
+- AI-assisted Development
+projects_priority:
+- MLDP
+- AutoBidder
+- Site-RAG-Chatbot
+# First 5 priority companies get full bullets; older ones get this many.
+recent_jobs: 5
+old_experience_max_bullets: 1

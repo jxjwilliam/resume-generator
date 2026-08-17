@@ -1,0 +1,50 @@
+# Lightweight positioning profile. Content is selected from career-en.yaml.
+meta:
+  version: '1.0'
+  market: Canada / North America
+  profile: Senior Software Engineer + AI/GenAI/Agentic AI
+source:
+  career: "./career-en.yaml"
+headline: Senior Software Engineer | Full-Stack & AI/GenAI | Python · TypeScript · React · LLM · RAG · Agentic AI
+target_roles:
+- Senior Software Engineer
+- Senior Full-Stack Engineer
+- Senior AI Software Engineer
+- Senior AI Engineer
+- Senior Backend Engineer
+- Senior Frontend Engineer
+summary: Senior software engineer with strong hands-on full-stack experience and recent production work in GenAI, LLM, RAG,
+  Agentic AI, ML platforms, and MLOps. Builds reliable production systems across Python/FastAPI, TypeScript/React, Node.js,
+  PostgreSQL, Kubernetes, and cloud platforms.
+experience_priority:
+- Best IT Consulting Inc.
+- Xperi Inc.
+- EPAM Systems (Credit Suisse)
+- China Soft Int'l (HSBC)
+- WebMD
+- Best Buy Canada
+- FedEx
+- ZTE
+emphasis:
+- fullstack
+- backend
+- frontend
+- ai
+- architecture
+- cloud
+skills_priority:
+- Python/FastAPI
+- TypeScript/React/Next.js
+- Node.js
+- LLM/RAG/Agentic AI
+- PostgreSQL
+- Docker/Kubernetes/Cloud
+projects_priority:
+- AgentsAI / AgentsCrew
+- AutoBidder
+- Site-RAG-Chatbot
+- MLDP
+- MemWeaver
+# First 5 priority companies get full bullets; older ones get this many.
+recent_jobs: 5
+old_experience_max_bullets: 1

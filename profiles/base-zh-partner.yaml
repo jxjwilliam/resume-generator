@@ -1,0 +1,1193 @@
+# Purpose-specific Chinese resume profile; same schema as the source resume system.
+meta:
+  version: '3.0'
+  last_updated: '2026-08-17'
+  name: William Jiang
+  name_en: William Jiang
+  lang: zh-CN
+  profile: AI 技术合伙人 / 联合创始人方向
+  note: 面向中国市场创业公司、AI 初创企业、企业 AI 转型及技术合伙人机会；保持与 base-2-zh 相同 schema。
+identity:
+  name: 姜威廉（William Jiang）
+  headline: AI 技术合伙人 | AI 产品与技术负责人 | Agentic AI · LLM · RAG | Python · TypeScript
+  email: jxjwilliam@gmail.com
+  phone: (236) 992-3846
+  location: 加拿大·温哥华
+  photo: assets/william-jiang.jpg
+  urls:
+  - label: GitHub
+    url: https://github.com/williamjxj
+    status: active
+    note: 主仓库 — 400+ 提交，AI/ML 项目为主
+  - label: LinkedIn
+    url: https://www.linkedin.com/in/william-jiang-226a7616/
+    status: active
+  - label: 作品集
+    url: https://williamjxj.github.io/
+    status: active
+  - label: Best IT Consulting
+    url: https://www.bestitconsulting.ca
+    status: active
+    note: 公司与 AI 技术咨询/产品项目
+  - label: Best IT Consultants
+    url: https://www.bestitconsultants.ca
+    status: active
+    note: 技术咨询与 AI 解决方案
+  cover_letter_base:
+    opening: 我希望就贵司 {role} / 技术合伙人机会表达合作意向。作为拥有 20+ 年软件工程与企业级系统经验、近年来持续深耕 AI 的技术负责人，我能够从产品需求、技术架构到编码实现、AI 集成、云端部署和交付，独立推动
+      AI 产品从 0 到 1 落地。
+    closing: 如果贵司正在寻找能够把 AI 技术真正转化为产品、业务能力和可交付系统的技术合伙人，我期待进一步交流具体产品方向、技术路线及合作模式。
+summary: AI 技术合伙人、联合创始人方向的技术负责人，拥有 20+ 年软件工程与企业级系统经验，近年来持续一线实践 Generative AI、LLM、RAG、Agentic AI、AI 自动化与 AI 产品工程。现为 Best IT
+  Consulting Inc. 联合创始人兼首席 AI 工程师，能够独立完成从产品需求、技术选型、系统架构、Python/FastAPI 后端、React/TypeScript 前端、LLM/RAG/多智能体工作流，到 Kubernetes、云端部署、监控和客户交付的完整链路。熟悉
+  OpenAI、Anthropic Claude、开源模型及 AI 开发工具，持续构建 AgentsAI、AutoBidder、MemWeaver、AgenticAP、idea2spec 等 AI 项目。适合创业公司、AI 初创企业、企业 AI
+  转型及老板直接招聘的技术合伙人/AI 技术负责人岗位。
+experience:
+- company: Best IT Consulting Inc.
+  title: 联合创始人 · 首席AI工程师
+  location: 加拿大·温哥华
+  start: 2024-10
+  end: null
+  status: active
+  tags:
+  - fullstack
+  - ai
+  - llm
+  - rag
+  - agentic
+  - consulting
+  - founder
+  - python
+  - node
+  - typescript
+  bullets:
+  - text: 作为联合创始人兼首席 AI 工程师，负责企业 AI 产品与解决方案的架构、研发、部署和客户交付；代表性方向包括企业 RAG、AI 文档智能、多智能体自动化与 LLM 应用
+    tags:
+    - ai
+    - llm
+    - rag
+    - agentic
+    - architecture
+    - founder
+    - enterprise
+    status: active
+    relevance: high
+  - text: 综合评估并选型 LLM 提供商（OpenAI、Anthropic Claude、开源模型），兼顾延迟、成本、准确率与企业安全要求；维护 AI 服务生产监控与可观测性管道
+    tags:
+    - ai
+    - llm
+    - mlops
+    - observability
+    - enterprise
+    status: active
+    relevance: high
+  - text: 基于 GCP 与 Azure 部署云原生 AI 微服务（Kubernetes + Docker）；全程主导从架构设计、研发到 DevOps 及客户交付的完整生命周期
+    tags:
+    - devops
+    - docker
+    - kubernetes
+    - gcp
+    - azure
+    - architecture
+    status: active
+    relevance: high
+  - text: 构建 React + TypeScript 生产级前端，集成 AI 增强 FastAPI 后端；实现 AutoBidder（AI 智能竞标引擎）与 Site-RAG-Chatbot（企业知识问答机器人）
+    tags:
+    - fullstack
+    - react
+    - typescript
+    - python
+    - fastapi
+    - ai
+    status: active
+    relevance: high
+  - text: Mentor 工程师掌握可扩展 AI 驱动的 Python 与 Node.js 模式；引入规格驱动开发（Spec-Driven Development）与上下文工程（Context Engineering）实践，加速 AI
+      产品交付
+    tags:
+    - leadership
+    - mentorship
+    - ai
+    - python
+    - methodology
+    status: active
+    relevance: medium
+- company: Xperi Inc.
+  title: 高级全栈 & AI/ML 工程师（远程）
+  location: 美国·圣何塞（远程）
+  start: 2021-03
+  end: 2024-09
+  status: active
+  tags:
+  - fullstack
+  - ai
+  - ml
+  - python
+  - react
+  - node
+  - devops
+  - mlops
+  - kubeflow
+  bullets:
+  - text: 主导 MLDP（机器学习数据管道，Machine Learning Data Pipeline）的设计与实现 — 生产级平台，管理 ML 实验、GPU/CPU 工作负载调度及模型生命周期，年处理推理事件达数亿次；技术栈：React.js、Python、Node.js、Java、Kubernetes（AWS
+      & GCP）
+    tags:
+    - fullstack
+    - ai
+    - ml
+    - react
+    - node
+    - python
+    - architecture
+    - mlops
+    status: active
+    relevance: high
+    variants:
+    - 设计并交付 MLDP 生产级 ML 管道，管理模型训练、GPU 调度及实验生命周期，年处理事件数亿次；技术栈：Python、Kubeflow、Kubernetes
+  - text: 基于 Kubeflow（ML 编排平台）与分布式 GPU 集群构建并优化 ML 训练工作流，管理实验追踪与模型版本控制管道
+    tags:
+    - ai
+    - ml
+    - kubeflow
+    - python
+    - mlops
+    - gpu
+    status: active
+    relevance: high
+  - text: 设计 REST API 与后端服务，实现 GPU/CPU 实时性能追踪；借助 Prometheus（监控）与 ElasticSearch（搜索/分析）优化可观测性，服务可靠性显著提升
+    tags:
+    - backend
+    - api
+    - devops
+    - kubernetes
+    - performance
+    - observability
+    status: active
+    relevance: high
+  - text: 实施 MLOps 工作流：Kubernetes、Docker、Jenkins CI/CD、AWS、Kubeflow、Airflow（任务调度）及 Weights & Biases，实现端到端 ML 训练与部署自动化
+    tags:
+    - ai
+    - ml
+    - devops
+    - mlops
+    - kubernetes
+    - airflow
+    status: active
+    relevance: high
+  - text: 参与跨职能 AI 团队技术路线图与架构决策；Mentor 初级工程师，跨时区评审 ML 平台代码
+    tags:
+    - leadership
+    - mentorship
+    - architecture
+    - collaboration
+    status: active
+    relevance: medium
+- company: EPAM Systems（客户：瑞士信贷）
+  company_en: EPAM Systems (Credit Suisse)
+  title: 软件架构师 · 全栈工程师
+  location: 中国·深圳
+  start: 2018-12
+  end: 2021-02
+  status: active
+  tags:
+  - fullstack
+  - react
+  - node
+  - python
+  - finance
+  - architecture
+  - websockets
+  bullets:
+  - text: 为瑞士信贷（Credit Suisse）架构并实现实时股票交易集成平台：React/Node.js 前端 + WebSocket 事件流 + Python 微服务 + MongoDB，承载核心交易业务高可用要求
+    tags:
+    - fullstack
+    - react
+    - node
+    - python
+    - finance
+    - websockets
+    - architecture
+    status: active
+    relevance: high
+    variants:
+    - 为瑞士信贷构建高可用实时数据集成系统，支撑股票交易核心业务；技术栈：React、Node.js、WebSockets、Python 微服务
+  - text: Mentor 开发团队掌握事件驱动微服务设计模式，建立代码评审机制与可扩展架构规范
+    tags:
+    - leadership
+    - mentorship
+    - architecture
+    - microservices
+    status: active
+    relevance: high
+- company: 中软国际（客户：汇丰银行）
+  company_en: China Soft International (HSBC)
+  title: 软件架构师 · 全栈工程师
+  location: 中国·西安
+  start: 2017-09
+  end: 2018-12
+  status: active
+  tags:
+  - fullstack
+  - react
+  - java
+  - banking
+  - architecture
+  - microservices
+  bullets:
+  - text: 架构并构建汇丰银行（HSBC）零售银行中小企业 Onboarding（数字化开户）平台：React/Redux 前端 + Java Spring Boot 微服务 + Node.js API + MongoDB，服务跨国企业客户
+    tags:
+    - fullstack
+    - react
+    - java
+    - spring-boot
+    - node
+    - banking
+    - architecture
+    status: active
+    relevance: high
+  - text: 主导架构设计，协调多国跨职能干系人，推动汇丰 SME（中小企业）数字银行项目落地
+    tags:
+    - leadership
+    - architecture
+    - banking
+    - stakeholder
+    status: active
+    relevance: high
+  - text: 开发中小企业银行服务 React.js 移动端应用，建立团队前端开发最佳实践规范
+    tags:
+    - frontend
+    - react
+    - mobile
+    - banking
+    status: active
+    relevance: medium
+- company: WebMD
+  title: 高级前端工程师
+  location: 美国·纽约
+  start: 2014-11
+  end: 2017-08
+  status: active
+  tags:
+  - frontend
+  - javascript
+  - advertising
+  - node
+  - angular
+  - data
+  bullets:
+  - text: 带领 Consumer-UI 团队构建高收益广告投放服务，集成 Google DFP（广告管理平台）、Media.net Header Bidding 及多家第三方广告网络；技术栈：JavaScript、Node.js、jQuery
+    tags:
+    - frontend
+    - javascript
+    - node
+    - advertising
+    status: active
+    relevance: medium
+  - text: 整合 Google DFP 与 Adobe Analytics 及 Media.net Header Bidding，显著提升 WebMD 高流量站点的广告收入
+    tags:
+    - frontend
+    - javascript
+    - advertising
+    - performance
+    status: active
+    relevance: high
+- company: Best Buy Canada
+  title: 高级 JavaScript 工程师
+  location: 加拿大·温哥华
+  start: 2007-03
+  end: 2014-07
+  status: deprecated
+  tags:
+  - frontend
+  - javascript
+  - ecommerce
+  - ui
+  - react
+  - fullstack
+  bullets:
+  - text: 主导 bestbuy.ca 与 futureshop.ca 前端功能交付：多视频支持、商品 360° 旋转展示，适配桌面/平板/移动端
+    tags:
+    - frontend
+    - javascript
+    - ui
+    - mobile
+    status: deprecated
+    relevance: low
+  - text: 完成 Best Buy 保修服务与购物车清算项目，通过 JavaScript 性能优化提升结账转化率
+    tags:
+    - frontend
+    - javascript
+    - ecommerce
+    - performance
+    status: deprecated
+    relevance: low
+  note: 创业/AI 技术合伙人版本默认简化；仅在需要体现大型互联网/电商经历时启用。
+- company: 联邦快递（FedEx）
+  company_en: FedEx
+  title: 程序分析员
+  location: 新加坡
+  start: 2000-10
+  end: 2004-12
+  status: deprecated
+  tags:
+  - legacy
+  - enterprise
+  - supply-chain
+  - java
+  note: 仅限物流/供应链方向职位启用
+  bullets:
+  - text: 设计并开发 FedEx GIVS（全球库存可视系统）及 EC-IV（电商库存可视系统），负责亚太区追踪数据集成
+    tags:
+    - enterprise
+    - java
+    - supply-chain
+    status: deprecated
+    relevance: low
+- company: 中兴通讯（ZTE）
+  company_en: ZTE (Zhongxing Telecom)
+  title: 软件工程师
+  location: 中国·深圳
+  start: 1995-09
+  end: 2000-09
+  status: deprecated
+  tags:
+  - legacy
+  - telecom
+  - embedded
+  - c
+  note: 仅限电信/嵌入式方向职位启用
+  bullets:
+  - text: 负责 CDMA 系统安全模块开发及数据中心与基站间的网络通信；技术栈：TCP/IP、C/C++、Oracle
+    tags:
+    - c
+    - embedded
+    - telecom
+    - security
+    status: deprecated
+    relevance: low
+skills:
+  languages:
+  - name: Python
+    level: 专家
+    status: active
+    tags:
+    - backend
+    - ai
+    - ml
+    - scripting
+    - data
+    note: AI/ML 工作主要语言：FastAPI、LangChain、训练流水线、数据处理
+  - name: TypeScript
+    level: 专家
+    status: active
+    tags:
+    - backend
+    - frontend
+    - node
+    - fullstack
+  - name: JavaScript
+    level: 专家
+    status: active
+    tags:
+    - frontend
+    - node
+    - fullstack
+  - name: Java
+    level: 熟练
+    status: active
+    tags:
+    - backend
+    - spring-boot
+    - enterprise
+  - name: SQL
+    level: 精通
+    status: active
+    tags:
+    - data
+    - backend
+  - name: Bash / Shell
+    level: 精通
+    status: active
+    tags:
+    - devops
+    - scripting
+    - automation
+  - name: C / C++
+    level: 熟练
+    status: deprecated
+    tags:
+    - legacy
+    - embedded
+    note: 仅限嵌入式/电信方向职位启用
+  frameworks:
+  - name: React.js / Next.js
+    level: 专家
+    status: active
+    tags:
+    - frontend
+    - fullstack
+    - ui
+  - name: Node.js / Express.js
+    level: 专家
+    status: active
+    tags:
+    - backend
+    - fullstack
+    - api
+  - name: Python / FastAPI
+    level: 专家
+    status: active
+    tags:
+    - backend
+    - ai
+    - api
+    - python
+  - name: LangChain / LlamaIndex（LLM应用框架）
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - llm
+    - rag
+    - python
+  - name: CrewAI / 多智能体系统
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - agentic
+    - llm
+    - python
+  - name: Hugging Face Transformers（大模型工具库）
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - ml
+    - llm
+    - python
+    - finetuning
+  - name: TailwindCSS / Shadcn/ui
+    level: 精通
+    status: active
+    tags:
+    - frontend
+    - ui
+  - name: Spring Boot
+    level: 熟练
+    status: active
+    tags:
+    - backend
+    - java
+    - enterprise
+  - name: Flask
+    level: 熟练
+    status: active
+    tags:
+    - backend
+    - python
+    - api
+  - name: AngularJS
+    level: 熟练
+    status: deprecated
+    tags:
+    - frontend
+    - legacy
+    note: 仅限 Angular 迁移类职位启用
+  ai_ml:
+  - name: LLM 编排（OpenAI、Claude、开源模型）
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - llm
+    - production
+  - name: RAG（检索增强生成）流水线
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - rag
+    - llm
+    - python
+  - name: Agentic AI / 多智能体（CrewAI）
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - agentic
+    - llm
+  - name: Prompt Engineering / Context Engineering（提示工程/上下文工程）
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - llm
+    - methodology
+  - name: 向量数据库（Pinecone、Weaviate、Chroma）
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - rag
+    - data
+  - name: Embedding 模型（词向量/语义编码模型）
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - ml
+    - llm
+  - name: MLOps / 模型生命周期管理
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - ml
+    - devops
+    - mlops
+  - name: Kubeflow（ML 编排平台）
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - ml
+    - mlops
+    - kubernetes
+  - name: Hugging Face / 模型微调（Fine-tuning）
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - ml
+    - finetuning
+    - python
+  - name: Weights & Biases（实验追踪平台）
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - ml
+    - mlops
+    - experiment-tracking
+  - name: Stable Diffusion / ComfyUI（图像生成）
+    level: 熟练
+    status: active
+    tags:
+    - ai
+    - generative
+    - image
+  - name: Airflow（数据/任务调度）
+    level: 熟练
+    status: active
+    tags:
+    - data
+    - ml
+    - pipeline
+    - orchestration
+  - name: 知识蒸馏（Knowledge Distillation）
+    level: 熟练
+    status: active
+    tags:
+    - ai
+    - ml
+    - finetuning
+    - python
+  tools:
+  - name: Git / GitHub
+    level: 专家
+    status: active
+    tags:
+    - general
+    - devops
+    - ci/cd
+  - name: Docker / Kubernetes（容器化与编排）
+    level: 精通
+    status: active
+    tags:
+    - devops
+    - cloud
+  - name: AWS（EKS、Lambda、S3、API Gateway、EC2）
+    level: 精通
+    status: active
+    tags:
+    - devops
+    - cloud
+    - aws
+  - name: GCP（Vertex AI、GKE、Cloud Run）
+    level: 精通
+    status: active
+    tags:
+    - devops
+    - cloud
+    - gcp
+    - ai
+  - name: Azure（AKS、OpenAI Service）
+    level: 熟练
+    status: active
+    tags:
+    - devops
+    - cloud
+    - azure
+    - ai
+  - name: Jenkins / CI/CD（持续集成/持续部署）
+    level: 精通
+    status: active
+    tags:
+    - devops
+    - ci/cd
+  - name: Kafka（消息队列/流式处理）
+    level: 熟练
+    status: active
+    tags:
+    - data
+    - backend
+    - streaming
+  - name: ElasticSearch（分布式搜索引擎）
+    level: 熟练
+    status: active
+    tags:
+    - data
+    - backend
+    - search
+  - name: Prometheus / 可观测性
+    level: 熟练
+    status: active
+    tags:
+    - devops
+    - monitoring
+  - name: PostgreSQL
+    level: 精通
+    status: active
+    tags:
+    - backend
+    - data
+  - name: MongoDB
+    level: 精通
+    status: active
+    tags:
+    - backend
+    - data
+  - name: MySQL / Oracle
+    level: 熟练
+    status: active
+    tags:
+    - backend
+    - data
+  methodologies:
+  - name: Agile / Scrum / JIRA
+    level: 专家
+    status: active
+    tags:
+    - general
+    - methodology
+  - name: TDD（测试驱动开发）
+    level: 精通
+    status: active
+    tags:
+    - general
+    - methodology
+  ai_dev_tools:
+  - name: Cursor（AI 编程 IDE）
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - development
+  - name: Claude Code（AI 编程助手）
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - development
+  - name: GitHub Copilot
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - development
+  - name: OpenAI API / Assistants
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - llm
+  - name: Anthropic Claude API
+    level: 专家
+    status: active
+    tags:
+    - ai
+    - llm
+  - name: Supabase（后端即服务平台）
+    level: 精通
+    status: active
+    tags:
+    - backend
+    - data
+    - ai
+  - name: Vercel（前端部署平台）
+    level: 精通
+    status: active
+    tags:
+    - frontend
+    - devops
+    - deployment
+  - name: 规格驱动开发（Spec-Driven Development）
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - development
+    - methodology
+  - name: 上下文工程（Context Engineering）
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - development
+    - methodology
+  - name: Vibe Coding（AI辅助直觉编程）
+    level: 精通
+    status: active
+    tags:
+    - ai
+    - development
+    - methodology
+projects:
+- name: AgentsAI / AgentsCrew · 企业AI自动化平台
+  name_en: AgentsAI / AgentsCrew
+  url: https://github.com/williamjxj/AgentsAI
+  description: 基于多智能体编排（CrewAI）、LangChain 与 RAG 流水线的企业级 AI 自动化平台，已生产部署
+  tags:
+  - ai
+  - agentic
+  - crewai
+  - langchain
+  - rag
+  - python
+  - llm
+  - enterprise
+  status: active
+  relevance: high
+  bullets:
+  - text: 构建多智能体编排系统（CrewAI），包含文档摄入、检索、推理与响应合成等专项 Agent
+    tags:
+    - ai
+    - agentic
+    - crewai
+    - llm
+    - python
+    status: active
+  - text: 实现端到端 RAG 流水线：文档分块、Embedding（OpenAI / HuggingFace）、向量存储（Chroma/Pinecone）及带引文溯源的 LLM 答案生成
+    tags:
+    - ai
+    - rag
+    - llm
+    - python
+    - vector-db
+    status: active
+  - text: 设计 Agent 路由与任务分解逻辑，支持复杂多步骤企业自动化工作流
+    tags:
+    - ai
+    - agentic
+    - llm
+    - architecture
+    status: active
+- name: AutoBidder · AI智能竞标平台
+  name_en: AutoBidder
+  url: https://github.com/williamjxj/AutoBidder
+  description: 将提案撰写时间从 30 分钟压缩至 2 分钟的 AI 投标自动化引擎，集成 LLM 决策与实时工作流自动化
+  tags:
+  - ai
+  - llm
+  - python
+  - typescript
+  - automation
+  - fullstack
+  status: active
+  relevance: high
+  bullets:
+  - text: 整合 LLM 决策引擎（OpenAI API）与规则化竞标逻辑，实现实时标书评估与自动提交
+    tags:
+    - ai
+    - llm
+    - python
+    - automation
+    status: active
+  - text: React/TypeScript 前端 + FastAPI 后端；实施结构化标书分析与评分的 Prompt Engineering 策略
+    tags:
+    - fullstack
+    - react
+    - typescript
+    - fastapi
+    - python
+    - prompt-engineering
+    status: active
+  - text: 设计事件驱动工作流自动化，支持可配置业务规则与完整审计日志
+    tags:
+    - backend
+    - automation
+    - architecture
+    status: active
+- name: AgenticAP / AgenticOmni · 发票自动化与文档智能平台
+  name_en: agenticAP / AgenticOmini
+  url: https://github.com/williamjxj/agenticAP
+  description: 多智能体发票处理与企业文档智能平台 — 覆盖摄入、提取、校验与审批路由全流程自动化，适用于企业财务数字化转型
+  tags:
+  - ai
+  - agentic
+  - llm
+  - python
+  - fastapi
+  - document-ai
+  - automation
+  - enterprise
+  status: active
+  relevance: high
+  bullets:
+  - text: 设计多 Agent 流水线：OCR 摄入 Agent → LLM 提取 Agent → 校验 Agent → 路由/审批 Agent，实现端到端 AP（应付账款）自动化
+    tags:
+    - ai
+    - agentic
+    - llm
+    - python
+    - document-ai
+    - automation
+    status: active
+  - text: 集成文档 AI（视觉 LLM + OCR），从非结构化发票与收据中高精度提取结构化数据
+    tags:
+    - ai
+    - llm
+    - document-ai
+    - python
+    - ocr
+    status: active
+  - text: FastAPI 异步任务队列后端 + React 实时监控看板，支持 AP 工作流追踪与异常处理
+    tags:
+    - fullstack
+    - fastapi
+    - react
+    - typescript
+    - async
+    - python
+    status: active
+- name: MemWeaver · 双LLM知识记忆与蒸馏系统
+  name_en: memweaver
+  url: https://github.com/williamjxj/memweaver
+  description: 公有 LLM + 本地 Ollama 协作的记忆压缩与知识检索中间件，支持跨会话持久化上下文，适合企业 AI 中台建设
+  tags:
+  - ai
+  - llm
+  - agentic
+  - python
+  - memory
+  - rag
+  - vector-db
+  status: active
+  relevance: high
+  bullets:
+  - text: 设计双组件记忆架构：行为记忆（短期、上下文相关动作）+ 认知记忆（长期偏好抽象），实现跨对话持久化智能体记忆
+    tags:
+    - ai
+    - agentic
+    - llm
+    - python
+    - architecture
+    status: active
+  - text: 基于图结构记忆索引（时间边 + 语义边）实现多跳推理与智能体决策链追溯
+    tags:
+    - ai
+    - llm
+    - python
+    - graph
+    - memory
+    status: active
+  - text: 构建增量记忆更新机制，以极低计算成本达到接近全量重建的精度
+    tags:
+    - ai
+    - python
+    - performance
+    - optimization
+    status: active
+- name: idea2spec · AI规格驱动开发工具
+  name_en: idea2spec
+  url: https://github.com/williamjxj/idea2spec
+  description: 将自然语言产品创意自动转化为结构化技术规格、用户故事与实施计划的 AI 辅助开发工具
+  tags:
+  - ai
+  - llm
+  - python
+  - typescript
+  - spec-driven
+  - productivity
+  - fullstack
+  status: active
+  relevance: high
+  bullets:
+  - text: 构建 LLM 流水线（Claude / OpenAI），将非结构化产品创意转化为 PRD、架构图、API 合约及任务拆解等结构化规格
+    tags:
+    - ai
+    - llm
+    - python
+    - prompt-engineering
+    - spec-driven
+    status: active
+  - text: 基于 Pydantic 模型实现结构化输出解析；集成多轮对话精化循环，支持规格迭代优化
+    tags:
+    - ai
+    - python
+    - pydantic
+    - llm
+    - structured-output
+    status: active
+  - text: React/TypeScript UI，支持 LLM 流式响应实时展示及 Markdown/YAML 规格文档导出
+    tags:
+    - fullstack
+    - react
+    - typescript
+    - streaming
+    - llm
+    status: active
+- name: Site-RAG-Chatbot · 网站知识问答机器人
+  name_en: Site-RAG-Chatbot
+  url: https://github.com/williamjxj/site-rag-chatbot
+  description: 基于 RAG 架构的网站内容问答机器人，支持对站点文档与知识库进行自然语言查询
+  tags:
+  - ai
+  - rag
+  - python
+  - llm
+  - langchain
+  - fullstack
+  status: active
+  relevance: high
+  bullets:
+  - text: 构建端到端 RAG 流水线（LangChain/LlamaIndex）：网页内容摄入、分块、Embedding、向量存储，及带来源标注的 LLM 答案生成
+    tags:
+    - ai
+    - rag
+    - llm
+    - python
+    - langchain
+    status: active
+  - text: 实现混合检索（语义检索 + 关键词检索）并加入重排序（Reranking），提升领域内容回答相关性
+    tags:
+    - ai
+    - rag
+    - python
+    - retrieval
+    - optimization
+    status: active
+- name: distill-wiki-pipeline · 知识蒸馏数据管道
+  name_en: distill-wki-pipeline
+  url: https://github.com/williamjxj/distill-wki-pipeline
+  description: 从维基百科级结构化知识中提取、处理并蒸馏为领域特定 LLM 微调数据集和压缩知识库的流水线
+  tags:
+  - ai
+  - ml
+  - python
+  - finetuning
+  - distillation
+  - data-pipeline
+  - llm
+  - huggingface
+  status: active
+  relevance: high
+  bullets:
+  - text: 构建可扩展数据管道，从维基百科文章中提取并预处理结构化训练数据集，用于 LLM 微调
+    tags:
+    - ai
+    - ml
+    - python
+    - data-pipeline
+    - llm
+    - finetuning
+    status: active
+  - text: 实现知识蒸馏技术，将大型教师模型输出压缩为高效的学生模型训练信号
+    tags:
+    - ai
+    - ml
+    - python
+    - distillation
+    - huggingface
+    status: active
+  - text: 集成 Hugging Face Transformers 与 Datasets，完成模型训练、评估与 Checkpoint 管理
+    tags:
+    - ai
+    - ml
+    - python
+    - huggingface
+    - finetuning
+    status: active
+- name: jinyong-finetune · 中文领域LLM微调
+  name_en: jinyong-finetune
+  url: https://github.com/williamjxj/jinyong-finetune
+  description: 基于金庸武侠小说语料库的领域 LLM 微调项目，用于中文文学风格生成与人物对话模拟
+  tags:
+  - ai
+  - ml
+  - python
+  - finetuning
+  - llm
+  - huggingface
+  - nlp
+  - chinese
+  status: active
+  relevance: high
+  bullets:
+  - text: 整理并预处理领域特定中文语料（金庸小说），实现数据清洗、分词及 LLM 微调数据集格式化
+    tags:
+    - ai
+    - ml
+    - python
+    - nlp
+    - data-pipeline
+    - finetuning
+    status: active
+  - text: 基于 LoRA/QLoRA（参数高效微调技术）在消费级 GPU 上对开源 LLM（Hugging Face Transformers）进行微调
+    tags:
+    - ai
+    - ml
+    - python
+    - finetuning
+    - lora
+    - huggingface
+    - gpu
+    status: active
+  - text: 使用困惑度（Perplexity）指标与人工评估验证模型输出质量；构建推理管道实现交互式风格一致文本生成
+    tags:
+    - ai
+    - ml
+    - python
+    - evaluation
+    - inference
+    - nlp
+    status: active
+- name: MLDP · 机器学习数据管道（Xperi）
+  name_en: MLDP (Machine Learning Data Pipelines)
+  url: ''
+  description: Xperi 企业级 ML 数据管道系统 — 生产级平台，管理 AI/ML 实验数据、GPU/CPU 工作负载调度及模型生命周期，年处理事件数亿次
+  tags:
+  - ai
+  - ml
+  - fullstack
+  - devops
+  - mlops
+  - kubeflow
+  - python
+  status: active
+  relevance: high
+  bullets:
+  - text: 设计并实现微服务化 ML 管道平台（React.js、Python、Node.js、Java），管理实验全生命周期与模型版本控制
+    tags:
+    - fullstack
+    - ai
+    - ml
+    - react
+    - node
+    - python
+    - architecture
+    status: active
+  - text: 基于 Kubeflow 构建 GPU 调度与分布式训练工作流，年支撑数亿次推理事件
+    tags:
+    - ai
+    - ml
+    - kubeflow
+    - python
+    - mlops
+    - gpu
+    - kubernetes
+    status: active
+  - text: 部署可观测性技术栈（Prometheus + ElasticSearch），实现 GPU/CPU 实时性能追踪与告警
+    tags:
+    - devops
+    - ml
+    - kubernetes
+    - performance
+    - observability
+    status: active
+education:
+- institution: 西安交通大学
+  institution_en: Xi'an Jiaotong University
+  degree: 工学学士
+  start: 1991-09
+  graduation: 1995-07
+  location: 中国
+  status: active
+  tags:
+  - general
+- institution: Universal Learning Institute
+  degree: 商业管理文凭
+  start: 2005-03
+  graduation: 2006-03
+  location: 加拿大·温哥华
+  status: active
+  tags:
+  - general
+languages:
+- name: 中文（普通话）
+  level: 母语
+  status: active
+- name: 英语
+  level: 流利（北美职场工作语言）
+  status: active
+cover_letters:
+- id: ai-technical-partner
+  label: AI 技术合伙人 / 联合创始人
+  tags:
+  - partner
+  - founder
+  - ai
+  - llm
+  - rag
+  - agentic
+  - fullstack
+  body: '{opening}
+
+
+    我更擅长承担技术型合伙人的角色：不只是制定技术路线，而是能够亲自完成关键架构、核心代码、AI 模型与应用集成、云端部署以及产品迭代。在 Best IT Consulting Inc.，我持续构建企业级 AI 产品与解决方案，覆盖 RAG、Agentic
+    AI、文档智能、自动化和 LLM 应用；同时通过 AgentsAI、AutoBidder、MemWeaver、AgenticAP、idea2spec 等项目验证 AI 技术在真实业务流程中的落地方式。
+
+
+    我也拥有 Credit Suisse、HSBC 和 Xperi 的企业级系统经验，因此能够在创业速度、工程质量、系统可扩展性和企业客户要求之间做平衡。我希望寻找的是长期共同做产品、共同承担结果的合作关系，而不仅是单纯的软件外包开发角色。
+
+
+    {closing}'
+- id: ai-product-founder
+  label: AI 产品 / 0→1 技术负责人
+  tags:
+  - ai
+  - product
+  - fullstack
+  - python
+  - typescript
+  - llm
+  - rag
+  - agentic
+  body: '{opening}
+
+
+    我的优势是从模糊业务需求快速形成可验证的 AI 产品：定义技术方案，选择 LLM 与工具链，搭建 RAG/Agent 工作流，完成 Python/FastAPI 与 React/TypeScript 全栈实现，再部署到云环境并持续迭代。对
+    AI 产品，我关注的不只是模型效果，也关注成本、延迟、可靠性和实际业务价值。
+
+
+    我期待加入一个有明确业务方向、希望用 AI 建立产品壁垒的创业团队，以技术合伙人的方式长期参与产品和业务成长。
+
+
+    {closing}'
+- id: technical-founder-enterprise-ai
+  label: 企业 AI / 技术合伙人
+  tags:
+  - enterprise
+  - ai
+  - architecture
+  - rag
+  - agentic
+  - cloud
+  - leadership
+  body: '{opening}
+
+
+    我兼具创业公司的快速交付能力和大型企业系统架构经验。过去在 Xperi、Credit Suisse、HSBC 等环境中负责复杂系统与架构，近年来则把这些工程经验用于 LLM、RAG、多智能体和企业 AI 自动化产品。对于需要连接现有企业系统、数据和
+    AI 能力的创业项目，我可以承担从架构到落地的完整技术责任。
+
+
+    {closing}'

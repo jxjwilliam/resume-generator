@@ -65,6 +65,8 @@ def build_provenance_report(
         "company": company,
         "role": role,
         "tags": tags_list,
+        "profile": (base.get("meta") or {}).get("profile"),
+        "source": (base.get("meta") or {}).get("source"),
         "template": template,
         "rx_template_suggestion": rx_template,
         "jd": {

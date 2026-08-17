@@ -1,5 +1,39 @@
 # profiles/ 目录说明 — YAML 文件对比
 
+## ⭐ 新架构（2026-08）：内容源 + 定位配置
+
+从 2026-08 起，目录分两类文件：
+
+**内容源（Source）— 完整简历数据：**
+
+| 文件 | 语言 | 用途 |
+|---|---|---|
+| `career-en.yaml` | EN | **英文内容唯一权威源**（默认 `--yaml`）。 |
+| `base-zh-cto.yaml` | 中文 | 中国市场 CTO / 首席架构师完整简历。 |
+| `base-zh-partner.yaml` | 中文 | 中国市场 AI 技术合伙人完整简历。 |
+
+**定位配置（Positioning Profile）— 只描述"如何呈现"，内容来自 `source.career`：**
+
+| 文件 | 市场 | 定位 |
+|---|---|---|
+| `na-ai-engineer.yaml` | Canada / NA | AI 侧重高级工程师 |
+| `na-software-engineer.yaml` | Canada / NA | 传统 / 全栈高级工程师 |
+| `china-cto.yaml` | China | CTO / AI 技术负责人 |
+| `china-partner.yaml` | China | AI 技术合伙人 / 联合创始人 |
+
+规则很简单：`python resume.py build --yaml profiles/na-ai-engineer.yaml`
+会自动加载 `career-en.yaml`，再用 profile 里的 `headline` / `summary` /
+`experience_priority` / `skills_priority` / `projects_priority` /
+`recent_jobs` / `old_experience_max_bullets` 重新聚焦内容。实现见
+`src/profiles.py`，完整说明见 `docs/profile-layering.md`。
+
+旧版 `base.yaml` 仍可作为完整源文件加载，不再是默认值；
+`base-v1/v2/v3.yaml`、`base-zh.yaml`、`base-2-zh.yaml` 已于 2026-08-17 删除。
+
+---
+
+> 下面章节是**已删除历史文件**的差异对比，仅存档参考，当前已不再使用。
+
 本目录存放 6 个简历数据文件，内容高度相似（来自同一套经历/技能/项目数据），
 但**版本、详略、语言和定位各不相同**。下表与矩阵帮助快速辨识和选用。
 

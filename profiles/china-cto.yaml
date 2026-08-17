@@ -1,0 +1,50 @@
+# Lightweight positioning profile. Content is selected from career-en.yaml.
+meta:
+  version: '1.0'
+  market: China
+  profile: CTO / AI Expert / Principal Architect
+source:
+  career: "./career-en.yaml"
+headline: CTO / AI Technology Leader / Principal Architect | Generative AI · LLM · RAG · Agentic AI
+target_roles:
+- CTO
+- AI CTO
+- AI Technology Leader
+- Technical Director
+- Principal Architect
+- AI Architect
+- Principal AI Engineer
+summary: Hands-on technology leader with 20+ years of enterprise software engineering and architecture experience, with recent
+  deep focus on Generative AI, LLM, RAG, Agentic AI, ML platforms and MLOps.
+experience_priority:
+- Best IT Consulting Inc.
+- Xperi Inc.
+- EPAM Systems (Credit Suisse)
+- China Soft Int'l (HSBC)
+- WebMD
+- Best Buy Canada
+- FedEx
+- ZTE
+emphasis:
+- ai
+- architecture
+- enterprise
+- leadership
+- mlops
+- backend
+skills_priority:
+- AI/GenAI
+- Architecture
+- Python/Backend
+- Cloud/Kubernetes/MLOps
+- Full-Stack
+- Technical Leadership
+projects_priority:
+- MLDP
+- AgentsAI / AgentsCrew
+- AgenticAP / AgenticOmni
+- MemWeaver
+- AutoBidder
+# First 5 priority companies get full bullets; older ones get this many.
+recent_jobs: 5
+old_experience_max_bullets: 1

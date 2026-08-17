@@ -267,22 +267,22 @@ cover_letters:
 
 ## 3. Layer 2 — Composition Engine
 
-The composition script reads `base.yaml`, takes a job description, and outputs a lean `variant.yaml` that only contains the sections and bullets relevant to that role.
+The composition script reads the default source `profiles/career-en.yaml` (or any `--yaml` source/profile), takes a job description, and outputs a lean `variant.yaml` that only contains the sections and bullets relevant to that role.
 
 ### 3.1 CLI usage
 
 ```bash
 # Basic — manual section selection
-python resume.py build --company "BestIT" --role "SWE" --tags backend,python,typescript --template clean
+python resume.py build --company "BestIT" --role "SWE" --tags backend,python,typescript --template classic
 
 # With LLM analysis (optional)
-python resume.py build --company "BestIT" --role "SWE" --jd jds/bestit-swe.txt --llm --template clean
+python resume.py build --company "BestIT" --role "SWE" --jd jds/bestit-swe.txt --llm --template classic
 
 # Output DOCX alongside PDF
 python resume.py build --company "BestIT" --role "SWE" --tags backend,python --docx
 
 # Chinese resume with CJK font
-python resume.py build --company "BestIT" --role "SWE" --tags backend,python --locale zh-CN --yaml base_zh.yaml
+python resume.py build --company "BestIT" --role "SWE" --tags backend,python --locale zh-CN --yaml profiles/base-zh-cto.yaml
 
 # Cover letter during build
 python resume.py build --company "BestIT" --role "SWE" --tags backend,python --cover-letter
@@ -305,11 +305,11 @@ The composition engine is implemented in `resume.py` at the repo root. The spec 
 
 | Function | Purpose |
 |---|---|
-| `load_base()` | Read and parse a YAML file (default: `base.yaml`) |
+| `load_base()` | Read and parse a YAML file (default: `profiles/career-en.yaml`) |
 | `filter_by_tags()` | Filter items by tag list + status flags |
 | `build_variant()` | Assemble a rendercv-compatible variant dict from filtered base data |
 | `write_variant()` | Serialize variant dict to `variants/<slug>.yaml` |
-| `render_variant()` | Shell out to `rendercv render` to produce PDF (and optionally HTML/Markdown/PNG); sidebar themes (`classic`) are patched by `src/sidebar_layout.py` and compiled with `typst` |
+| `render_variant()` | Shell out to `rendercv render` to produce PDF (and optionally HTML/Markdown/PNG); sidebar themes (`classic`) are patched by `src/sidebar_layout.py` and compiled with the `typst` Python package (typst-py) |
 | `generate_docx()` | Build a .docx Word document from the variant YAML using `python-docx` |
 | `_write_history_from_build()` | Write build metadata to shared `runs.db` (SQLite) + legacy `applications.json` |
 | `llm_extract_tags()` | Optional — call DeepSeek/OpenAI API to suggest tags from a JD |
@@ -344,16 +344,16 @@ design:
 
 ### 4.1 rendercv (primary renderer)
 
-rendercv takes your variant YAML and outputs a PDF and an HTML version.
+rendercv takes your variant YAML and outputs a PDF (HTML/Markdown/PNG only with `--all-formats`).
 
 ```bash
 # Install
 pip install rendercv
 
 # Render a variant
-rendercv render variants/bestit-swe-202606.yaml
+rendercv render variants/bestit-swe.yaml
 
-# Output: a folder with PDF + HTML
+# Output: a folder with PDF (+ HTML/Markdown/PNG with --all-formats)
 ```
 
 rendercv has several built-in themes. Match theme to role type:
@@ -372,7 +372,8 @@ rendercv has several built-in themes. Match theme to role type:
 > `src/sidebar_layout.py`, which rewrites the rendercv-generated `.typ`
 > file at build time (widens the left margin, moves the header into
 > `page(background:)` as a repeating sidebar, switches header colors to
-> light-on-dark) and compiles it with `typst` using the same bundled
+> light-on-dark) and compiles it with the `typst` Python package (typst-py)
+> using the same bundled
 > rendercv package and fonts. The sidebar repeats on every page; CVs
 > without a photo get the sidebar without the photo. Which themes use the
 > layout is controlled by `SIDEBAR_THEMES` in `src/sidebar_layout.py`
@@ -684,20 +685,28 @@ Build the minimum system that solves your actual problem. Do this in order.
 
 ```
 resume-system/
-├── base.yaml                  # Single source of truth (edit this)
 ├── resume.py                  # Composition engine CLI
-├── history_db.py              # Shared SQLite DB module (CLI + WebUI)
 ├── runs.db                    # Shared history database (tracked)
-├── applications.json          # Legacy tracking log (still written for compat)
+├── src/
+│   ├── profiles.py            # Source / positioning-profile resolver
+│   ├── compose.py             # Shared bullet ranking + caps
+│   ├── jd_parser.py           # Structured JD keyword parsing
+│   ├── ats.py                 # ATS scoring + multi-JD compare
+│   └── history_db.py          # Shared SQLite DB module (CLI + WebUI)
+├── profiles/
+│   ├── career-en.yaml         # ★ Canonical English source (edit this)
+│   ├── base-zh-cto.yaml       # Standalone Chinese resume (CTO focus)
+│   ├── base-zh-partner.yaml   # Standalone Chinese resume (partner focus)
+│   └── na-ai-engineer.yaml / china-*.yaml  # Positioning profiles
 │
 ├── jds/                       # Job descriptions (paste JD text here)
 ├── variants/                  # Auto-generated per-application YAMLs
 ├── output/                    # Auto-generated PDFs + DOCX + HTML
-│   ├── bestit-swe-202606/
-│   │   ├── William_Chen_CV.pdf
-│   │   ├── William_Chen_CV.html
+│   ├── bestit-swe/
+│   │   ├── William_Jiang-Senior-SWE.pdf
+│   │   ├── William_Jiang-Senior-SWE.html   # --all-formats
 │   │   └── resume.docx
-│   └── shopify-staff-eng-202607/
+│   └── shopify-staff-eng/
 │       └── resume.docx
 │
 ├── scripts/
@@ -739,9 +748,9 @@ __pycache__/
 .ui_temp_id.txt  # VSCode temp file
 ```
 
-**Commit to git:** `base.yaml`, `resume.py`, `src/`, `applications.json`, `variants/`, `jds/`, `runs.db`, `ui/`
+**Commit to git:** `profiles/career-en.yaml`, `profiles/base-zh-*.yaml`, positioning profiles, `resume.py`, `src/`, `jds/`, `ui/`, `Dockerfile`, `render.yaml`
 
-**Do not commit:** `output/` (PDFs/DOCX — regenerate anytime), `.env` (API keys), `__pycache__/`, `.ui_temp_id.txt`
+**Do not commit:** `output/` (PDFs/DOCX — regenerate anytime), `.env` (API keys), `__pycache__/`, `variants/`, `runs.db`, `applications.json` (all generated)
 
 ---
 
@@ -795,13 +804,13 @@ python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,pyt
 python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python --cover-letter
 
 # Build Chinese resume
-python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python --locale zh-CN --yaml base_zh.yaml
+python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python --locale zh-CN --yaml profiles/base-zh-cto.yaml
 
 # View application history
 python resume.py log
 
 # Render a variant manually
-rendercv render variants/bestit-senior-swe-202606.yaml
+rendercv render variants/bestit-senior-swe.yaml
 ```
 
 ---

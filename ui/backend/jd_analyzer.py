@@ -35,12 +35,10 @@ def analyze_jd_structured(text: str, base: dict | None = None) -> dict:
     from src.jd_parser import parse_jd
 
     if base is None:
-        import yaml
-        yaml_path = repo_root / PROFILES_DIR / "base.yaml"
-        # ^ currently unused; kept for API stability
-        if yaml_path.exists():
-            with open(yaml_path) as f:
-                base = yaml.safe_load(f)
+        from src.profiles import load_effective
+        from pathlib import Path
+
+        base = load_effective(str(Path(__file__).resolve().parent.parent.parent / PROFILES_DIR / "career-en.yaml"))[0]
 
     return parse_jd(text, base)
 

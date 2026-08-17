@@ -106,7 +106,11 @@ function Row({ item, onReRun }: { item: RunHistoryItem; onReRun: (i: RunHistoryI
                         Output files:
                       </Typography>
                       <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                        {item.output_files.map((f) => (
+                        {item.output_files
+                          .filter((f) =>
+                            ["pdf", "docx", "cover-letter", "ats-report", "bullet-diff"].includes(f.type),
+                          )
+                          .map((f) => (
                           <MuiChip
                             key={f.name}
                             icon={fileIcon(f.type)}

@@ -18,6 +18,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 import src.history_db as history_db
+import src.profiles as profiles
 
 from src.compose import (
     DEFAULT_MAX_BULLETS,
@@ -47,14 +48,21 @@ from src.sidebar_layout import (
     patch_typst_for_sidebar,
 )
 
+try:
+    from docx.shared import Inches, Pt, RGBColor
+    _HAS_DOCX = True
+except ImportError:
+    _HAS_DOCX = False
+
 PROFILES_DIR = "profiles"
-BASE_FILE = f"{PROFILES_DIR}/base.yaml"
+# Canonical English career source; positioning profiles layer on top of it.
+BASE_FILE = f"{PROFILES_DIR}/career-en.yaml"
 OUTPUT_DIR = "output"
 VARIANTS_DIR = "output/variants"
 
 def load_base(yaml_file: str = BASE_FILE):
-    with open(yaml_file) as f:
-        return yaml.safe_load(f)
+    """Load any YAML (full source or positioning profile) as an effective base."""
+    return profiles.load_effective(yaml_file)[0]
 
 def filter_by_tags(items, tags, status_filter=["active"]):
     """Filter a list of items by tags and status."""
@@ -153,6 +161,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
         jd_keywords=jd_keywords,
         seniority=seniority,
         llm_scores=llm_scores,
+        priority=base.get("experience_priority"),
     )
 
     skill_rows_preview = filter_skills_by_tags(
@@ -287,6 +296,21 @@ def _slugify(text: str) -> str:
     """'Full-Stack Engineer' → 'Full-Stack-Engineer'"""
     return re.sub(r"[^\w.-]", "-", text).strip("-")
 
+
+def _cleanup_render_byproducts(output_dir: Path):
+    """Remove rendercv intermediates (typ source + copied photo) after a render."""
+    for p in output_dir.glob("*.typ"):
+        try:
+            p.unlink(missing_ok=True)
+        except OSError:
+            pass
+    photo = output_dir / "william-jiang.jpg"
+    try:
+        photo.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
 def render_variant(variant_path, slug, all_formats=False, role=None, template=None):
     """Call rendercv to render the variant, then rename PDF with role."""
     output_path = str(Path(OUTPUT_DIR).resolve() / slug)
@@ -307,12 +331,30 @@ def render_variant(variant_path, slug, all_formats=False, role=None, template=No
     if result.returncode != 0:
         print(f"rendercv error:\n{result.stderr}")
         return False
+
+    # rendercv names outputs after the CV's localized name (e.g. the Chinese
+    # full name for zh-CN); normalize to the English filename expected below.
+    pdf_files = [p for p in Path(output_path).glob("*.pdf") if p.is_file()]
+    if not pdf_files:
+        print(
+            f"rendercv error: expected a PDF in {output_path} but none was generated",
+            file=sys.stderr,
+        )
+        return False
+    default_pdf = max(pdf_files, key=lambda p: p.stat().st_mtime)
+    target_pdf = Path(output_path) / "William_Jiang_CV.pdf"
+    if default_pdf != target_pdf:
+        if target_pdf.exists():
+            target_pdf.unlink()
+        default_pdf.rename(target_pdf)
+        default_pdf = target_pdf
+
     # Rename PDF to include role
     if role:
-        default_pdf = Path(output_path) / "William_Jiang_CV.pdf"
         custom_pdf = Path(output_path) / f"William_Jiang-{_slugify(role)}.pdf"
         if default_pdf.exists() and custom_pdf != default_pdf:
             default_pdf.rename(custom_pdf)
+    _cleanup_render_byproducts(Path(output_path))
     return True
 
 
@@ -344,10 +386,23 @@ def _render_variant_sidebar(variant_path, output_path, all_formats=False, role=N
         print(f"sidebar render error: could not copy photo: {e}", file=sys.stderr)
         return False
 
-    typ_path = Path(output_path) / "William_Jiang_CV.typ"
-    if not typ_path.exists():
-        print(f"rendercv error: expected {typ_path} was not generated", file=sys.stderr)
+    # rendercv names the .typ after the CV's localized name (e.g. the Chinese
+    # full name for zh-CN); normalize it to the English filename the rest of
+    # the pipeline expects, so PDF generation isn't blocked by the locale.
+    typ_files = [p for p in output_dir.glob("*.typ") if p.is_file()]
+    if not typ_files:
+        print(
+            f"rendercv error: expected a .typ file in {output_dir} but none was generated",
+            file=sys.stderr,
+        )
         return False
+    typ_path = max(typ_files, key=lambda p: p.stat().st_mtime)
+    if typ_path.name != "William_Jiang_CV.typ":
+        target = output_dir / "William_Jiang_CV.typ"
+        if target.exists():
+            target.unlink()
+        typ_path.rename(target)
+        typ_path = target
 
     try:
         patch_typst_for_sidebar(typ_path)
@@ -366,14 +421,148 @@ def _render_variant_sidebar(variant_path, output_path, all_formats=False, role=N
         custom_pdf = Path(output_path) / f"William_Jiang-{_slugify(role)}.pdf"
         if default_pdf.exists() and custom_pdf != default_pdf:
             default_pdf.rename(custom_pdf)
+    _cleanup_render_byproducts(Path(output_path))
     return True
 
 
+_DOCX_NAVY = RGBColor(0x1F, 0x38, 0x64)
+_DOCX_GRAY = RGBColor(0x44, 0x44, 0x44)
+_DOCX_BLACK = RGBColor(0x00, 0x00, 0x00)
+_DOCX_FONT = "Calibri"
+
+_MONTHS = {
+    "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+    "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
+    "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
+}
+
+
+def _format_month_year(value) -> str:
+    """'2024-10' -> 'Oct 2024'; empty -> 'Present'."""
+    if not value:
+        return "Present"
+    parts = str(value).split("-")
+    if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+        return f"{_MONTHS.get(parts[1], parts[1])} {parts[0]}"
+    return str(value).title()
+
+
+def _docx_setup(doc, top=0.43, bottom=0.43, left=0.49, right=0.49):
+    """US Letter with Claude-reference margins; Calibri Normal style."""
+    section = doc.sections[0]
+    section.page_width = Inches(8.5)
+    section.page_height = Inches(11)
+    section.top_margin = Inches(top)
+    section.bottom_margin = Inches(bottom)
+    section.left_margin = Inches(left)
+    section.right_margin = Inches(right)
+    normal = doc.styles["Normal"]
+    normal.font.name = _DOCX_FONT
+    normal.font.size = Pt(10.5)
+    normal.font.color.rgb = _DOCX_GRAY
+
+
+def _docx_para(doc, runs, before=None, after=None, align=None, style=None):
+    """Add a paragraph from (text, size_pt, bold, color) run tuples."""
+    p = doc.add_paragraph(style=style)
+    if align is not None:
+        p.alignment = align
+    if before is not None:
+        p.paragraph_format.space_before = Pt(before)
+    if after is not None:
+        p.paragraph_format.space_after = Pt(after)
+    for text, size, bold, color in runs:
+        if not text:
+            continue
+        r = p.add_run(text)
+        r.font.name = _DOCX_FONT
+        r.font.size = Pt(size)
+        r.bold = bold
+        r.font.color.rgb = color
+    return p
+
+
+def _docx_heading(doc, text):
+    return _docx_para(
+        doc, [(text, 10.5, True, _DOCX_NAVY)],
+        before=11, after=3,
+    )
+
+
+def _docx_contact_parts(cv_or_identity) -> list[str]:
+    """Contact line pieces: location | phone | email | github | linkedin."""
+    parts = []
+    location = cv_or_identity.get("location")
+    if location:
+        parts.append(str(location))
+    phone = cv_or_identity.get("phone")
+    if phone:
+        digits = re.sub(r"\D", "", str(phone))
+        if len(digits) == 11 and digits.startswith("1"):
+            parts.append(f"({digits[1:4]}) {digits[4:7]}-{digits[7:]}")
+        else:
+            parts.append(str(phone))
+    email = cv_or_identity.get("email")
+    if email:
+        parts.append(str(email))
+    urls = cv_or_identity.get("social_networks") or cv_or_identity.get("urls") or []
+    seen_networks = set()
+    for entry in urls:
+        if isinstance(entry, dict) and entry.get("status") == "deprecated":
+            continue
+        label = str(entry.get("label") or entry.get("network") or "").lower()
+        if "github" in label:
+            if "github" in seen_networks:
+                continue
+            seen_networks.add("github")
+            user = entry.get("username") or ""
+            if not user:
+                url = entry.get("url") or ""
+                user = url.rstrip("/").rsplit("/", 1)[-1]
+            if user:
+                parts.append(f"github.com/{user}")
+        elif "linkedin" in label:
+            if "linkedin" in seen_networks:
+                continue
+            seen_networks.add("linkedin")
+            user = entry.get("username") or ""
+            if not user:
+                url = entry.get("url") or ""
+                user = url.rstrip("/").rsplit("/", 1)[-1]
+            if user:
+                parts.append(f"linkedin.com/in/{user}")
+    return parts
+
+
+def _docx_bullet(doc, text, bold_prefix=None):
+    """Real Word bullet (List Bullet) with Claude-reference indentation."""
+    p = doc.add_paragraph(style="List Bullet")
+    pf = p.paragraph_format
+    pf.left_indent = Inches(0.22)
+    pf.first_line_indent = Inches(-0.14)
+    pf.space_before = Pt(0)
+    pf.space_after = Pt(2)
+    pf.line_spacing = 1.0
+    if bold_prefix:
+        r = p.add_run(bold_prefix)
+        r.font.name = _DOCX_FONT
+        r.font.size = Pt(10.5)
+        r.bold = True
+        r.font.color.rgb = _DOCX_BLACK
+    r = p.add_run(text)
+    r.font.name = _DOCX_FONT
+    r.font.size = Pt(10.5)
+    r.font.color.rgb = _DOCX_GRAY
+    return p
+
+
 def generate_docx(variant_path: str, slug: str) -> str | None:
-    """Generate a .docx file from a variant YAML. Returns output path or None on error."""
+    """Generate a Claude-style .docx resume from a variant YAML."""
+    if not _HAS_DOCX:
+        print("python-docx not installed. Run: pip install python-docx", file=sys.stderr)
+        return None
     try:
         from docx import Document
-        from docx.shared import Pt, Inches, RGBColor
         from docx.enum.text import WD_ALIGN_PARAGRAPH
     except ImportError:
         print("python-docx not installed. Run: pip install python-docx", file=sys.stderr)
@@ -383,176 +572,114 @@ def generate_docx(variant_path: str, slug: str) -> str | None:
         variant = yaml.safe_load(f)
 
     cv = variant.get("cv", {})
-    design = variant.get("design", {})
-    doc = Document()
-
-    # Page setup
-    section = doc.sections[0]
-    page = design.get("page", {})
-    margin_str = page.get("left_margin", "0.7in")
-    if margin_str.endswith("in"):
-        val = float(margin_str.replace("in", ""))
-        for attr in ["top_margin", "bottom_margin", "left_margin", "right_margin"]:
-            setattr(section, attr, Inches(val))
-
-    theme_color = RGBColor(0, 0x4F, 0x90)
-
-    def _heading(text):
-        p = doc.add_paragraph()
-        run = p.add_run(text)
-        run.bold = True
-        run.font.size = Pt(12)
-        run.font.color.rgb = theme_color
-        run.font.name = "Calibri"
-        p.paragraph_format.space_before = Pt(12)
-        p.paragraph_format.space_after = Pt(4)
-        return p
-
-    def _font(run, name="Calibri", size=Pt(10.5)):
-        run.font.name = name
-        run.font.size = size
-
-    # Name
-    name = cv.get("name", "")
-    if name:
-        p = doc.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p.add_run(name)
-        run.bold = True
-        run.font.size = Pt(18)
-        run.font.name = "Calibri"
-        p.paragraph_format.space_after = Pt(2)
-
-    # Contact line
-    parts = [cv.get("email", ""), cv.get("phone", ""), cv.get("location", "")]
-    contact = "  |  ".join(p for p in parts if p)
-    if contact:
-        p = doc.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p.add_run(contact)
-        _font(run, size=Pt(10))
-        p.paragraph_format.space_after = Pt(2)
-
-    # Headline
-    headline = cv.get("headline", "")
-    if headline:
-        p = doc.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p.add_run(headline)
-        run.italic = True
-        _font(run, size=Pt(10.5))
-        p.paragraph_format.space_after = Pt(6)
-
     sections_data = cv.get("sections", {})
+    doc = Document()
+    _docx_setup(doc)
 
-    # Summary
+    # ── Header block (name / headline / contact) ──────────────────────────
+    _docx_para(
+        doc, [(str(cv.get("name", "")).upper(), 20, True, _DOCX_NAVY)],
+        after=1, align=WD_ALIGN_PARAGRAPH.CENTER,
+    )
+    if cv.get("headline"):
+        _docx_para(
+            doc, [(cv["headline"], 12, False, _DOCX_BLACK)],
+            after=4, align=WD_ALIGN_PARAGRAPH.CENTER,
+        )
+    contact = " | ".join(_docx_contact_parts(cv))
+    if contact:
+        _docx_para(
+            doc, [(contact, 9, False, _DOCX_GRAY)],
+            after=8, align=WD_ALIGN_PARAGRAPH.CENTER,
+        )
+    _docx_para(doc, [("", 10, False, _DOCX_GRAY)], after=6)
+
+    # ── Summary ───────────────────────────────────────────────────────────
     summary_list = sections_data.get("Summary", [])
     if summary_list:
-        _heading("Summary")
-        for text in summary_list:
-            p = doc.add_paragraph(text)
-            _font(p.runs[0] if p.runs else p.add_run(), size=Pt(10.5))
-            p.paragraph_format.space_after = Pt(4)
+        _docx_heading(doc, "SUMMARY")
+        _docx_para(
+            doc, [(" ".join(str(s) for s in summary_list), 10.5, False, _DOCX_GRAY)],
+            after=5,
+        )
 
-    # Experience
-    exp = sections_data.get("experience", [])
-    if exp:
-        _heading("Experience")
-        for job in exp:
-            p = doc.add_paragraph()
-            run = p.add_run(job.get("company", ""))
-            run.bold = True
-            _font(run)
-            p.paragraph_format.space_after = Pt(0)
-            p.paragraph_format.space_before = Pt(6)
-
-            pos = job.get("position", "")
-            dates = job.get("start_date", "")
-            if job.get("end_date"):
-                dates += f" -- {job['end_date']}"
-            if pos or dates:
-                p = doc.add_paragraph()
-                if pos:
-                    run = p.add_run(pos)
-                    _font(run)
-                    run.font.size = Pt(10)
-                if dates:
-                    run = p.add_run(f"  ({dates})")
-                    run.italic = True
-                    _font(run, size=Pt(10))
-                p.paragraph_format.space_after = Pt(2)
-
-            loc = job.get("location", "")
-            if loc:
-                p = doc.add_paragraph()
-                run = p.add_run(loc)
-                _font(run, size=Pt(10))
-                p.paragraph_format.space_after = Pt(2)
-
-            for hl in job.get("highlights", []):
-                p = doc.add_paragraph(hl, style="List Bullet")
-                for run in p.runs:
-                    _font(run, size=Pt(10.5))
-
-    # Skills
-    skills = sections_data.get("skills", [])
-    if skills:
-        _heading("Skills")
-        for sg in skills:
+    # ── Core skills ───────────────────────────────────────────────────────
+    skill_rows = sections_data.get("skills", [])
+    if skill_rows:
+        _docx_heading(doc, "CORE SKILLS")
+        for sg in skill_rows:
             label = sg.get("label", "")
             details = sg.get("details", "")
-            if label or details:
-                p = doc.add_paragraph()
-                if label:
-                    run = p.add_run(f"{label}: ")
-                    run.bold = True
-                    _font(run)
-                if details:
-                    run = p.add_run(details)
-                    _font(run)
-                p.paragraph_format.space_after = Pt(2)
+            if not details:
+                continue
+            _docx_para(
+                doc,
+                [(f"{label}: ", 10, True, _DOCX_BLACK), (details, 10, False, _DOCX_GRAY)],
+                after=2,
+            )
 
-    # Projects
+    # ── Experience (+ earlier-career one-liners) ──────────────────────────
+    exp = sections_data.get("experience", [])
+    if exp:
+        _docx_heading(doc, "EXPERIENCE")
+        detailed, earlier = [], []
+        for job in exp:
+            (detailed if job.get("highlights") else earlier).append(job)
+        for job in detailed:
+            position = job.get("position", "")
+            company = job.get("company", "")
+            location = job.get("location", "")
+            dates = (
+                f"{_format_month_year(job.get('start_date'))} – "
+                f"{_format_month_year(job.get('end_date'))}"
+            )
+            runs = [
+                (position, 11, True, _DOCX_BLACK),
+                (f" — {company}, " if company else "", 11, True, _DOCX_NAVY),
+                (location, 9.5, False, _DOCX_GRAY),
+                (f" | {dates}" if dates else "", 9.5, False, _DOCX_GRAY),
+            ]
+            _docx_para(doc, runs, before=8, after=1)
+            for hl in job.get("highlights", []):
+                _docx_bullet(doc, hl)
+        if earlier:
+            _docx_heading(doc, "EARLIER CAREER")
+            for job in earlier:
+                company = job.get("company", "")
+                position = job.get("position", "")
+                dates = (
+                    f"{_format_month_year(job.get('start_date'))} – "
+                    f"{_format_month_year(job.get('end_date'))}"
+                )
+                line = f"{company} — {position}" if position else company
+                if dates:
+                    line += f" | {dates}"
+                _docx_para(doc, [(line, 10, False, _DOCX_GRAY)], after=1.5)
+
+    # ── Selected projects ─────────────────────────────────────────────────
     projects = sections_data.get("projects", [])
     if projects:
-        _heading("Projects")
+        _docx_heading(doc, "SELECTED PROJECTS")
         for proj in projects:
-            proj_name = proj.get("name", "")
-            proj_summary = proj.get("summary", "")
-            if proj_name:
-                p = doc.add_paragraph()
-                run = p.add_run(proj_name)
-                run.bold = True
-                _font(run)
-                p.paragraph_format.space_after = Pt(0)
-            if proj_summary:
-                p = doc.add_paragraph(proj_summary)
-                _font(p.runs[0] if p.runs else p.add_run(), size=Pt(10))
-                p.paragraph_format.space_after = Pt(2)
-            for hl in proj.get("highlights", []):
-                p = doc.add_paragraph(hl, style="List Bullet")
-                for run in p.runs:
-                    _font(run, size=Pt(10.5))
+            name = proj.get("name", "")
+            summary = proj.get("summary", "")
+            text = f" — {summary}" if summary else ""
+            _docx_bullet(doc, text, bold_prefix=name)
 
-    # Education
+    # ── Education ─────────────────────────────────────────────────────────
     edu = sections_data.get("education", [])
     if edu:
-        _heading("Education")
+        _docx_heading(doc, "EDUCATION")
         for e in edu:
-            inst = e.get("institution", "")
             area = e.get("area", "")
-            edate = e.get("date", "")
-            if inst:
-                p = doc.add_paragraph()
-                run = p.add_run(inst)
-                run.bold = True
-                _font(run)
-                p.paragraph_format.space_after = Pt(0)
-            line = "  |  ".join(p for p in [area, edate] if p)
-            if line:
-                p = doc.add_paragraph(line)
-                _font(p.runs[0] if p.runs else p.add_run(), size=Pt(10))
-                p.paragraph_format.space_after = Pt(4)
+            institution = e.get("institution", "")
+            edate = _format_month_year(e.get("date"))
+            runs = [
+                (area, 10, True, _DOCX_BLACK),
+                (f" — {institution}" if institution else "", 10, False, _DOCX_GRAY),
+                (f" | {edate}" if edate else "", 10, False, _DOCX_GRAY),
+            ]
+            _docx_para(doc, runs, after=1)
 
     output_path = f"{OUTPUT_DIR}/{slug}/resume.docx"
     Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
@@ -626,12 +753,16 @@ def cmd_build(args):
     if not args.role and not args.llm:
         if args.jd:
             print("Note: --role not provided and LLM disabled, using JD first line")
-    if not args.role and not args.jd:
-        print("Error: --role is required when not using --jd", file=sys.stderr)
-        exit(1)
-
     jd_text = None
     role = args.role
+    if not role and not args.jd:
+        default_role = (base.get("target_roles") or [None])[0]
+        if default_role:
+            role = default_role
+            print(f"Note: --role not provided, using profile default: {role}")
+        else:
+            print("Error: --role is required when not using --jd", file=sys.stderr)
+            exit(1)
     if args.jd:
         with open(args.jd) as f:
             jd_text = f.read()
@@ -639,7 +770,7 @@ def cmd_build(args):
             role = jd_text.strip().split('\n')[0].strip()
             print(f"Extracted role from JD: {role}")
 
-    slug_raw = f"{args.company.lower()}-{role.lower()}-{datetime.now().strftime('%Y%m')}"
+    slug_raw = f"{args.company.lower()}-{role.lower()}"
     slug = re.sub(r"[^a-z0-9-]", "-", slug_raw).strip("-")
 
     from src.jd_parser import parse_jd
@@ -923,7 +1054,8 @@ def cmd_build(args):
         print("Generating cover letter...")
         cl_tags = tags or ""
         _generate_cover_letter(base, args.company, role, jd_text, cl_tags, slug,
-                                yaml_file=getattr(args, "yaml", BASE_FILE))
+                                yaml_file=getattr(args, "yaml", BASE_FILE),
+                                use_llm=getattr(args, "llm", False))
 
     # ── DOCX (optional) ─────────────────────────────────────────
     if getattr(args, "docx", False):
@@ -940,6 +1072,25 @@ def cmd_tags(args):
         for item in items:
             all_tags.update(item.get("tags", []))
     print("Available tags:\n" + "\n".join(sorted(all_tags)))
+
+
+def cmd_profiles(args):
+    """List resume sources and positioning profiles."""
+    rows = profiles.list_profiles()
+    if not rows:
+        print("No YAML files found in profiles/")
+        return
+    header = f"{'YAML':<28} {'Kind':<8} {'Market':<24} {'Focus':<48} {'Source'}"
+    print(header)
+    print("-" * len(header))
+    for r in rows:
+        market = (r.get("market") or "")[:24]
+        focus = (r.get("focus") or "")[:48]
+        source = Path(r["source"]).name if r.get("source") else "-"
+        print(f"{r['name']:<28} {r['kind']:<8} {market:<24} {focus:<48} {source}")
+    print()
+    print("Usage: python resume.py build ... --yaml profiles/na-ai-engineer.yaml")
+    print("Positioning profiles auto-load their source career YAML.")
 
 def cmd_log(args):
     from src.history_db import list_runs
@@ -1194,6 +1345,7 @@ def llm_tailor_bullets(
         max_bullets=max_bullets,
         max_jobs=max_jobs,
         jd_keywords=jd_keywords,
+        priority=base.get("experience_priority"),
     )
 
     kw_hint = ", ".join((jd_keywords or [])[:15])
@@ -1310,6 +1462,7 @@ def llm_boost_bullets(
         max_bullets=max_bullets,
         max_jobs=max_jobs,
         jd_keywords=jd_keywords,
+        priority=base.get("experience_priority"),
     )
 
     missing_str = ", ".join(verified)
@@ -1420,6 +1573,7 @@ def llm_enhance_experience(
         max_bullets=max_bullets,
         max_jobs=max_jobs,
         jd_keywords=jd_keywords,
+        priority=base.get("experience_priority"),
     )
 
     role_line = f"Target role: {role}." if role else ""
@@ -1766,33 +1920,95 @@ def cmd_compare(args):
         print(json.dumps(result, indent=2))
 
 
-def _generate_cover_letter(base: dict, company: str, role: str | None,
-                           jd_text: str | None, tags: str, slug: str, yaml_file: str = BASE_FILE):
-    """Generate a cover letter .txt file in the output directory.
+def _compose_cover_letter(base: dict, company: str, role: str | None,
+                          jd_text: str | None, tags: str,
+                          yaml_file: str = BASE_FILE,
+                          use_llm: bool = False,
+                          llm_provider: str | None = None) -> str | None:
+    """Build the full cover-letter text (header + body + footer)."""
+    cls = base.get("cover_letters", [])
+    tags_list = [t.strip() for t in (tags or "").split(",") if t.strip()]
+    target_set = set(tags_list) if tags_list else None
+    if target_set and target_set.intersection({"ai", "fullstack"}):
+        match = next((c for c in cls if c["id"] == "ai-fullstack-focused"), None)
+    elif target_set and target_set.intersection({"backend", "api"}):
+        match = next((c for c in cls if c["id"] == "backend-focused"), None)
+    else:
+        match = next((c for c in cls if c["id"] == "leadership-focused"), None)
+    if not match:
+        # Localized sources (e.g. base-zh-*.yaml) ship their own template ids;
+        # fall back to the first cover-letter template so a letter is still
+        # produced instead of being silently skipped.
+        match = next(iter(cls), None)
+    if not match:
+        return None
 
-    NOTE: jd_text is raw text content (not a file path). It gets written to a
-    temp file because cmd_cover_letter reads from a file path.
-    """
-    from argparse import Namespace
-    jd_path = None
-    if jd_text:
-        Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
-        jd_path = f"{OUTPUT_DIR}/{slug}/.cl_jd.txt"
-        Path(jd_path).write_text(jd_text)
-    company_slug = re.sub(r"[^a-z0-9-]", "-", company.lower()).strip("-")
-    cl_args = Namespace(
-        yaml=yaml_file,
-        company=company,
-        role=role or "",
-        jd=jd_path,
-        tags=tags,
-        llm=bool(jd_text),
-        output=f"{OUTPUT_DIR}/{slug}/cover-letter-{company_slug}.txt",
+    cl_base = base.get("identity", {}).get("cover_letter_base", {})
+    opening = cl_base.get("opening", "").replace("{role}", role or "{role}").replace("{company}", company)
+    closing = cl_base.get("closing", "").replace("{role}", role or "{role}").replace("{company}", company)
+    body = match["body"].replace("{opening}", opening).replace("{closing}", closing)
+    body = body.replace("{role}", role or "{role}").replace("{company}", company)
+
+    if use_llm and jd_text:
+        print("Rewriting cover letter with LLM...")
+        rewritten = llm_rewrite_cover_letter(body, jd_text, llm_provider=llm_provider)
+        if rewritten != body:
+            print("Cover letter rewritten")
+        body = rewritten
+
+    header = f"To the Hiring Team at {company},\n\n"
+    footer = f"\n\nBest regards,\n{base['identity']['name']}"
+    return header + body + footer
+
+
+def _generate_cover_letter(base: dict, company: str, role: str | None,
+                           jd_text: str | None, tags: str, slug: str,
+                           yaml_file: str = BASE_FILE, use_llm: bool = False) -> str | None:
+    """Generate a styled .docx cover letter in the output directory."""
+    from docx import Document
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    full = _compose_cover_letter(
+        base, company, role, jd_text, tags, yaml_file, use_llm=use_llm,
     )
-    try:
-        cmd_cover_letter(cl_args)
-    except SystemExit:
-        pass  # cmd_cover_letter calls exit(1) on error — swallow for batch mode
+    if full is None:
+        print("Cover letter: no matching template", file=sys.stderr)
+        return None
+
+    company_slug = re.sub(r"[^a-z0-9-]", "-", company.lower()).strip("-")
+    out_path = Path(OUTPUT_DIR) / slug / f"cover-letter-{company_slug}.docx"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if not _HAS_DOCX:
+        # Graceful fallback: plain text when python-docx is unavailable.
+        txt_path = out_path.with_suffix(".txt")
+        txt_path.write_text(full, encoding="utf-8")
+        print(f"Cover letter written: {txt_path}")
+        return str(txt_path)
+
+    doc = Document()
+    _docx_setup(doc)
+    identity = base.get("identity", {})
+    _docx_para(
+        doc, [(str(identity.get("name", "")).upper(), 16, True, _DOCX_NAVY)],
+        after=2, align=WD_ALIGN_PARAGRAPH.CENTER,
+    )
+    contact = " | ".join(_docx_contact_parts(identity))
+    if contact:
+        _docx_para(
+            doc, [(contact, 9, False, _DOCX_GRAY)],
+            after=14, align=WD_ALIGN_PARAGRAPH.CENTER,
+        )
+    for chunk in [c.strip() for c in full.split("\n\n") if c.strip()]:
+        lines = [ln.strip() for ln in chunk.split("\n") if ln.strip()]
+        if len(lines) == 2 and lines[0].startswith("Best regards"):
+            _docx_para(doc, [(lines[0], 10.5, False, _DOCX_GRAY)], before=10, after=1)
+            _docx_para(doc, [(lines[1], 10.5, True, _DOCX_BLACK)], after=0)
+        else:
+            _docx_para(doc, [(" ".join(lines), 10.5, False, _DOCX_GRAY)], after=8)
+    doc.save(out_path)
+    print(f"Cover letter written: {out_path}")
+    return str(out_path)
 
 
 def cmd_cover_letter(args):
@@ -1811,38 +2027,14 @@ def cmd_cover_letter(args):
     if args.llm and jd_text and not role:
         role = jd_text.strip().split('\n')[0].strip()
 
-    tags_list = [t.strip() for t in args.tags.split(",") if t] if args.tags else None
-    target_set = set(tags_list) if tags_list else None
-
-    cls = base.get("cover_letters", [])
-    if target_set and target_set.intersection({"ai", "fullstack"}):
-        match = next((c for c in cls if c["id"] == "ai-fullstack-focused"), None)
-    elif target_set and target_set.intersection({"backend", "api"}):
-        match = next((c for c in cls if c["id"] == "backend-focused"), None)
-    else:
-        match = next((c for c in cls if c["id"] == "leadership-focused"), None)
-
-    if not match:
+    full = _compose_cover_letter(
+        base, args.company, role, jd_text, args.tags, args.yaml,
+        use_llm=args.llm,
+        llm_provider=getattr(args, "llm_provider", None),
+    )
+    if full is None:
         print(f"Error: No cover letter template found in {BASE_FILE}", file=sys.stderr)
         exit(1)
-
-    cl_base = base.get("identity", {}).get("cover_letter_base", {})
-    opening = cl_base.get("opening", "").replace("{role}", role or "{role}").replace("{company}", args.company)
-    closing = cl_base.get("closing", "").replace("{role}", role or "{role}").replace("{company}", args.company)
-
-    body = match["body"].replace("{opening}", opening).replace("{closing}", closing)
-    body = body.replace("{role}", role or "{role}").replace("{company}", args.company)
-
-    if args.llm and jd_text:
-        print("Rewriting cover letter with LLM...")
-        rewritten = llm_rewrite_cover_letter(body, jd_text, llm_provider=getattr(args, "llm_provider", None))
-        if rewritten != body:
-            print("Cover letter rewritten")
-        body = rewritten
-
-    header = f"To the Hiring Team at {args.company},\n\n"
-    footer = f"\n\nBest regards,\n{base['identity']['name']}"
-    full = header + body + footer
 
     if args.output:
         out_path = Path(args.output)
@@ -1912,8 +2104,14 @@ def main():
     build_parser.add_argument("--target-score", type=int, default=0,
                               help="Re-run with tailor+boost if ATS score below target (e.g. 75)")
     build_parser.add_argument("--all-formats", action="store_true", help="Generate HTML, Markdown, and PNG in addition to PDF")
-    build_parser.add_argument("--cover-letter", action="store_true", help="Also generate a cover letter .txt file")
-    build_parser.add_argument("--docx", action="store_true", help="Also generate a .docx Word document")
+    build_parser.add_argument("--cover-letter", dest="cover_letter", action="store_true", default=True,
+                              help="Generate a styled .docx cover letter (default: on)")
+    build_parser.add_argument("--no-cover-letter", dest="cover_letter", action="store_false",
+                              help="Skip cover letter generation")
+    build_parser.add_argument("--docx", dest="docx", action="store_true", default=True,
+                              help="Generate resume.docx (default: on)")
+    build_parser.add_argument("--no-docx", dest="docx", action="store_false",
+                              help="Skip DOCX generation")
     build_parser.add_argument("--no-history", action="store_true",
                               help="Skip runs.db logging (used by WebUI runner)")
     build_parser.set_defaults(func=cmd_build)
@@ -1959,6 +2157,12 @@ def main():
 
     tags_parser = subparsers.add_parser("tags", help="List all available tags in base")
     tags_parser.set_defaults(func=cmd_tags)
+
+    profiles_parser = subparsers.add_parser(
+        "profiles",
+        help="List resume sources and positioning profiles",
+    )
+    profiles_parser.set_defaults(func=cmd_profiles)
 
     log_parser = subparsers.add_parser("log", help="Show application history")
     log_parser.set_defaults(func=cmd_log)

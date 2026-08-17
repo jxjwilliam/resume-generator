@@ -1,5 +1,5 @@
 /** Configurable path for the default resume profile YAML */
-export const DEFAULT_YAML_PATH = "profiles/base.yaml";
+export const DEFAULT_YAML_PATH = "profiles/career-en.yaml";
 
 export interface ThemeInfo {
   id: string;
@@ -11,6 +11,11 @@ export interface ThemeInfo {
 export interface YamlInfo {
   name: string;
   path: string;
+  kind?: "source" | "profile";
+  market?: string;
+  focus?: string;
+  source?: string;
+  target_roles?: string[];
 }
 
 export interface OutputFile {

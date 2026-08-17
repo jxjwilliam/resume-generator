@@ -12,6 +12,7 @@ interface Props {
   selected: boolean;
   onClick: () => void;
   disabled?: boolean;
+  compact?: boolean;
 }
 
 /** Photo placeholder — circle with person silhouette */
@@ -297,40 +298,51 @@ function ThemePreview({ themeId }: { themeId: string }) {
   }
 }
 
-export default function ThemeCard({ theme, selected, onClick, disabled }: Props) {
+export default function ThemeCard({ theme, selected, onClick, disabled, compact = false }: Props) {
   return (
     <Card
       sx={{
-        width: 255,
+        width: compact ? "100%" : 255,
         opacity: disabled ? 0.5 : 1,
-        border: selected ? "2px solid #1976d2" : "2px solid transparent",
+        border: selected ? "2px solid #1F3864" : "2px solid #E3E8F0",
         bgcolor: selected ? "action.selected" : "background.paper",
         transition: "border-color 0.2s, box-shadow 0.2s",
-        ...(selected ? { boxShadow: "0 0 10px rgba(25,118,210,0.35)" } : {}),
+        ...(selected ? { boxShadow: "0 4px 14px rgba(31,56,100,0.18)" } : {}),
       }}
     >
       <CardActionArea onClick={disabled ? undefined : onClick} disabled={disabled}>
         <Box
           sx={{
-            height: 180,
+            height: compact ? 118 : 180,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "#fafafa",
-            borderBottom: "1px solid #eee",
+            bgcolor: "#F7F9FC",
+            borderBottom: "1px solid #EDF0F5",
             overflow: "hidden",
             p: 0.5,
           }}
         >
-          <ThemePreview themeId={theme.id} />
+          <Box
+            sx={{
+              width: 240,
+              transform: compact ? "scale(0.66)" : "none",
+              transformOrigin: "top left",
+              flexShrink: 0,
+            }}
+          >
+            <ThemePreview themeId={theme.id} />
+          </Box>
         </Box>
-        <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
+        <CardContent sx={{ py: compact ? 1 : 1.5, px: compact ? 1.25 : 2, "&:last-child": { pb: compact ? 1 : 1.5 } }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
             {theme.name}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-            {theme.best_for}
-          </Typography>
+          {!compact && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+              {theme.best_for}
+            </Typography>
+          )}
         </CardContent>
       </CardActionArea>
     </Card>

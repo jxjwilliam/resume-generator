@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
-DEFAULT_YAML = "profiles/base.yaml"
+DEFAULT_YAML = "profiles/career-en.yaml"
 
 
 class ResumeRunRequest(BaseModel):
@@ -23,8 +23,8 @@ class ResumeRunRequest(BaseModel):
     no_projects: bool = False
     all_formats: bool = False
     locale: str = "en"
-    cover_letter: bool = False
-    docx: bool = False
+    cover_letter: bool = True
+    docx: bool = True
 
 
 class RunResponse(BaseModel):
@@ -58,6 +58,11 @@ class ThemeInfo(BaseModel):
 class YamlInfo(BaseModel):
     name: str
     path: str
+    kind: Optional[str] = None  # "source" | "profile"
+    market: Optional[str] = None
+    focus: Optional[str] = None
+    source: Optional[str] = None
+    target_roles: Optional[list[str]] = None
 
 
 class KeywordResult(BaseModel):

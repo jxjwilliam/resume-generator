@@ -1,0 +1,48 @@
+# Lightweight positioning profile. Content is selected from career-en.yaml.
+meta:
+  version: '1.0'
+  market: China
+  profile: AI Technical Partner / Co-founder
+source:
+  career: "./career-en.yaml"
+headline: AI Technical Partner / Co-founder | AI Products · LLM · RAG · Agentic AI | 0→1 Delivery
+target_roles:
+- AI Technical Partner
+- Technical Co-founder
+- AI Co-founder
+- AI Product & Technology Lead
+- AI Technical Lead
+summary: AI technical partner and product-minded engineering leader who can take an AI idea from product definition and architecture
+  through hands-on implementation, AI integration, cloud deployment, and delivery.
+experience_priority:
+- Best IT Consulting Inc.
+- Xperi Inc.
+- EPAM Systems (Credit Suisse)
+- China Soft Int'l (HSBC)
+- WebMD
+- Best Buy Canada
+- FedEx
+- ZTE
+emphasis:
+- ai
+- agentic
+- product
+- fullstack
+- backend
+- architecture
+skills_priority:
+- AI/LLM/RAG/Agents
+- Product & 0→1
+- Full-Stack
+- Python/TypeScript
+- Cloud/DevOps
+- Architecture
+projects_priority:
+- AgentsAI / AgentsCrew
+- AutoBidder
+- AgenticAP / AgenticOmni
+- MemWeaver
+- idea2spec
+# First 5 priority companies get full bullets; older ones get this many.
+recent_jobs: 5
+old_experience_max_bullets: 1

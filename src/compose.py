@@ -7,6 +7,8 @@ and optional JD keyword matches.
 
 from __future__ import annotations
 
+from src.profiles import _match_name
+
 DEFAULT_MAX_BULLETS = 4
 DEFAULT_MAX_JOBS = 0  # 0 = unlimited
 
@@ -48,6 +50,29 @@ def sort_jobs_reverse_chronological(jobs: list) -> list:
     return sorted(jobs, key=sort_key, reverse=True)
 
 
+def reorder_jobs_by_priority(jobs: list, priority: list[str] | None) -> list:
+    """
+    Priority-listed companies first (in listed order), the rest after.
+    Within each priority tier, jobs stay reverse-chronological.
+    """
+    if not priority:
+        return sort_jobs_reverse_chronological(jobs)
+    used: set[int] = set()
+    groups: list[list] = []
+    for wanted in priority:
+        group = [
+            j for j in jobs
+            if id(j) not in used and _match_name(j.get("company", ""), wanted)
+        ]
+        used.update(id(j) for j in group)
+        groups.append(group)
+    rest = [j for j in jobs if id(j) not in used]
+    ordered: list = []
+    for group in groups + [rest]:
+        ordered.extend(sort_jobs_reverse_chronological(group))
+    return ordered
+
+
 def bullet_relevance_score(
     bullet: dict,
     required_tags: set | None = None,
@@ -86,6 +111,7 @@ def select_experience_jobs(
     jd_keywords: list[str] | None = None,
     seniority: str | None = None,
     llm_scores: dict[str, int] | None = None,
+    priority: list[str] | None = None,
 ) -> list[tuple[dict, list[dict]]]:
     """
     Return (job, selected_bullets) pairs, newest first.
@@ -108,10 +134,13 @@ def select_experience_jobs(
             det += llm_scores.get(key, 0) * 5
         return det
 
-    active_jobs = [j for j in exp_list if j.get("status") == "active"]
+    active_jobs = reorder_jobs_by_priority(
+        [j for j in exp_list if j.get("status") == "active"],
+        priority,
+    )
     results: list[tuple[dict, list[dict]]] = []
 
-    for job in sort_jobs_reverse_chronological(active_jobs):
+    for job in active_jobs:
         matched = filter_bullets(job.get("bullets", []), required_tags)
         if not matched and required_tags:
             job_tags = set(job.get("tags", []))
@@ -129,8 +158,9 @@ def select_experience_jobs(
         matched.sort(key=lambda b: _score(b, job["company"]), reverse=True)
         for b in matched:
             b["_score"] = _score(b, job["company"])
-        if max_bullets > 0:
-            matched = matched[:max_bullets]
+        cap = int(job.get("_max_bullets") or max_bullets)
+        if cap > 0:
+            matched = matched[:cap]
         results.append((job, matched))
 
         if max_jobs > 0 and len(results) >= max_jobs:
@@ -256,14 +286,16 @@ def preview_experience_jobs(
     max_bullets: int = DEFAULT_MAX_BULLETS,
     max_jobs: int = DEFAULT_MAX_JOBS,
     jd_keywords: list[str] | None = None,
+    priority: list[str] | None = None,
 ) -> list[dict]:
     """
     Preview which bullets would be included/excluded per job before build.
     """
     tags_list = parse_tag_list(tags)
     required_tags = set(tags_list) if tags_list else None
-    active_jobs = sort_jobs_reverse_chronological(
-        [j for j in exp_list if j.get("status") == "active"]
+    active_jobs = reorder_jobs_by_priority(
+        [j for j in exp_list if j.get("status") == "active"],
+        priority,
     )
     results: list[dict] = []
     jobs_included = 0
@@ -289,7 +321,9 @@ def preview_experience_jobs(
             })
         scored_items.sort(key=lambda x: x["score"], reverse=True)
 
-        cap = max_bullets if max_bullets > 0 else len(scored_items)
+        cap = int(job.get("_max_bullets") or max_bullets)
+        if cap <= 0:
+            cap = len(scored_items)
         for i, item in enumerate(scored_items):
             item["included"] = job_will_include and i < cap
 

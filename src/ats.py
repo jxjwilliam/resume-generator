@@ -75,6 +75,7 @@ def score_resume(
         max_bullets=max_bullets,
         max_jobs=max_jobs,
         jd_keywords=jd_keywords,
+        priority=base.get("experience_priority"),
     )
 
     # Build combined text for keyword matching (bullets + skills + headline + summary)

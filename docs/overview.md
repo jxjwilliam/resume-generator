@@ -2,7 +2,7 @@
 
 > **Note:** The RxResume/`transform.py` path described in this document has been removed (July 2026). References to `transform.py`, `rxresu.me`, `/api/transform/run`, and `TransformPage.tsx` are historical only. The core pipeline (`resume.py` → rendercv / python-docx) and WebUI (Resume, Compare, Outputs, History, Editor tabs) remain active.
 
-> **One YAML to rule them all.** Maintain a single source of truth in `base.yaml`, compose job-specific variants with tag-based filtering, and render to **ATS PDFs** (rendercv) — all from the CLI.
+> **Canonical sources, composed per job.** Maintain sources in `profiles/career-en.yaml` (English) and `profiles/base-zh-*.yaml` (Chinese), optionally re-focused through positioning profiles, compose job-specific variants with tag-based filtering, and render to **ATS PDFs** (rendercv) — all from the CLI.
 
 ---
 
@@ -13,7 +13,7 @@ The system has three data/composition layers and **two rendering paths**:
 ```mermaid
 flowchart TB
     subgraph L1["Layer 1 · Data (manual)"]
-        BY["profiles/base.yaml<br/>summary, headline, experience,<br/>skills, projects, education"]
+        BY["profiles/career-en.yaml<br/>summary, headline, experience,<br/>skills, projects, education"]
         style BY fill:#e1f5fe,stroke:#0288d1
     end
 
@@ -47,24 +47,24 @@ flowchart TB
 
 | Layer | Edits | Tools | Output |
 |---|---|---|---|
-| **Layer 1** — `base.yaml` | Manual only | — | Tagged YAML data |
-| **Layer 2** — Composition | Never manually | `resume.py`, `transform.py`, **WebUI** | Variant YAML, JSON Patch ops, or direct CLI invocation |
+| **Layer 1** — `profiles/career-en.yaml` + `base-zh-*.yaml` | Manual only | — | Tagged YAML data |
+| **Layer 2** — Composition | Never manually | `resume.py`, **WebUI** | Variant YAML via direct CLI invocation |
 | **Layer 3A** — rendercv | Never manually | rendercv CLI | ATS PDF, HTML |
 | **Layer 3B** — python-docx | Never manually | python-docx | Word DOCX |
-| **Layer 3C** — rxresu.me | Tweak in UI | rxresu.me dashboard | Visual PDF, public link |
+| **Layer 3C** — rxresu.me | Removed 2026-07 | — | Historical only |
 
-The key rule: **`base.yaml` is the only file you touch by hand.** Everything else is generated or synced on demand.
+The key rule: **canonical sources (`profiles/career-en.yaml`, `profiles/base-zh-*.yaml`) are the only files you touch by hand.** Everything else is generated or synced on demand.
 
 ### When to use which path
 
 | Need | Command | Output |
 |---|---|---|
-| Job application, ATS scan | `resume.py build --tags ...` | `output/<slug>/William_Jiang_CV.pdf` |
+| Job application, ATS scan | `resume.py build --tags ...` | `output/<slug>/William_Jiang-{role}.pdf` |
 | Recruiter prefers Word | `resume.py build --tags ... --docx` | `output/<slug>/resume.docx` |
-| Visual polish, templates, sharing | `transform.py --resume-id ...` | rxresu.me builder + PDF export |
+| Visual polish, templates, sharing | ~~`transform.py`~~ (removed 2026-07) | Historical only |
 | Both PDF + DOCX + cover letter | `resume.py build --docx --cover-letter` | All three in one command |
-| Chinese resume | `resume.py build --locale zh-CN --yaml base_zh.yaml` | PDF + DOCX with CJK font |
-| Visual UI for everything | `./ui/start.sh` then open http://localhost:5173 | WebUI with all options |
+| Chinese resume | `resume.py build --locale zh-CN --yaml profiles/base-zh-cto.yaml` | PDF + DOCX with CJK font |
+| Visual UI for everything | `./ui/start.sh` then open http://localhost:5300 | WebUI with all options |
 
 ---
 
@@ -138,17 +138,17 @@ sequenceDiagram
 
 ---
 
-## `base.yaml` schema highlights
+## Source schema highlights
 
 Beyond tagged experience/skills/projects, the source file now includes fields used by both render paths:
 
 | Field | Example | Used by |
 |---|---|---|
-| `identity.headline` | `Senior Full-Stack & AI Engineer \| ...` | `transform.py` → rxresu.me |
-| `identity.photo` | `assets/william-jiang.jpg` | `transform.py` → embedded headshot |
-| `summary` | Short professional paragraph | `transform.py` (default summary source) |
+| `identity.headline` | `Senior Full-Stack & AI Engineer \| ...` | `resume.py build` headline (positioning profiles override) |
+| `identity.photo` | `assets/william-jiang.jpg` | rendercv / sidebar theme embedded headshot |
+| `summary` | Short professional paragraph | `resume.py build` summary (positioning profiles override) |
 | `education[].start` + `graduation` | `1987-09` → `1991-07` | Full date ranges in output |
-| `cover_letters[]` | Role-specific letter bodies | Applications only (`--use-cover-letter` for rxresu.me) |
+| `cover_letters[]` | Role-specific letter bodies | Generated as `cover-letter-{company}.docx` during build |
 
 Experience is stored oldest→newest in YAML; both CLIs **output newest-first**.
 
@@ -285,7 +285,7 @@ sequenceDiagram
     CLI->>FS: log to runs.db (SQLite)
     FS-->>CLI: done
 
-    CLI-->>User: PDF at output/bestit-swe/CV.pdf
+    CLI-->>User: PDF at output/bestit-swe/William_Jiang-{role}.pdf
     CLI-->>User: DOCX at output/bestit-swe/resume.docx (if --docx)
 ```
 
@@ -295,8 +295,8 @@ sequenceDiagram
 |---|---|
 | `python resume.py build --company X --role Y --tags backend,python` | Build and render an ATS resume via rendercv |
 | `python resume.py build --docx --cover-letter` | Build + DOCX + cover letter |
-| `python resume.py build --locale zh-CN --yaml base_zh.yaml` | Build Chinese resume with CJK font |
-| `python resume.py tags` | List all available tags in `base.yaml` |
+| `python resume.py build --locale zh-CN --yaml profiles/base-zh-cto.yaml` | Build Chinese resume with CJK font |
+| `python resume.py tags` | List all available tags in `profiles/career-en.yaml` |
 | `python resume.py log` | Show application history |
 | `python resume.py cover-letter --company X --role Y` | Generate a cover letter standalone |
 | `python resume.py analyze --jd jds/x.txt` | Structured JD parse + skill match report |
@@ -305,7 +305,7 @@ sequenceDiagram
 | `python resume.py interview --jd jds/x.txt` | Gap analysis + interview prep |
 | `python resume.py compare --jds-dir jds/` | Rank 2–5 JDs by resume fit |
 | `python resume.py build --llm --tailor --boost --template auto --pages 1` | Full quality pipeline build |
-| `python transform.py --resume-id <ID> --template auto --jd jds/x.txt` | RxResume sync with auto template |
+| ~~`python transform.py --resume-id <ID> ...`~~ | RxResume sync (removed 2026-07) |
 | `./scripts/cleanup.sh` | Reset all generated data (variants, output, DB) |
 
 ### `build` flags
@@ -316,7 +316,7 @@ sequenceDiagram
 | `--role` | ✅ | Job title |
 | `--tags` | | Comma-separated tag filter (e.g. `backend,python,react`) |
 | `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes` (default: `classic`) |
-| `--yaml` | | YAML source file (default: `base.yaml`) |
+| `--yaml` | | YAML source file (default: `profiles/career-en.yaml`) |
 | `--locale` | | Resume language: `en` or `zh-CN` (default: `en`) |
 | `--jd` | | Path to a job description text file (saved in `jds/` for reference) |
 | `--max-bullets` | | Max bullets per job (default: 4) |
@@ -324,24 +324,24 @@ sequenceDiagram
 | `--llm` | | Enable LLM-based tag extraction + headline + summary from the JD |
 | `--tailor` | | LLM minimally rewrite bullets for JD (requires `--jd` + API key) |
 | `--boost` | | Second LLM pass for verified missing hard skills |
-| `--pages` | | Page budget — trim to N pages (default: 1) |
+| `--pages` | | Page budget — trim to N pages (default: 2) |
 | `--target-score` | | Re-run with tailor+boost if ATS below threshold |
 | `--template auto` | | Pick rendercv theme from JD signals |
 | `--all-formats` | | Generate HTML, Markdown, and PNG in addition to PDF |
-| `--cover-letter` | | Also generate a cover letter .txt file |
-| `--docx` | | Also generate a .docx Word document |
+| `--cover-letter` / `--no-cover-letter` | | Generate a cover letter `.docx` (on by default) |
+| `--docx` / `--no-docx` | | Generate a `.docx` Word document (on by default) |
 
 ### Slug convention
 
 The variant file name is auto-generated:
 
 ```
-{company}-{role}-{YYYYMM}.yaml
+{company}-{role}.yaml
 
 Examples:
-  bestit-senior-swe-202606.yaml
-  google-swe-202606.yaml
-  shopify-staff-engineer-202607.yaml
+  bestit-senior-swe.yaml
+  google-swe.yaml
+  shopify-staff-engineer.yaml
 ```
 
 ---
@@ -350,20 +350,25 @@ Examples:
 
 ```
 resume-app/
-├── base.yaml                 # ★ Single source of truth — you edit this
 ├── resume.py                 # CLI composition engine (rendercv path)
-├── history_db.py              # Shared SQLite DB module (CLI + WebUI)
 ├── runs.db                    # Shared history database (tracked)
-├── compose.py                # Shared bullet ranking + caps
-├── jd_parser.py              # Structured JD keyword parsing
-├── ats.py                    # ATS scoring + multi-JD compare
-├── transform.py              # RxResume sync (visual path)
-├── applications.json         # Legacy tracking log (still written for backward compat)
+├── src/
+│   ├── profiles.py           # Source / positioning-profile resolver
+│   ├── compose.py            # Shared bullet ranking + caps
+│   ├── jd_parser.py          # Structured JD keyword parsing
+│   ├── ats.py                # ATS scoring + multi-JD compare
+│   ├── history_db.py         # Shared SQLite DB module (CLI + WebUI)
+│   └── ...
+├── profiles/
+│   ├── career-en.yaml        # ★ Canonical English source — you edit this
+│   ├── base-zh-cto.yaml      # Standalone Chinese resume (CTO focus)
+│   ├── base-zh-partner.yaml  # Standalone Chinese resume (partner focus)
+│   └── na-ai-engineer.yaml / china-*.yaml  # Positioning profiles
 ├── README.md
 ├── .gitignore
 │
 ├── assets/                   # Source resumes + profile photo
-│   ├── william-jiang.jpg     # Default headshot (rxresu.me)
+│   ├── william-jiang.jpg     # Default headshot (rendercv / sidebar)
 │   └── *.docx                # Legacy resume versions
 │
 ├── jds/                      # Job descriptions
@@ -378,7 +383,7 @@ resume-app/
 └── docs/
     ├── overview.md           # This document
     ├── resume-quality-pipeline.md  # JD pipeline, ATS, tailor/boost
-    ├── rxresume-integration-guide.md
+    ├── profile-layering.md   # Sources + positioning profiles
     ├── resume-system-implementation.md
     └── superpowers/
         ├── specs/            # Design specs
@@ -461,8 +466,8 @@ DEEPSEEK_API_KEY=sk-...
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
 
-# Required for transform.py → rxresu.me
-RXRESU_API_KEY=your_key_here
+# Historical — RxResume/transform.py removed 2026-07
+# RXRESU_API_KEY=your_key_here
 ```
 
 Swap `DEEPSEEK_BASE_URL` for another OpenAI-compatible provider (e.g. Ollama, OpenAI) — no code changes needed.
@@ -510,7 +515,7 @@ python resume.py build \
   --template classic
 
 # 4. Open the PDF
-open output/bestit-senior-swe-*/William_Jiang_CV.pdf
+open output/bestit-senior-swe-*/William_Jiang-*.pdf
 
 # 5. Check the log
 python resume.py log

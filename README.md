@@ -1,8 +1,13 @@
 # Resume Management System
 
-Maintain a **single source of truth** for your resume (`profiles/base.yaml`), compose job-specific variants, and render to **PDF** (via rendercv) or **DOCX** (via python-docx). Includes a local **WebUI** (FastAPI + React) for visual operation.
+Maintain canonical resume sources (`profiles/career-en.yaml`,
+`profiles/base-zh-*.yaml`), layer lightweight **positioning profiles** on top
+for each job market, compose job-specific variants, and render to **PDF** (via
+rendercv) or **DOCX** (via python-docx). Includes a local **WebUI** (FastAPI +
+React) for visual operation.
 
-Stop juggling 7 different resume files. Edit one YAML file — generate any variant you need.
+Stop juggling duplicated resume files. Edit one career source — generate any
+positioned variant you need. See [`docs/profile-layering.md`](docs/profile-layering.md).
 
 ## Quick Start
 
@@ -25,14 +30,14 @@ python resume.py build \
   --template classic
 # → output/variants/bestit-senior-swe-*.yaml + output/.../William_Jiang-Senior-SWE.pdf
 
-# Path A — with DOCX + cover letter
+# Path A — default: PDF + DOCX + cover letter (3 files)
 python resume.py build \
   --company "BestIT" \
   --role "Senior SWE" \
   --tags backend,python,api \
-  --template classic \
-  --docx --cover-letter
-# → output/.../resume.docx + output/.../cover-letter-bestit.txt
+  --template classic
+# → output/.../William_Jiang-Senior-SWE.pdf + resume.docx + cover-letter-bestit.docx
+#   (--no-docx / --no-cover-letter to opt out)
 
 # Path B — WebUI (local)
 ./ui/start.sh
@@ -43,7 +48,7 @@ python resume.py compare --jds-dir jds/
 python resume.py analyze --jd jds/target.txt
 python resume.py build --company Acme --jd jds/target.txt \
   --llm --tailor --boost --max-bullets 3 --max-jobs 4 --template auto --pages 1
-# → output/.../CV.pdf + ats-report.json + bullet-diff.json + provenance.json
+# → output/.../William_Jiang-{role}.pdf + ats-report.json + bullet-diff.json + provenance.json
 ```
 
 Set `LLM_PROVIDER` + provider API keys for Path C (LLM features). See [`docs/llm-providers.md`](docs/llm-providers.md) and [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline.md).
@@ -64,20 +69,21 @@ A beautifully designed mockup resume — the system produces real PDFs via rende
 
 ```mermaid
 flowchart LR
-    A["✏️ profiles/base.yaml<br/>(manual edit)"] --> B["⚙️ resume.py build"]
+    A["✏️ profiles/career-en.yaml<br/>(canonical source)"] --> P["🎯 positioning profiles<br/>na-ai-engineer / china-cto / ..."]
+    P --> B["⚙️ resume.py build"]
     A --> U["🌐 WebUI"]
     U --> B
     B --> C["📄 variants/&lt;slug&gt;.yaml"]
     C --> D["🎨 rendercv"]
     C --> W["📝 python-docx"]
-    D --> E["📑 output/&lt;slug&gt;/CV.pdf"]
-    D --> F["🌐 output/&lt;slug&gt;/CV.html"]
+    D --> E["📑 output/&lt;slug&gt;/William_Jiang-{role}.pdf"]
+    D --> F["🌐 output/&lt;slug&gt;/CV.html (--all-formats)"]
     W --> X["📄 output/&lt;slug&gt;/resume.docx"]
     B -.-> H["📋 runs.db<br/><small>(shared SQLite)</small>"]
-    B -.-> L["✉️ cover letter .txt"]
+    B -.-> L["✉️ cover-letter-{company}.docx"]
 ```
 
-1. **Edit `profiles/base.yaml`** — single source of truth: experience, skills, projects, education, summary, headline, cover letter templates.
+1. **Edit `profiles/career-en.yaml`** (English) or `profiles/base-zh-*.yaml` (Chinese) — canonical sources: experience, skills, projects, education, summary, headline, cover letter templates. Pick a positioning profile (`profiles/na-ai-engineer.yaml`, ...) to re-focus content for a market.
 2. **Choose a render path:**
    - **`resume.py build`** — tag-filtered variant → rendercv → ATS PDF/HTML, optionally DOCX + cover letter, logged in `runs.db` (shared SQLite).
    - **WebUI** ([http://localhost:5300](http://localhost:5300)) — visual interface for building resumes, storing history in the same shared `runs.db`.
@@ -87,7 +93,7 @@ flowchart LR
 
 ### `python resume.py build`
 
-Generate a job-specific resume variant and render it to PDF + HTML, with optional DOCX and cover letter.
+Generate a job-specific resume variant and render it to PDF (plus HTML/Markdown/PNG with `--all-formats`), with DOCX and cover letter by default.
 
 | Flag | Required | Description |
 |---|---|---|
@@ -95,7 +101,7 @@ Generate a job-specific resume variant and render it to PDF + HTML, with optiona
 | `--role` | ✅* | Job title (extracted from JD first line if omitted with `--llm`) |
 | `--tags` | | Comma-separated tags to filter bullets (e.g. `backend,python,react`) |
 | `--template` | | rendercv theme: `classic`, `sb2nov`, `moderncv`, `engineeringresumes`, `harvard`, `opal`, `ink`, or `auto` (default: `classic`) |
-| `--yaml` | | YAML source file (default: `profiles/base.yaml`) |
+| `--yaml` | | YAML source file — full source or positioning profile (default: `profiles/career-en.yaml`) |
 | `--locale` | | Resume language: `en` or `zh-CN` (default: `en`) |
 | `--jd` | ** | Path to a job description text file (required with `--llm`) |
 | `--max-bullets` | | Max bullets per job (default: `4`; `0` = unlimited) |
@@ -104,12 +110,12 @@ Generate a job-specific resume variant and render it to PDF + HTML, with optiona
 | `--llm-provider` | | Override provider: `deepseek`, `kimi`, or `minimax` (default: `LLM_PROVIDER` in `.env`) |
 | `--tailor` | | LLM minimally rewrite selected bullets for JD alignment (requires `--jd` + API key) |
 | `--boost` | | Second LLM pass: add verified missing JD skills to bullets + skills section |
-| `--pages` | | Page budget — trim to fit N pages (default: `1`; `0` = no trim) |
+| `--pages` | | Page budget — trim to fit N pages (default: `2`; `0` = no trim) |
 | `--no-projects` | | Omit projects section (helps one-page budget) |
 | `--target-score` | | Re-run with tailor+boost if ATS score below target (e.g. `75`) |
 | `--all-formats` | | Generate HTML, Markdown, and PNG in addition to PDF |
-| `--cover-letter` | | Also generate a cover letter .txt file |
-| `--docx` | | Also generate a .docx Word document |
+| `--cover-letter` / `--no-cover-letter` | on | Generate a styled `cover-letter-{company}.docx` |
+| `--docx` / `--no-docx` | on | Generate `resume.docx` styled like the PDF |
 
 \* `--role` still required when NOT using `--llm`\
 \*\* `--jd` required when using `--llm`
@@ -129,18 +135,18 @@ python resume.py build --company "Anthropic" --jd jds/anthropic.txt --llm
 
 # Full quality pipeline: LLM + bullet tailor + ATS boost + one-page budget
 python resume.py build --company "BestIT" --jd jds/bestit.txt --llm --tailor --boost \
-  --max-bullets 3 --max-jobs 4 --template auto --pages 1 --target-score 75 --docx
+  --max-bullets 3 --max-jobs 4 --template auto --pages 1 --target-score 75
 
-# With DOCX + cover letter
-python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python --docx --cover-letter
+# DOCX + cover letter are generated by default; opt out with --no-docx --no-cover-letter
+python resume.py build --company "BestIT" --role "Senior SWE" --tags backend,python
 
-# Chinese resume (requires base_zh.yaml + Noto Sans CJK font)
-python resume.py build --company "BestIT" --role "高级工程师" --yaml base_zh.yaml --locale zh-CN --docx
+# Chinese resume (requires base-zh source + Noto Sans CJK font)
+python resume.py build --company "BestIT" --role "高级工程师" --yaml profiles/base-zh-cto.yaml --locale zh-CN
 ```
 
 ### `python resume.py tags`
 
-List every tag used across your `profiles/base.yaml`. Use these tags with `--tags` in the build command.
+List every tag used across your `profiles/career-en.yaml`. Use these tags with `--tags` in the build command.
 
 ```bash
 $ python resume.py tags
@@ -160,7 +166,7 @@ View your application history from the shared SQLite database — every build fr
 $ python resume.py log
 
 2026-06-25 — Google / SWE
-  ID:       google-swe-202606
+  ID:       google-swe
   Tags:     backend,python
   Template: classic
   ATS:      87/100 (A) (was 72, +15)
@@ -173,7 +179,7 @@ Both CLI builds and WebUI builds appear in the same log.
 
 ### `python resume.py analyze`
 
-Parse a JD against `profiles/base.yaml`: hard skills, matched/missing skills, top-scored bullets.
+Parse a JD against `profiles/career-en.yaml`: hard skills, matched/missing skills, top-scored bullets.
 
 ```bash
 python resume.py analyze --jd jds/target.txt
@@ -186,7 +192,7 @@ Deterministic ATS compatibility score (/100) without building a PDF.
 
 ```bash
 python resume.py score --jd jds/target.txt --tags backend,python --max-bullets 3
-python resume.py score --jd jds/target.txt --variant variants/acme-role-202606.yaml
+python resume.py score --jd jds/target.txt --variant variants/acme-role.yaml
 python resume.py score --jd jds/target.txt --output score-report.json
 ```
 
@@ -213,7 +219,7 @@ Full reference: [`docs/resume-quality-pipeline.md`](docs/resume-quality-pipeline
 
 ### `python resume.py cover-letter`
 
-Generate a cover letter from a `profiles/base.yaml` template, with optional LLM rewrite.
+Generate a cover letter from a `profiles/career-en.yaml` template, with optional LLM rewrite.
 
 | Flag | Required | Description |
 |---|---|---|
@@ -317,12 +323,15 @@ Notes:
 ## Project Structure
 
 ```
-├── profiles/                # ★ Resume profile YAML files (base*.yaml)
-│   ├── base.yaml            #   Single source of truth — edit this
-│   ├── base-v2.yaml
-│   ├── base-v1.yaml
-│   ├── base-zh.yaml         #   Chinese variant
-│   └── base-2-zh.yaml
+├── profiles/                # ★ Resume sources + positioning profiles
+│   ├── career-en.yaml       #   Canonical English source — edit this
+│   ├── na-ai-engineer.yaml  #   Positioning profile → career-en.yaml
+│   ├── na-software-engineer.yaml
+│   ├── china-cto.yaml
+│   ├── china-partner.yaml
+│   ├── base-zh-cto.yaml     #   Standalone Chinese resume (CTO focus)
+│   ├── base-zh-partner.yaml #   Standalone Chinese resume (partner focus)
+│   └── base.yaml            #   Legacy English source (still loadable)
 ├── resume.py                # CLI entry point (thin wrapper → src/cli.py)
 ├── src/                     # ★ Core Python modules
 │   ├── cli.py               #   CLI composition engine (~1900 lines)
@@ -350,10 +359,10 @@ Notes:
 │   └── google-swe.txt
 │
 ├── variants/                # Auto-generated per-application YAMLs
-│   └── google-swe-202606.yaml
+│   └── google-swe.yaml
 │
 ├── output/                  # Auto-generated PDFs + DOCX + HTML (gitignored)
-│   └── google-swe-202606/
+│   └── google-swe/
 │       ├── William_Jiang-Role.pdf
 │       ├── William_Jiang_Role.html
 │       ├── resume.docx
@@ -414,7 +423,8 @@ Notes:
 ```mermaid
 flowchart TB
     subgraph L1["Layer 1 — Data"]
-        BY["profiles/base.yaml<br/>all experience, skills,<br/>projects, education"]
+        BY["profiles/career-en.yaml<br/>all experience, skills,<br/>projects, education"] --> PR["profiles/na-ai-engineer.yaml<br/>headline · summary · priorities"]
+        PR --> RP2["effective base"] --> RP
         AG["Tagging System<br/>backend, react, ai, ...<br/>active / deprecated / conflicted"]
     end
 
@@ -441,9 +451,12 @@ flowchart TB
     DX --> DOCX
 ```
 
-### Layer 1 — `profiles/base.yaml` (single source of truth)
+### Layer 1 — canonical sources + positioning profiles
 
-Every resume bullet, skill, project, and education entry lives in `profiles/base.yaml`. Key top-level fields:
+Every resume bullet, skill, project, and education entry lives in
+`profiles/career-en.yaml` (or `profiles/base-zh-*.yaml`). Positioning profiles
+(`na-ai-engineer.yaml`, `china-cto.yaml`, ...) layer headline, summary, and
+`*_priority` ordering on top without duplicating content. Key top-level fields:
 
 | Field | Purpose |
 |---|---|
@@ -499,13 +512,13 @@ Toggle between English and 中文 (Simplified Chinese) via `--locale`:
 # English (default)
 python resume.py build --company "X" --role "Engineer" --tags backend
 
-# Chinese — requires base_zh.yaml and Noto Sans SC font
-python resume.py build --company "X" --role "工程师" --yaml base_zh.yaml --locale zh-CN
+# Chinese — use the standalone Chinese source + Noto Sans SC font
+python resume.py build --company "X" --role "工程师" --yaml profiles/base-zh-cto.yaml --locale zh-CN
 ```
 
 - Langauge toggle switches the rendercv font (`Source Sans 3` → `Noto Sans SC` for CJK support)
 - In the WebUI, toggling language auto-switches to the corresponding YAML file
-- Create `profiles/base_zh.yaml` for Chinese content — same schema as `profiles/base.yaml`
+- Create additional `profiles/base-zh-*.yaml` files for Chinese content — same schema as `profiles/career-en.yaml`
 
 ## LLM Integration (Optional)
 
@@ -550,7 +563,13 @@ open output/test-engineer-*/William_Jiang-Engineer.pdf
 
 ```
 # Commit these:
-profiles/base.yaml
+profiles/career-en.yaml
+profiles/base-zh-cto.yaml
+profiles/base-zh-partner.yaml
+profiles/na-ai-engineer.yaml
+profiles/na-software-engineer.yaml
+profiles/china-cto.yaml
+profiles/china-partner.yaml
 resume.py
 src/                   # All core Python modules
 runs.db                # SQLite history (shared by CLI + WebUI)
