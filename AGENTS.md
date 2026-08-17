@@ -112,11 +112,11 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 
 KIMI_API_KEY=...
 KIMI_BASE_URL=https://api.moonshot.cn/v1      # China inland
-KIMI_MODEL=kimi-k2.5
+KIMI_MODEL=kimi-k3
 
 MINIMAX_API_KEY=...
 MINIMAX_BASE_URL=https://api.minimaxi.com/v1  # China inland
-MINIMAX_MODEL=MiniMax-M2.5
+MINIMAX_MODEL=MiniMax-M3
 
 ```
 

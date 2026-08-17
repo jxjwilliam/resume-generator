@@ -36,13 +36,13 @@ services:
         sync: false
       - key: KIMI_BASE_URL         # default https://api.moonshot.cn/v1
         sync: false
-      - key: KIMI_MODEL            # default kimi-k2.5
+      - key: KIMI_MODEL            # default kimi-k3
         sync: false
       - key: MINIMAX_API_KEY
         sync: false
       - key: MINIMAX_BASE_URL      # default https://api.minimaxi.com/v1
         sync: false
-      - key: MINIMAX_MODEL         # default MiniMax-M2.5
+      - key: MINIMAX_MODEL         # default MiniMax-M3
         sync: false
 
       # --- Storage note ---

@@ -45,13 +45,12 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "model_var": "KIMI_MODEL",
         # China inland — use api.moonshot.ai/v1 for international
         "default_base_url": "https://api.moonshot.cn/v1",
-        "default_model": "kimi-k2.5",
+        "default_model": "kimi-k3",
         "models": [
-            "kimi-k2.5",
-            "kimi-k2-0905-preview",
-            "moonshot-v1-8k",
-            "moonshot-v1-32k",
-            "moonshot-v1-128k",
+            "kimi-k3",
+            "kimi-k2.7-code",
+            "kimi-k2.7-code-highspeed",
+            "kimi-k2.6",
         ],
     },
     "minimax": {
@@ -61,13 +60,11 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "model_var": "MINIMAX_MODEL",
         # China inland — use https://api.minimax.io/v1 for international
         "default_base_url": "https://api.minimaxi.com/v1",
-        "default_model": "MiniMax-M2.5",
+        "default_model": "MiniMax-M3",
         "models": [
-            "MiniMax-M2.5",
-            "MiniMax-M2.5-highspeed",
+            "MiniMax-M3",
             "MiniMax-M2.7",
             "MiniMax-M2.7-highspeed",
-            "MiniMax-M3",
         ],
     },
 }

@@ -46,20 +46,21 @@ Platform: https://platform.deepseek.com
 |---|---|
 | `KIMI_API_KEY` | — |
 | `KIMI_BASE_URL` | `https://api.moonshot.cn/v1` |
-| `KIMI_MODEL` | `kimi-k2.5` |
+| `KIMI_MODEL` | `kimi-k3` |
 
 Popular models:
 
 | Model | Notes |
 |---|---|
-| `kimi-k2.5` | Latest K2.5 (recommended) |
-| `kimi-k2-0905-preview` | K2 preview |
-| `moonshot-v1-32k` | 32K context |
-| `moonshot-v1-128k` | 128K context |
-| `moonshot-v1-8k` | Short tasks, lowest cost |
+| `kimi-k3` | Latest flagship, 2.8T params, 1M context, native vision (recommended) |
+| `kimi-k2.7-code` | Coding-focused, 256K context |
+| `kimi-k2.7-code-highspeed` | K2.7 Code fast variant (~180 tok/s) |
+| `kimi-k2.6` | Vision + text, thinking/non-thinking modes, 256K context |
 
 Platform: https://platform.moonshot.cn (China)  
 International base URL: `https://api.moonshot.ai/v1` — keys are **not** interchangeable between regions.
+
+> ⚠️ `kimi-k2.5` and the `moonshot-v1` series are no longer available to new users and are fully sunset on **August 31, 2026**. Use `kimi-k3` instead.
 
 ---
 
@@ -69,17 +70,15 @@ International base URL: `https://api.moonshot.ai/v1` — keys are **not** interc
 |---|---|
 | `MINIMAX_API_KEY` | — |
 | `MINIMAX_BASE_URL` | `https://api.minimaxi.com/v1` |
-| `MINIMAX_MODEL` | `MiniMax-M2.5` |
+| `MINIMAX_MODEL` | `MiniMax-M3` |
 
 Popular models:
 
 | Model | Notes |
 |---|---|
-| `MiniMax-M2.5` | Best balance of quality + cost |
-| `MiniMax-M2.5-highspeed` | Same quality, faster |
-| `MiniMax-M2.7` | Newer M series |
+| `MiniMax-M3` | Latest flagship — native multimodal, 1M context (recommended) |
+| `MiniMax-M2.7` | Current M-series, 200K context |
 | `MiniMax-M2.7-highspeed` | M2.7 fast variant |
-| `MiniMax-M3` | Latest flagship, 1M context |
 
 Platform: https://platform.minimaxi.com (China)  
 International base URL: `https://api.minimax.io/v1`
@@ -99,11 +98,11 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 
 KIMI_API_KEY=sk-...
 KIMI_BASE_URL=https://api.moonshot.cn/v1
-KIMI_MODEL=kimi-k2.5
+KIMI_MODEL=kimi-k3
 
 MINIMAX_API_KEY=sk-api-...
 MINIMAX_BASE_URL=https://api.minimaxi.com/v1
-MINIMAX_MODEL=MiniMax-M2.5
+MINIMAX_MODEL=MiniMax-M3
 ```
 
 ---
