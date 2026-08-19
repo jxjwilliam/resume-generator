@@ -268,18 +268,6 @@ Reset all generated data — output, runs.db — for a fresh test.
 ./scripts/cleanup.sh
 ```
 
-### `scripts/screenshot_ui.py`
-
-Capture screenshots of the WebUI (all 5 tabs) and the latest output PDF using Playwright. Saved to `docs/imgs/`.
-
-```bash
-pip install playwright pdf2image
-python -m playwright install chromium
-python scripts/screenshot_ui.py
-```
-
-Requires the WebUI backend and frontend dependencies (`pip install -r requirements.txt` + `cd ui/frontend && npm install`).
-
 ## WebUI
 
 A local web interface wraps the CLI tools for visual operation. No auth — localhost only.
