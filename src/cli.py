@@ -26,10 +26,21 @@ from src.compose import (
     DEFAULT_MAX_JOBS,
     bullet_key,
     filter_skills_by_tags,
+    format_education_institution,
+    format_earlier_career_line,
     parse_tag_list,
     pick_bullet_text,
     rank_bullets_for_jd,
+    section_entries,
+    select_earlier_career_jobs,
     select_experience_jobs,
+    SEC_EARLIER,
+    SEC_EDUCATION,
+    SEC_EXPERIENCE,
+    SEC_PROJECTS,
+    SEC_SKILLS,
+    SEC_SUMMARY,
+    SECTION_TITLE_COLOR,
 )
 from src.tailor_validation import (
     build_bullet_diff_report,
@@ -60,6 +71,7 @@ PROFILES_DIR = "profiles"
 BASE_FILE = f"{PROFILES_DIR}/career-en.yaml"
 OUTPUT_DIR = "output"
 VARIANTS_DIR = "output/variants"
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 
 def load_base(yaml_file: str = BASE_FILE):
     """Load any YAML (full source or positioning profile) as an effective base."""
@@ -153,7 +165,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
 
     summary_text = summary_override or base.get("summary")
     if summary_text:
-        sections["Summary"] = [summary_text]
+        sections[SEC_SUMMARY] = [summary_text]
 
     job_pairs = select_experience_jobs(
         base.get("experience", []),
@@ -165,6 +177,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
         llm_scores=llm_scores,
         priority=base.get("experience_priority"),
     )
+    earlier_jobs = select_earlier_career_jobs(base.get("experience", []))
 
     skill_rows_preview = filter_skills_by_tags(
         base.get("skills", {}), tags_list,
@@ -205,6 +218,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
             skill_rows=max(len(skill_rows_preview), 1),
             project_count=len(project_list) if include_projects else 0,
             education_count=len(education_list),
+            earlier_career_count=len(earlier_jobs),
         )
         skills_collapsed = page_budget_report.get("skills_collapsed", False)
         include_projects = page_budget_report.get("projects_included", include_projects)
@@ -229,7 +243,6 @@ def build_variant(base, tags, template, company, role, jd_text=None,
             "end_date": job.get("end") or "present",
             "highlights": highlights,
         })
-    sections["experience"] = exp_section
 
     skill_rows = filter_skills_by_tags(
         base.get("skills", {}), tags_list,
@@ -240,12 +253,19 @@ def build_variant(base, tags, template, company, role, jd_text=None,
         combined = ", ".join(
             name for row in skill_rows for name in row.get("details", "").split(", ") if name
         )
-        sections["skills"] = [{"label": "Skills", "details": combined}]
-    else:
-        sections["skills"] = skill_rows
+        skill_rows = [{"label": "Skills", "details": combined}]
 
+    # Display order: Summary (already set), Core Skills, Experience, Earlier Career,
+    # Selected Projects (JD-scored, not a fixed list), Education.
+    if skill_rows:
+        sections[SEC_SKILLS] = skill_rows
+    sections[SEC_EXPERIENCE] = exp_section
+    if earlier_jobs:
+        sections[SEC_EARLIER] = [
+            format_earlier_career_line(job) for job in earlier_jobs
+        ]
     if include_projects:
-        sections["projects"] = [
+        sections[SEC_PROJECTS] = [
             {
                 "name": p["name"],
                 "summary": p["description"],
@@ -254,9 +274,9 @@ def build_variant(base, tags, template, company, role, jd_text=None,
             for p in project_list
         ]
 
-    sections["education"] = [
+    sections[SEC_EDUCATION] = [
         {
-            "institution": e["institution"],
+            "institution": format_education_institution(e),
             "area": e["degree"],
             "degree": "",
             "date": e["graduation"]
@@ -264,7 +284,11 @@ def build_variant(base, tags, template, company, role, jd_text=None,
         for e in education_list
     ]
 
-    design = {"theme": template}
+    design = {
+        "theme": template,
+        "page": {"show_top_note": False},
+        "colors": {"section_titles": SECTION_TITLE_COLOR},
+    }
     if font_family:
         design["typography"] = {
             "font_family": {
@@ -282,7 +306,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
             "phone": _parse_phone(base["identity"]["phone"]),
             "location": base["identity"]["location"],
             "headline": headline_override or base["identity"].get("headline", ""),
-            "photo": str(Path("../..") / base["identity"]["photo"]) if base["identity"].get("photo") else None,
+            "photo": _cv_photo_path(base["identity"]),
             "social_networks": [
                 {"network": n, "username": _extract_username(u["url"])}
                 for u in base["identity"]["urls"]
@@ -297,6 +321,7 @@ def build_variant(base, tags, template, company, role, jd_text=None,
     return variant, page_budget_report, job_pairs
 
 def write_variant(variant, slug):
+    history_db.ensure_output_dir()
     path = Path(VARIANTS_DIR) / f"{slug}.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
@@ -322,10 +347,39 @@ def _cleanup_render_byproducts(output_dir: Path):
         pass
 
 
+def _cv_photo_path(identity: dict) -> str | None:
+    """Absolute photo path so rendercv still finds it when output/ is a symlink."""
+    rel = identity.get("photo")
+    if not rel:
+        return None
+    p = Path(rel)
+    if not p.is_absolute():
+        p = _REPO_ROOT / rel
+    return str(p.resolve())
+
+
+def _rendercv_bin() -> str:
+    """RenderCV next to this interpreter's bin dir (venv), not PATH/miniconda.
+
+    Do not Path.resolve() sys.executable — a venv python is often a symlink
+    into the base install, which would pick the wrong rendercv.
+    """
+    sibling = Path(sys.executable).parent / "rendercv"
+    if sibling.is_file():
+        return str(sibling)
+    return "rendercv"
+
+
+def _log_rendercv(result: subprocess.CompletedProcess, missing: str) -> None:
+    """Print rendercv stdout+stderr. Validation errors often go to stdout with exit 0."""
+    out = "\n".join(s for s in (result.stderr, result.stdout) if s).strip()
+    print(f"rendercv error: {missing}\n{out}", file=sys.stderr)
+
+
 def render_variant(variant_path, slug, all_formats=False, role=None, template=None):
     """Call rendercv to render the variant, then rename PDF with role."""
+    history_db.ensure_output_dir()
     output_path = str(Path(OUTPUT_DIR).resolve() / slug)
-    Path(OUTPUT_DIR).mkdir(exist_ok=True)
 
     if is_sidebar_theme(template):
         return _render_variant_sidebar(
@@ -335,22 +389,13 @@ def render_variant(variant_path, slug, all_formats=False, role=None, template=No
             role=role,
         )
 
-    cmd = ["rendercv", "render", variant_path, "--output-folder", output_path]
+    cmd = [_rendercv_bin(), "render", variant_path, "--output-folder", output_path]
     if not all_formats:
         cmd += ["--dont-generate-markdown", "--dont-generate-html", "--dont-generate-png"]
     result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"rendercv error:\n{result.stderr}")
-        return False
-
-    # rendercv names outputs after the CV's localized name (e.g. the Chinese
-    # full name for zh-CN); normalize to the English filename expected below.
     pdf_files = [p for p in Path(output_path).glob("*.pdf") if p.is_file()]
     if not pdf_files:
-        print(
-            f"rendercv error: expected a PDF in {output_path} but none was generated",
-            file=sys.stderr,
-        )
+        _log_rendercv(result, f"expected a PDF in {output_path}")
         return False
     default_pdf = max(pdf_files, key=lambda p: p.stat().st_mtime)
     target_pdf = Path(output_path) / "William_Jiang_CV.pdf"
@@ -374,38 +419,16 @@ def _render_variant_sidebar(variant_path, output_path, all_formats=False, role=N
     output_dir = Path(output_path)
     output_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
-        "rendercv", "render", variant_path,
+        _rendercv_bin(), "render", variant_path,
         "--output-folder", output_path,
         "--dont-generate-pdf",
     ]
     if not all_formats:
         cmd += ["--dont-generate-markdown", "--dont-generate-html", "--dont-generate-png"]
     result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"rendercv error:\n{result.stderr}")
-        return False
-
-    # rendercv only copies the photo next to the .typ when it compiles PDF/PNG;
-    # with those disabled it must be copied explicitly for our own compile.
-    try:
-        variant = yaml.safe_load(Path(variant_path).read_text())
-        photo_rel = (variant or {}).get("cv", {}).get("photo")
-        if photo_rel:
-            photo_src = Path(variant_path).parent / photo_rel
-            shutil.copy2(photo_src, output_dir / photo_src.name)
-    except (OSError, yaml.YAMLError) as e:
-        print(f"sidebar render error: could not copy photo: {e}", file=sys.stderr)
-        return False
-
-    # rendercv names the .typ after the CV's localized name (e.g. the Chinese
-    # full name for zh-CN); normalize it to the English filename the rest of
-    # the pipeline expects, so PDF generation isn't blocked by the locale.
     typ_files = [p for p in output_dir.glob("*.typ") if p.is_file()]
     if not typ_files:
-        print(
-            f"rendercv error: expected a .typ file in {output_dir} but none was generated",
-            file=sys.stderr,
-        )
+        _log_rendercv(result, f"expected a .typ file in {output_dir}")
         return False
     typ_path = max(typ_files, key=lambda p: p.stat().st_mtime)
     if typ_path.name != "William_Jiang_CV.typ":
@@ -414,6 +437,18 @@ def _render_variant_sidebar(variant_path, output_path, all_formats=False, role=N
             target.unlink()
         typ_path.rename(target)
         typ_path = target
+
+    try:
+        variant = yaml.safe_load(Path(variant_path).read_text())
+        photo_rel = (variant or {}).get("cv", {}).get("photo")
+        if photo_rel:
+            photo_src = Path(photo_rel)
+            if not photo_src.is_absolute():
+                photo_src = Path(variant_path).parent / photo_rel
+            shutil.copy2(photo_src, output_dir / photo_src.name)
+    except (OSError, yaml.YAMLError) as e:
+        print(f"sidebar render error: could not copy photo: {e}", file=sys.stderr)
+        return False
 
     try:
         patch_typst_for_sidebar(typ_path)
@@ -494,10 +529,35 @@ def _docx_para(doc, runs, before=None, after=None, align=None, style=None):
 
 
 def _docx_heading(doc, text):
-    return _docx_para(
+    """Uppercase navy heading with a matching navy underline."""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    p = _docx_para(
         doc, [(text, 10.5, True, _DOCX_NAVY)],
         before=11, after=3,
     )
+    pPr = p._p.get_or_add_pPr()
+    pBdr = OxmlElement("w:pBdr")
+    bottom = OxmlElement("w:bottom")
+    bottom.set(qn("w:val"), "single")
+    bottom.set(qn("w:sz"), "12")
+    bottom.set(qn("w:space"), "1")
+    bottom.set(qn("w:color"), "1F3864")
+    pBdr.append(bottom)
+    pPr.append(pBdr)
+    return p
+
+
+def _split_earlier_career_line(line: str) -> tuple[str, str]:
+    """Split '**Company** — Title | dates' (or unbolded) into company + rest."""
+    m = re.match(r"^\*\*(.+?)\*\*\s*—\s*(.+)$", line)
+    if m:
+        return m.group(1), m.group(2)
+    if " — " in line:
+        company, rest = line.split(" — ", 1)
+        return company.strip(), rest.strip()
+    return line, ""
 
 
 def _docx_contact_parts(cv_or_identity) -> list[str]:
@@ -609,18 +669,18 @@ def generate_docx(variant_path: str, slug: str, font_family_docx: str | None = N
     _docx_para(doc, [("", 10, False, _DOCX_GRAY)], after=6)
 
     # ── Summary ───────────────────────────────────────────────────────────
-    summary_list = sections_data.get("Summary", [])
+    summary_list = section_entries(sections_data, "summary")
     if summary_list:
-        _docx_heading(doc, "SUMMARY")
+        _docx_heading(doc, SEC_SUMMARY)
         _docx_para(
             doc, [(" ".join(str(s) for s in summary_list), 10.5, False, _DOCX_GRAY)],
             after=5,
         )
 
     # ── Core skills ───────────────────────────────────────────────────────
-    skill_rows = sections_data.get("skills", [])
+    skill_rows = section_entries(sections_data, "skills")
     if skill_rows:
-        _docx_heading(doc, "CORE SKILLS")
+        _docx_heading(doc, SEC_SKILLS)
         for sg in skill_rows:
             label = sg.get("label", "")
             details = sg.get("details", "")
@@ -632,14 +692,11 @@ def generate_docx(variant_path: str, slug: str, font_family_docx: str | None = N
                 after=2,
             )
 
-    # ── Experience (+ earlier-career one-liners) ──────────────────────────
-    exp = sections_data.get("experience", [])
+    # ── Experience ────────────────────────────────────────────────────────
+    exp = section_entries(sections_data, "experience")
     if exp:
-        _docx_heading(doc, "EXPERIENCE")
-        detailed, earlier = [], []
+        _docx_heading(doc, SEC_EXPERIENCE)
         for job in exp:
-            (detailed if job.get("highlights") else earlier).append(job)
-        for job in detailed:
             position = job.get("position", "")
             company = job.get("company", "")
             location = job.get("location", "")
@@ -656,24 +713,21 @@ def generate_docx(variant_path: str, slug: str, font_family_docx: str | None = N
             _docx_para(doc, runs, before=8, after=1)
             for hl in job.get("highlights", []):
                 _docx_bullet(doc, hl)
-        if earlier:
-            _docx_heading(doc, "EARLIER CAREER")
-            for job in earlier:
-                company = job.get("company", "")
-                position = job.get("position", "")
-                dates = (
-                    f"{_format_month_year(job.get('start_date'))} – "
-                    f"{_format_month_year(job.get('end_date'))}"
-                )
-                line = f"{company} — {position}" if position else company
-                if dates:
-                    line += f" | {dates}"
-                _docx_para(doc, [(line, 10, False, _DOCX_GRAY)], after=1.5)
 
-    # ── Selected projects ─────────────────────────────────────────────────
-    projects = sections_data.get("projects", [])
+    earlier_lines = section_entries(sections_data, "earlier")
+    if earlier_lines:
+        _docx_heading(doc, SEC_EARLIER)
+        for line in earlier_lines:
+            company, rest = _split_earlier_career_line(str(line))
+            runs = [(company, 10, True, _DOCX_BLACK)]
+            if rest:
+                runs.append((f" — {rest}", 10, False, _DOCX_GRAY))
+            _docx_para(doc, runs, after=1.5)
+
+    # ── Selected projects (JD-scored subset) ──────────────────────────────
+    projects = section_entries(sections_data, "projects")
     if projects:
-        _docx_heading(doc, "SELECTED PROJECTS")
+        _docx_heading(doc, SEC_PROJECTS)
         for proj in projects:
             name = proj.get("name", "")
             summary = proj.get("summary", "")
@@ -681,9 +735,9 @@ def generate_docx(variant_path: str, slug: str, font_family_docx: str | None = N
             _docx_bullet(doc, text, bold_prefix=name)
 
     # ── Education ─────────────────────────────────────────────────────────
-    edu = sections_data.get("education", [])
+    edu = section_entries(sections_data, "education")
     if edu:
-        _docx_heading(doc, "EDUCATION")
+        _docx_heading(doc, SEC_EDUCATION)
         for e in edu:
             area = e.get("area", "")
             institution = e.get("institution", "")
@@ -696,7 +750,7 @@ def generate_docx(variant_path: str, slug: str, font_family_docx: str | None = N
             _docx_para(doc, runs, after=1)
 
     output_path = f"{OUTPUT_DIR}/{slug}/resume.docx"
-    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+    history_db.ensure_output_dir()
     doc.save(output_path)
     print(f"DOCX written: {output_path}")
     return output_path
@@ -758,6 +812,7 @@ def cmd_build(args):
         print("Max build attempts reached.", file=sys.stderr)
         return
     args._build_attempt = getattr(args, "_build_attempt", 0) + 1
+    history_db.ensure_output_dir()
 
     base = load_base(getattr(args, "yaml", BASE_FILE))
 
@@ -987,6 +1042,12 @@ def cmd_build(args):
     )
     if success:
         print(f"Output: {OUTPUT_DIR}/{slug}/")
+    else:
+        print(
+            f"ERROR: PDF was not generated for {OUTPUT_DIR}/{slug}/. "
+            "DOCX/cover letter may still be written.",
+            file=sys.stderr,
+        )
 
     if not getattr(args, "no_history", False):
         _write_history_from_build(slug, args.company, role, tags, template, args, variant_path, jd_text)
@@ -1006,7 +1067,7 @@ def cmd_build(args):
             tailored_bullets=tailored_bullets,
         )
         report_path = f"{OUTPUT_DIR}/{slug}/ats-report.json"
-        Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+        history_db.ensure_output_dir()
         Path(report_path).parent.mkdir(parents=True, exist_ok=True)
         with open(report_path, "w") as f:
             json.dump(ats_result, f, indent=2)
@@ -1079,6 +1140,9 @@ def cmd_build(args):
     if getattr(args, "docx", False):
         print("Generating DOCX...")
         generate_docx(variant_path, slug, font_family_docx=font_cfg["docx"])
+
+    if not success:
+        sys.exit(1)
 
 def cmd_tags(args):
     base = load_base()

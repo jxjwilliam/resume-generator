@@ -297,17 +297,22 @@ def score_variant_yaml(
     sections = cv.get("sections", {})
 
     headline = cv.get("headline", "")
-    summary_list = sections.get("Summary") or sections.get("summary") or []
+    summary_list = sections.get("SUMMARY") or sections.get("Summary") or sections.get("summary") or []
     summary = summary_list[0] if summary_list else ""
 
     bullet_texts: list[str] = []
-    exp = sections.get("experience") or sections.get("Experience") or []
+    exp = sections.get("EXPERIENCE") or sections.get("experience") or sections.get("Experience") or []
     for job in exp:
         for h in job.get("highlights") or []:
             bullet_texts.append(h)
 
     skills_text = ""
-    for row in sections.get("skills") or sections.get("Skills") or []:
+    for row in (
+        sections.get("CORE SKILLS")
+        or sections.get("skills")
+        or sections.get("Skills")
+        or []
+    ):
         if isinstance(row, dict):
             skills_text += " " + row.get("details", "")
         elif isinstance(row, str):

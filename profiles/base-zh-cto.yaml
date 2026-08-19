@@ -307,7 +307,7 @@ experience:
   location: 加拿大·温哥华
   start: 2007-03
   end: 2014-07
-  status: deprecated
+  status: earlier
   tags:
   - frontend
   - javascript
@@ -332,20 +332,20 @@ experience:
     - performance
     status: deprecated
     relevance: low
-  note: CTO/AI 架构师版本默认简化；仅在需要补充大型电商经历时启用。
+  note: 以 Earlier Career 一行摘要展示（非整段 bullets）
 - company: 联邦快递（FedEx）
   company_en: FedEx
   title: 程序分析员
   location: 新加坡
   start: 2000-10
   end: 2004-12
-  status: deprecated
+  status: earlier
   tags:
   - legacy
   - enterprise
   - supply-chain
   - java
-  note: 仅限物流/供应链方向职位启用
+  note: 以 Earlier Career 一行摘要展示（非整段 bullets）
   bullets:
   - text: 设计并开发 FedEx GIVS（全球库存可视系统）及 EC-IV（电商库存可视系统），负责亚太区追踪数据集成
     tags:
@@ -360,13 +360,13 @@ experience:
   location: 中国·深圳
   start: 1995-09
   end: 2000-09
-  status: deprecated
+  status: earlier
   tags:
   - legacy
   - telecom
   - embedded
   - c
-  note: 仅限电信/嵌入式方向职位启用
+  note: 以 Earlier Career 一行摘要展示（非整段 bullets）
   bullets:
   - text: 负责 CDMA 系统安全模块开发及数据中心与基站间的网络通信；技术栈：TCP/IP、C/C++、Oracle
     tags:

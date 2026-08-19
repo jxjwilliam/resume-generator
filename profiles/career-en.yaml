@@ -51,17 +51,19 @@ summary: 'Senior full-stack engineer with 20+ years shipping production systems 
   '
 experience:
 - company: ZTE (Zhongxing Telecom)
+  earlier_company: ZTE China
   title: Software Engineer
+  earlier_title: Software Engineer, CDMA Systems
   location: China
   start: 1995-09
   end: 2000-09
-  status: deprecated
+  status: earlier
   tags:
   - legacy
   - telecom
   - embedded
   - c
-  note: Only include for legacy telecom or very early-career roles
+  note: Shown as an Earlier Career one-liner (not full bullets)
   bullets:
   - text: Early software engineering experience at ZTE, establishing the foundation for a long-term enterprise software career.
     tags:
@@ -70,17 +72,18 @@ experience:
   role: Software Engineer
   period: Sep 1995 – Sep 2000
 - company: FedEx
+  earlier_company: FedEx Singapore
   title: Computer Programmer Analyst
   location: Singapore
   start: 2000-10
   end: 2004-12
-  status: deprecated
+  status: earlier
   tags:
   - legacy
   - enterprise
   - supply-chain
   - java
-  note: Only include for logistics/supply-chain roles or very early-career roles
+  note: Shown as an Earlier Career one-liner (not full bullets)
   bullets:
   - text: Software engineering experience in enterprise logistics systems at FedEx Singapore.
     tags:
@@ -89,11 +92,12 @@ experience:
   role: Software Engineer
   period: Oct 2000 – Dec 2004
 - company: Best Buy Canada
+  earlier_company: Best Buy Canada (Vancouver)
   title: Senior JavaScript Engineer
   location: Canada
   start: 2007-03
   end: 2014-07
-  status: deprecated
+  status: earlier
   tags:
   - frontend
   - javascript
@@ -101,7 +105,7 @@ experience:
   - ui
   - react
   - fullstack
-  note: Omit for senior/staff AI roles — early-career frontend; senior filter drops automatically
+  note: Shown as an Earlier Career one-liner (not full bullets)
   bullets:
   - text: Built and maintained production web and retail technology systems in a large-scale enterprise environment.
     tags:

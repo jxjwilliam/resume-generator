@@ -12,6 +12,35 @@ from src.profiles import _match_name
 DEFAULT_MAX_BULLETS = 4
 DEFAULT_MAX_JOBS = 0  # 0 = unlimited
 
+# Rendered section titles. Keys are the visible headings (uppercase).
+SEC_SUMMARY = "SUMMARY"
+SEC_SKILLS = "CORE SKILLS"
+SEC_EXPERIENCE = "EXPERIENCE"
+SEC_EARLIER = "EARLIER CAREER"
+SEC_PROJECTS = "SELECTED PROJECTS"
+SEC_EDUCATION = "EDUCATION"
+
+_SECTION_ALIASES = {
+    "summary": (SEC_SUMMARY, "Summary", "summary"),
+    "skills": (SEC_SKILLS, "skills", "Skills"),
+    "experience": (SEC_EXPERIENCE, "experience", "Experience"),
+    "earlier": (SEC_EARLIER, "Earlier Career"),
+    "projects": (SEC_PROJECTS, "projects", "Projects"),
+    "education": (SEC_EDUCATION, "education", "Education"),
+}
+
+SECTION_TITLE_COLOR = "rgb(31,56,100)"  # matches DOCX navy #1F3864
+
+
+def section_entries(sections: dict, kind: str, default=None):
+    """Look up a composed section, accepting current and legacy titles."""
+    if default is None:
+        default = []
+    for key in _SECTION_ALIASES.get(kind, (kind,)):
+        if key in sections:
+            return sections[key]
+    return default
+
 _RELEVANCE = {"high": 3, "medium": 2, "low": 1}
 
 
@@ -48,6 +77,58 @@ def sort_jobs_reverse_chronological(jobs: list) -> list:
         return (start, end)
 
     return sorted(jobs, key=sort_key, reverse=True)
+
+
+_MONTHS = {
+    "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+    "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
+    "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
+}
+
+
+def _format_month_year(value) -> str:
+    if not value:
+        return "Present"
+    parts = str(value).split("-")
+    if len(parts) >= 2 and parts[0].isdigit() and parts[1].isdigit():
+        return f"{_MONTHS.get(parts[1], parts[1])} {parts[0]}"
+    return str(value)
+
+
+def select_earlier_career_jobs(exp_list: list) -> list[dict]:
+    """Jobs with status ``earlier`` — compressed one-liners, newest first.
+
+    ``deprecated`` still means omit. ``earlier`` means keep, but briefly.
+    """
+    return sort_jobs_reverse_chronological(
+        [j for j in exp_list if j.get("status") == "earlier"]
+    )
+
+
+def format_earlier_career_line(job: dict) -> str:
+    """Markdown one-liner matching the Earlier Career screenshot.
+
+    **Company** — Title | dates
+    """
+    company = (job.get("earlier_company") or job.get("company") or "").strip()
+    title = (job.get("earlier_title") or job.get("title") or job.get("role") or "").strip()
+    dates = (job.get("period") or "").strip()
+    if not dates:
+        dates = f"{_format_month_year(job.get('start'))} – {_format_month_year(job.get('end'))}"
+    body = " | ".join(p for p in (title, dates) if p)
+    company_md = f"**{company}**" if company else ""
+    if company_md and body:
+        return f"{company_md} — {body}"
+    return company_md or body
+
+
+def format_education_institution(entry: dict) -> str:
+    """Institution with location: "Xi'an Jiaotong University, China"."""
+    inst = (entry.get("institution") or "").strip()
+    loc = (entry.get("location") or "").strip()
+    if loc and loc.casefold() not in inst.casefold():
+        return f"{inst}, {loc}"
+    return inst
 
 
 def reorder_jobs_by_priority(jobs: list, priority: list[str] | None) -> list:

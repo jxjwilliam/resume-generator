@@ -10,6 +10,8 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 
+from src.history_db import ensure_output_dir
+
 from .db import init_db, get_run, list_runs
 from .jd_analyzer import extract_keywords, extract_text_from_pdf
 from .models import (
@@ -34,6 +36,7 @@ FRONTEND_DIST = REPO_ROOT / "ui" / "frontend" / "dist"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    ensure_output_dir()
     yield
 
 
@@ -253,7 +256,7 @@ async def preview_jd(data: JdPreviewRequest):
 
 @app.post("/api/jd/upload")
 async def upload_jd(file: UploadFile):
-    temp = REPO_ROOT / "output" / f".ui_temp_jd{Path(file.filename or 'file.txt').suffix}"
+    temp = ensure_output_dir() / f".ui_temp_jd{Path(file.filename or 'file.txt').suffix}"
     content = await file.read()
     temp.write_bytes(content)
     try:
@@ -342,8 +345,9 @@ def _build_resume_cmd(args: ResumeRunRequest, jd_file: str | None) -> list[str]:
 async def run_resume(args: ResumeRunRequest):
     jd_file = None
     if args.jd_text:
-        jd_file = str(REPO_ROOT / "output" / ".ui_temp_jd.txt")
-        Path(jd_file).write_text(args.jd_text)
+        jd_path = ensure_output_dir() / ".ui_temp_jd.txt"
+        jd_path.write_text(args.jd_text)
+        jd_file = str(jd_path)
 
     cmd = _build_resume_cmd(args, jd_file)
     job_id = await start_job(cmd, "resume", metadata=args.model_dump())

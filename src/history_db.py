@@ -19,6 +19,20 @@ DB_PATH = str(REPO_ROOT / "runs.db")
 OUTPUT_DIR = REPO_ROOT / "output"
 VARIANTS_DIR = REPO_ROOT / "output/variants"
 
+
+def ensure_output_dir(path: Path | None = None) -> Path:
+    """Return a writable output directory.
+
+    `output/` is gitignored, so it may be missing on a fresh clone. It may also
+    be a dangling symlink (e.g. an unmounted external drive). Replace that
+    symlink so later writes do not raise FileNotFoundError.
+    """
+    out = Path(path) if path is not None else OUTPUT_DIR
+    if out.is_symlink() and not out.exists():
+        out.unlink()
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
 # ── Schema ───────────────────────────────────────────────────────────────────
 
 SCHEMA_SQL = """

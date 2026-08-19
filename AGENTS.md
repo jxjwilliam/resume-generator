@@ -129,7 +129,7 @@ python resume.py build --company "BestIT" --jd jds/target.txt \
 - **Canonical sources and positioning profiles are the only manually edited files.** Everything else is generated.
 - `--yaml` accepts either a full source (`career-en.yaml`, `base-zh-*.yaml`) or a positioning profile (`na-ai-engineer.yaml`, ...). Profiles resolve to their `source.career` and layer headline/summary/ordering/caps on top.
 - `recent_jobs` (default 5) = how many `experience_priority` companies keep full bullets; listed-but-older jobs get `old_experience_max_bullets`.
-- **Status flags:** `active` / `deprecated` / `conflicted`
+- **Status flags:** `active` / `earlier` / `deprecated` / `conflicted`. Experience `earlier` = compressed Earlier Career one-liners (not omitted). `deprecated` = omit.
 - **LLM never fabricates** — only rephrases verified source content
 - **ATS scoring is deterministic** — LLM is not used to grade
 - Builds with `--jd` write `output/{slug}/ats-report.json` + `provenance.json`

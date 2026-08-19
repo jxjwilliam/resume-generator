@@ -122,3 +122,4 @@ Used by `resume.py` (`--llm`, `--tailor`, `--boost`, `cover-letter`).
 ## Related
 
 - Quality pipeline: [`resume-quality-pipeline.md`](resume-quality-pipeline.md)
+- LLM prompts (system/user instructions per stage): [`cursor_llm_resume_prompts.md`](cursor_llm_resume_prompts.md)

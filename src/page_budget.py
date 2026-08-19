@@ -27,6 +27,7 @@ def estimate_lines(
     project_count: int,
     education_count: int,
     skills_collapsed: bool = False,
+    earlier_career_count: int = 0,
 ) -> float:
     lines = float(HEADER_LINES)
     if has_summary:
@@ -36,6 +37,8 @@ def estimate_lines(
         for _, bullets in jobs:
             lines += LINES_JOB_HEADER
             lines += len(bullets) * LINES_PER_BULLET
+    if earlier_career_count > 0:
+        lines += LINES_SECTION_HEADER + earlier_career_count * LINES_SKILL_ROW
     if skill_rows > 0:
         lines += LINES_SECTION_HEADER
         lines += 1 if skills_collapsed else skill_rows * LINES_SKILL_ROW
@@ -56,6 +59,7 @@ def trim_jobs_to_page_budget(
     skill_rows: int = 3,
     project_count: int = 0,
     education_count: int = 1,
+    earlier_career_count: int = 0,
 ) -> tuple[list[tuple[dict, list[dict]]], dict]:
     """
     Trim lowest-scored bullets/jobs until estimated lines fit page budget.
@@ -78,6 +82,7 @@ def trim_jobs_to_page_budget(
             project_count=project_count if include_projects else 0,
             education_count=education_count,
             skills_collapsed=skills_collapsed,
+            earlier_career_count=earlier_career_count,
         )
 
     while _lines() > budget and jobs:
